@@ -1,0 +1,67 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to Clerk keyless mode content" [ref=e2]:
+    - /url: "#--clerk-keyless-prompt-button"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e9]: F
+          - generic [ref=e10]: Frameio
+        - button "Toggle menu" [ref=e13]:
+          - generic [ref=e14]: Toggle menu
+    - main [ref=e19]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - heading "AI-Powered Marketing Assets for Textile Shops" [level=1] [ref=e22]:
+            - text: AI-Powered Marketing Assets
+            - generic [ref=e23]: for Textile Shops
+          - paragraph [ref=e24]: Transform your textile business with intelligent design generation, smart fabric analysis, and automated catalog creation powered by cutting-edge AI technology.
+          - generic [ref=e25]:
+            - button "Get Started" [ref=e26]:
+              - text: Get Started
+              - img [ref=e27]
+            - button "Login" [ref=e29]
+        - generic [ref=e34]:
+          - img [ref=e36]
+          - heading "AI-Powered Design Studio" [level=3] [ref=e39]
+          - paragraph [ref=e40]: Create stunning marketing materials with the power of artificial intelligence
+        - generic [ref=e41]:
+          - generic [ref=e43]:
+            - img [ref=e45]
+            - heading "AI Design Generation" [level=3] [ref=e51]
+            - paragraph [ref=e52]: Create stunning textile designs with AI-powered tools that understand your brand and style.
+          - generic [ref=e54]:
+            - img [ref=e56]
+            - heading "Smart Scheduling" [level=3] [ref=e58]
+            - paragraph [ref=e59]: Plan and schedule your marketing posts across all platforms with optimal timing.
+          - generic [ref=e61]:
+            - img [ref=e63]
+            - heading "Analytics & Insights" [level=3] [ref=e65]
+            - paragraph [ref=e66]: Track performance and get insights to optimize your marketing strategy.
+        - generic [ref=e67]:
+          - heading "Ready to Transform Your Textile Business?" [level=2] [ref=e68]
+          - paragraph [ref=e69]: Join hundreds of textile shops already using Frameio to create stunning marketing materials.
+          - generic [ref=e70]:
+            - button "Start Your Free Trial" [ref=e71]:
+              - text: Start Your Free Trial
+              - img [ref=e72]
+            - button "Watch Demo" [ref=e74]
+    - contentinfo [ref=e75]:
+      - paragraph [ref=e78]: © 2024 Frameio. All rights reserved.
+  - button "Open Next.js Dev Tools" [ref=e84] [cursor=pointer]:
+    - img [ref=e85] [cursor=pointer]
+  - alert [ref=e90]
+  - generic [ref=e91]:
+    - button "Missing environment keys" [expanded] [ref=e92]:
+      - generic [ref=e93]:
+        - img [ref=e94]
+        - paragraph [ref=e96] [cursor=pointer]: Missing environment keys
+    - generic [ref=e97]:
+      - region "Missing environment keys" [ref=e98]:
+        - paragraph [ref=e99]: You claimed this application but haven't set keys in your environment. Get them from the Clerk Dashboard.
+      - link "Get API keys" [ref=e101] [cursor=pointer]:
+        - /url: https://dashboard.clerk.com/apps/app_33SF1V30mDGeDVCnLqmK0nLlLvl/instances/ins_33SF1WjZBeipK6bE7KSkvU62sTY/api-keys
+```
