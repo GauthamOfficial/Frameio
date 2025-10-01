@@ -18,10 +18,28 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
+
+def api_status(request):
+    """Simple API status endpoint for the root URL"""
+    return JsonResponse({
+        'status': 'success',
+        'message': 'Framio API is running',
+        'version': '1.0.0',
+        'endpoints': {
+            'admin': '/admin/',
+            'api': '/api/',
+            'organizations': '/api/organizations/',
+            'users': '/api/users/',
+            'designs': '/api/designs/',
+            'ai_services': '/api/ai-services/'
+        }
+    })
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("organizations.urls")),
+    path("", api_status, name="api_status"),
+    path("api/", include("organizations.urls")),
     path("api/", include("users.urls")),
     path("api/", include("designs.urls")),
     path("api/", include("ai_services.urls")),

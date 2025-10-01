@@ -11,5 +11,5 @@ router.register(r'members', OrganizationMemberViewSet, basename='member')
 router.register(r'invitations', OrganizationInvitationViewSet, basename='invitation')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]
