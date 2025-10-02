@@ -42,7 +42,7 @@ urlpatterns = [
     path("api/", include("organizations.urls")),
     path("api/", include("users.urls")),
     path("api/", include("designs.urls")),
-    path("api/", include("ai_services.urls")),
+    path("api/ai/", include("ai_services.urls")),
 ]
 
 # Serve media files in development

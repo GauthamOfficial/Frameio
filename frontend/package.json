@@ -20,7 +20,15 @@
     "test:e2e:comprehensive": "playwright test --config=playwright.config.comprehensive.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "test:ai": "node scripts/test-ai-services.js",
+    "test:ai:headed": "node scripts/test-ai-services.js --headed",
+    "test:ai:debug": "node scripts/test-ai-services.js --debug",
+    "test:ai:verbose": "node scripts/test-ai-services.js --verbose",
+    "test:ai:frontend": "playwright test tests/ai-services.spec.ts --config=playwright.config.ai-services.ts",
+    "test:ai:backend": "playwright test tests/ai-backend-api.spec.ts --config=playwright.config.ai-services.ts",
+    "test:ai:integration": "playwright test tests/ai-integration.spec.ts --config=playwright.config.ai-services.ts",
+    "test:ai:mobile": "playwright test tests/ai-services.spec.ts --config=playwright.config.ai-services.ts --project=ai-services-mobile"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.33.1",

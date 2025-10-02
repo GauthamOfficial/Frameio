@@ -63,6 +63,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # AI Services middleware
+    "ai_services.middleware.RateLimitMiddleware",
+    "ai_services.middleware.AISecurityMiddleware", 
+    "ai_services.middleware.AIUsageTrackingMiddleware",
     # "organizations.middleware.TenantMiddleware",  # Temporarily disabled for tests
 ]
 
@@ -191,6 +195,7 @@ ARCJET_KEY = os.getenv('ARCJET_KEY', '')
 
 # AI Services configuration
 NANOBANANA_API_KEY = os.getenv('NANOBANANA_API_KEY', '')
+NANOBANANA_MODEL_KEY = os.getenv('NANOBANANA_MODEL_KEY', '')
 
 # Multi-tenancy settings
 TENANT_MODEL = 'organizations.Organization'

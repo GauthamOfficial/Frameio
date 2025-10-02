@@ -3,8 +3,27 @@ from django.http import JsonResponse
 from django.core.exceptions import PermissionDenied
 from .models import Organization, OrganizationMember
 import logging
+from threading import local
 
 logger = logging.getLogger(__name__)
+
+# Thread-local storage for organization context
+_thread_local = local()
+
+
+def get_current_organization():
+    """
+    Get the current organization from thread-local storage.
+    This is set by the TenantMiddleware.
+    """
+    return getattr(_thread_local, 'organization', None)
+
+
+def set_current_organization(organization):
+    """
+    Set the current organization in thread-local storage.
+    """
+    _thread_local.organization = organization
 
 
 class TenantMiddleware(MiddlewareMixin):
@@ -35,6 +54,7 @@ class TenantMiddleware(MiddlewareMixin):
         if organization:
             request.organization = organization
             request.tenant = organization
+            set_current_organization(organization)
         else:
             # For API requests, return error if no organization found
             if request.path.startswith('/api/'):
