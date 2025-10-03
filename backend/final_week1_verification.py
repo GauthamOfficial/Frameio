@@ -279,3 +279,4 @@ def verify_week1_completion():
 if __name__ == '__main__':
     success = verify_week1_completion()
     sys.exit(0 if success else 1)
+

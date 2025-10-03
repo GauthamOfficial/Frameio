@@ -173,3 +173,4 @@ class AIAnalyticsSerializer(serializers.Serializer):
     most_used_generation_type = serializers.CharField()
     most_used_provider = serializers.CharField()
     quota_usage_by_type = serializers.DictField()
+

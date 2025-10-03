@@ -595,3 +595,4 @@ class TextileCatalogBuilder:
                 'success': False,
                 'error': str(e)
             }
+

@@ -140,3 +140,4 @@ class Command(BaseCommand):
                 self.style.ERROR(f'❌ Setup failed: {str(e)}')
             )
             raise
+

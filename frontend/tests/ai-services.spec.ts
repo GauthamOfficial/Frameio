@@ -454,3 +454,4 @@ test.describe('AI Services Mobile Tests', () => {
     await expect(page.locator('[data-testid="mobile-nav-menu"]')).toBeVisible();
   });
 });
+

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useOrganization } from "@/contexts/organization-context"
 import { 
   LayoutDashboard, 
   Image, 
@@ -16,19 +17,41 @@ import {
   BarChart3,
   Settings,
   Menu,
-  X
+  X,
+  Users,
+  CreditCard,
+  Building
 } from "lucide-react"
 
-const navigationItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "AI Poster Generator", href: "/dashboard/poster-generator", icon: Image },
-  { name: "Catalog Builder", href: "/dashboard/catalog-builder", icon: BookOpen },
-  { name: "Branding Kit", href: "/dashboard/branding-kit", icon: Palette },
-  { name: "Social Media Posts", href: "/dashboard/social-media", icon: Share2 },
-  { name: "Scheduler", href: "/dashboard/scheduler", icon: Calendar },
-  { name: "Templates Library", href: "/dashboard/templates", icon: Library },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-]
+const getNavigationItems = (userRole: string | null, permissions: string[]) => {
+  const baseItems = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: null },
+    { name: "AI Poster Generator", href: "/dashboard/poster-generator", icon: Image, permission: "manage_designs" },
+    { name: "Catalog Builder", href: "/dashboard/catalog-builder", icon: BookOpen, permission: "manage_designs" },
+    { name: "Branding Kit", href: "/dashboard/branding-kit", icon: Palette, permission: "manage_designs" },
+    { name: "Social Media Posts", href: "/dashboard/social-media", icon: Share2, permission: "manage_designs" },
+    { name: "Scheduler", href: "/dashboard/scheduler", icon: Calendar, permission: "manage_designs" },
+    { name: "Templates Library", href: "/dashboard/templates", icon: Library, permission: "view_templates" },
+    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, permission: "view_analytics" },
+  ]
+
+  const adminItems = [
+    { name: "User Management", href: "/dashboard/users", icon: Users, permission: "manage_users" },
+    { name: "Organization Settings", href: "/dashboard/organization", icon: Building, permission: "manage_organization" },
+    { name: "Billing", href: "/dashboard/billing", icon: CreditCard, permission: "view_billing" },
+  ]
+
+  // Filter items based on permissions
+  const filteredBaseItems = baseItems.filter(item => 
+    !item.permission || permissions.includes(item.permission)
+  )
+
+  const filteredAdminItems = adminItems.filter(item => 
+    permissions.includes(item.permission)
+  )
+
+  return [...filteredBaseItems, ...filteredAdminItems]
+}
 
 interface SidebarProps {
   className?: string
@@ -37,6 +60,28 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const pathname = usePathname()
+  const { userRole, permissions, isLoading } = useOrganization()
+
+  // Debug logging
+  console.log('Sidebar Debug:', { userRole, permissions, isLoading })
+
+  // Get navigation items based on user role and permissions
+  const navigationItems = getNavigationItems(userRole, permissions)
+  
+  console.log('Navigation Items:', navigationItems)
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-y-0 left-0 z-40 w-64 bg-sidebar border-r border-sidebar-border">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="w-8 h-8 bg-primary rounded-lg mx-auto mb-4 animate-pulse"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

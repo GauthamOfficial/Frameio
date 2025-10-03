@@ -67,7 +67,7 @@ MIDDLEWARE = [
     "ai_services.middleware.RateLimitMiddleware",
     "ai_services.middleware.AISecurityMiddleware", 
     "ai_services.middleware.AIUsageTrackingMiddleware",
-    # "organizations.middleware.TenantMiddleware",  # Temporarily disabled for tests
+    "organizations.middleware.TenantMiddleware",
 ]
 
 ROOT_URLCONF = "frameio_backend.urls"
@@ -160,6 +160,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django REST Framework configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'users.authentication.DevelopmentAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'users.authentication.ClerkAuthentication',
     ],

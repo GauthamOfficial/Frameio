@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.utils import timezone
 
 def api_status(request):
     """Simple API status endpoint for the root URL"""
@@ -36,9 +37,18 @@ def api_status(request):
         }
     })
 
+def health_check(request):
+    """Health check endpoint for testing connectivity"""
+    return JsonResponse({
+        'status': 'healthy',
+        'message': 'Backend server is running',
+        'timestamp': timezone.now().isoformat()
+    })
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", api_status, name="api_status"),
+    path("health/", health_check, name="health_check"),
     path("api/", include("organizations.urls")),
     path("api/", include("users.urls")),
     path("api/", include("designs.urls")),

@@ -15,6 +15,7 @@ from .serializers import (
     OrganizationUpdateSerializer
 )
 from users.models import User
+from users.permissions import IsOrganizationMember
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,21 @@ class OrganizationViewSet(viewsets.ModelViewSet):
                 members__user=self.request.user,
                 members__is_active=True
             ).distinct()
+        elif self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            # For detail views, check if user is a member
+            org_id = self.kwargs.get('pk')
+            if org_id:
+                try:
+                    org = Organization.objects.get(id=org_id)
+                    if OrganizationMember.objects.filter(
+                        organization=org,
+                        user=self.request.user,
+                        is_active=True
+                    ).exists():
+                        return Organization.objects.filter(id=org_id)
+                except Organization.DoesNotExist:
+                    pass
+            return Organization.objects.none()
         return super().get_queryset()
     
     def perform_create(self, serializer):
@@ -193,6 +209,25 @@ class OrganizationMemberViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter members based on current organization."""
+        # Get organization from URL or request context
+        org_id = self.kwargs.get('organization_pk')
+        if org_id:
+            try:
+                organization = Organization.objects.get(id=org_id)
+                # Check if user is a member of this organization
+                if OrganizationMember.objects.filter(
+                    organization=organization,
+                    user=self.request.user,
+                    is_active=True
+                ).exists():
+                    return OrganizationMember.objects.filter(
+                        organization=organization,
+                        is_active=True
+                    )
+            except Organization.DoesNotExist:
+                pass
+        
+        # Fallback to request organization context
         organization = getattr(self.request, 'organization', None)
         if organization:
             return OrganizationMember.objects.filter(
@@ -253,6 +288,22 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter invitations based on current organization."""
+        # Get organization from URL or request context
+        org_id = self.kwargs.get('organization_pk')
+        if org_id:
+            try:
+                organization = Organization.objects.get(id=org_id)
+                # Check if user is a member of this organization
+                if OrganizationMember.objects.filter(
+                    organization=organization,
+                    user=self.request.user,
+                    is_active=True
+                ).exists():
+                    return OrganizationInvitation.objects.filter(organization=organization)
+            except Organization.DoesNotExist:
+                pass
+        
+        # Fallback to request organization context
         organization = getattr(self.request, 'organization', None)
         if organization:
             return OrganizationInvitation.objects.filter(organization=organization)

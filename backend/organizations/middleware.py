@@ -117,6 +117,16 @@ class TenantMiddleware(MiddlewareMixin):
         """
         if hasattr(request, 'user') and request.user.is_authenticated:
             return request.user.current_organization
+        
+        # Check for development headers
+        dev_org_id = request.META.get('HTTP_X_DEV_ORG_ID')
+        if dev_org_id:
+            try:
+                from .models import Organization
+                return Organization.objects.get(id=dev_org_id)
+            except Organization.DoesNotExist:
+                pass
+        
         return None
     
     def process_view(self, request, view_func, view_args, view_kwargs):

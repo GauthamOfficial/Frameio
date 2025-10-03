@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs';
 import { SimpleErrorBoundary } from "@/components/simple-error-boundary";
 import "./globals.css";
+import "@/lib/test-data"; // Import test data utilities
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

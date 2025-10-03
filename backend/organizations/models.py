@@ -74,11 +74,9 @@ class OrganizationMember(models.Model):
     Model for managing organization membership and roles.
     """
     ROLE_CHOICES = [
-        ('owner', 'Owner'),
         ('admin', 'Admin'),
         ('manager', 'Manager'),
         ('designer', 'Designer'),
-        ('viewer', 'Viewer'),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -1,25 +1,80 @@
-import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
+"use client"
+
 import { OverviewCards } from "@/components/dashboard/overview-cards"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, TrendingUp, Calendar, Image } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { useOrganization } from "@/contexts/organization-context"
+import { Plus, TrendingUp, Calendar, Image, Users, Building, CreditCard, Shield } from "lucide-react"
 
 export default function DashboardPage() {
+  const { userRole, permissions, isLoading } = useOrganization()
+
+  const getRoleBadgeVariant = (role: string | null) => {
+    switch (role) {
+      case 'Admin':
+        return 'destructive'
+      case 'Manager':
+        return 'default'
+      case 'Designer':
+        return 'secondary'
+      default:
+        return 'outline'
+    }
+  }
+
+  const getQuickActions = () => {
+    const baseActions = [
+      { name: "Generate AI Poster", href: "/dashboard/poster-generator", icon: Image },
+      { name: "Schedule Post", href: "/dashboard/scheduler", icon: Calendar },
+      { name: "View Analytics", href: "/dashboard/analytics", icon: TrendingUp },
+    ]
+
+    const adminActions = [
+      { name: "Manage Users", href: "/dashboard/users", icon: Users },
+      { name: "Organization Settings", href: "/dashboard/organization", icon: Building },
+      { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
+    ]
+
+    return [
+      ...baseActions,
+      ...(permissions.includes('manage_users') ? adminActions : [])
+    ]
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 bg-primary rounded-lg mx-auto mb-4 animate-pulse"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <DashboardLayout>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
+            <div className="flex items-center space-x-3 mb-2">
+              <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+              {userRole && (
+                <Badge variant={getRoleBadgeVariant(userRole)} className="text-xs">
+                  <Shield className="mr-1 h-3 w-3" />
+                  {userRole}
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground">
               Welcome back! Here's what's happening with your textile marketing.
             </p>
           </div>
-            <Button className="bg-textile-accent">
-              <Plus className="mr-2 h-4 w-4" />
-              Create New Post
-            </Button>
+          <Button className="bg-textile-accent">
+            <Plus className="mr-2 h-4 w-4" />
+            Create New Post
+          </Button>
         </div>
 
         {/* Overview Cards */}
@@ -74,18 +129,20 @@ export default function DashboardPage() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full justify-start" variant="outline">
-                <Image className="mr-2 h-4 w-4" />
-                Generate AI Poster
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Post
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <TrendingUp className="mr-2 h-4 w-4" />
-                View Analytics
-              </Button>
+              {getQuickActions().map((action, index) => {
+                const Icon = action.icon
+                return (
+                  <Button 
+                    key={index}
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => window.location.href = action.href}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    {action.name}
+                  </Button>
+                )
+              })}
             </CardContent>
           </Card>
         </div>
@@ -110,6 +167,5 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   )
 }

@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 import uuid
 
 
@@ -157,3 +159,73 @@ class UserActivity(models.Model):
     
     def __str__(self):
         return f"{self.user.email} - {self.action}"
+
+
+class UserProfile(models.Model):
+    """
+    Extended user profile model that extends Clerk user with additional fields.
+    """
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='profile',
+        primary_key=True
+    )
+    
+    # Organization context
+    current_organization = models.ForeignKey(
+        'organizations.Organization',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='current_users'
+    )
+    
+    # Additional profile fields
+    job_title = models.CharField(max_length=100, blank=True, null=True)
+    department = models.CharField(max_length=100, blank=True, null=True)
+    company_size = models.CharField(
+        max_length=20,
+        choices=[
+            ('1-10', '1-10 employees'),
+            ('11-50', '11-50 employees'),
+            ('51-200', '51-200 employees'),
+            ('201-500', '201-500 employees'),
+            ('500+', '500+ employees'),
+        ],
+        blank=True,
+        null=True
+    )
+    
+    # Notification preferences
+    email_notifications = models.BooleanField(default=True)
+    push_notifications = models.BooleanField(default=True)
+    marketing_emails = models.BooleanField(default=False)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'user_profiles'
+        verbose_name = 'User Profile'
+        verbose_name_plural = 'User Profiles'
+    
+    def __str__(self):
+        return f"Profile for {self.user.email}"
+    
+    def get_current_organization_role(self):
+        """Get user's role in current organization."""
+        if not self.current_organization:
+            return None
+        
+        try:
+            from organizations.models import OrganizationMember
+            membership = OrganizationMember.objects.get(
+                user=self.user,
+                organization=self.current_organization,
+                is_active=True
+            )
+            return membership.role
+        except:
+            return None

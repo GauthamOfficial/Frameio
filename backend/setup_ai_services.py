@@ -371,3 +371,4 @@ if __name__ == '__main__':
     else:
         print("\n❌ Setup failed. Please check the errors above.")
         sys.exit(1)
+

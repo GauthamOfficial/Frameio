@@ -34,3 +34,4 @@ echo 🎉 Week 1 Verification Complete!
 echo =============================================
 
 pause
+

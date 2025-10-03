@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,8 +12,7 @@ export default function CatalogBuilderPage() {
   ]
 
   return (
-    <DashboardLayout>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -110,6 +108,5 @@ export default function CatalogBuilderPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   )
 }

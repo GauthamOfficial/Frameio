@@ -1,9 +1,12 @@
 "use client"
 
-import { Bell, Search, User } from "lucide-react"
+import { Bell, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { AuthUserButton } from "@/components/auth/user-button"
+import { useOrganization } from "@/contexts/organization-context"
+import { useUser } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
 
 interface TopNavProps {
@@ -11,6 +14,22 @@ interface TopNavProps {
 }
 
 export function TopNav({ className }: TopNavProps) {
+  const { user } = useUser()
+  const { userRole, isLoading } = useOrganization()
+
+  const getRoleBadgeVariant = (role: string | null) => {
+    switch (role) {
+      case 'Admin':
+        return 'destructive'
+      case 'Manager':
+        return 'default'
+      case 'Designer':
+        return 'secondary'
+      default:
+        return 'outline'
+    }
+  }
+
   return (
     <header className={cn(
       "bg-card border-b border-border textile-shadow",
@@ -22,7 +41,7 @@ export function TopNav({ className }: TopNavProps) {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search posts, templates, analytics..."
+              placeholder="Search"
               className="pl-10 bg-input border-border focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -39,8 +58,14 @@ export function TopNav({ className }: TopNavProps) {
           {/* User Menu */}
           <div className="flex items-center space-x-3">
             <div className="text-right">
-              <p className="text-sm font-medium text-foreground">Sarah Chen</p>
-              <p className="text-xs text-muted-foreground">Textile Designer</p>
+              <p className="text-sm font-medium text-foreground">
+                {user?.firstName ? user.firstName : user?.fullName || 'User'}
+              </p>
+              {userRole && !isLoading && (
+                <p className="text-xs text-muted-foreground">
+                  {userRole}
+                </p>
+              )}
             </div>
             <AuthUserButton />
           </div>

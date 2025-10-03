@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,8 +7,7 @@ import { Upload, Wand2, Calendar, Share2, Download } from "lucide-react"
 
 export default function PosterGeneratorPage() {
   return (
-    <DashboardLayout>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -119,6 +117,5 @@ export default function PosterGeneratorPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   )
 }

@@ -310,3 +310,4 @@ main().catch(error => {
   log(`Fatal error: ${error.message}`, 'red');
   process.exit(1);
 });
+
