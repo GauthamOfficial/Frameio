@@ -4,6 +4,10 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import { SimpleErrorBoundary } from "@/components/simple-error-boundary";
 import { ClerkErrorBoundary } from "@/components/auth/clerk-error-boundary";
+import { AppProvider } from "@/contexts/app-context";
+import { OrganizationProvider } from "@/contexts/organization-context";
+import { ToastProvider } from "@/components/common";
+import { AppLayoutWrapper } from "@/components/layout/app-layout-wrapper";
 import "./globals.css";
 import "@/lib/test-data"; // Import test data utilities
 import "@/lib/wallet-error-handler"; // Handle wallet connection errors
@@ -54,7 +58,15 @@ export default function RootLayout({
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           >
             <SimpleErrorBoundary>
-              {children}
+              <ToastProvider>
+                <AppProvider>
+                  <OrganizationProvider>
+                    <AppLayoutWrapper>
+                      {children}
+                    </AppLayoutWrapper>
+                  </OrganizationProvider>
+                </AppProvider>
+              </ToastProvider>
             </SimpleErrorBoundary>
           </body>
         </html>
@@ -62,3 +74,4 @@ export default function RootLayout({
     </ClerkErrorBoundary>
   );
 }
+

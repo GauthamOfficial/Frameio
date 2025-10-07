@@ -375,3 +375,78 @@ class ScheduledPostUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Scheduled time must be in the future")
         return value
 
+
+# Social Media Posting serializers
+class SocialMediaPostSerializer(serializers.Serializer):
+    """Serializer for social media posting requests"""
+    platform = serializers.ChoiceField(
+        choices=[
+            ('facebook', 'Facebook'),
+            ('instagram', 'Instagram'),
+            ('tiktok', 'TikTok'),
+            ('whatsapp', 'WhatsApp'),
+            ('twitter', 'Twitter'),
+            ('linkedin', 'LinkedIn'),
+        ],
+        help_text="Social media platform"
+    )
+    asset_url = serializers.URLField(help_text="URL of the asset to post")
+    caption = serializers.CharField(
+        max_length=5000,
+        help_text="Post caption"
+    )
+    metadata = serializers.DictField(
+        required=False,
+        help_text="Additional metadata for the post"
+    )
+
+
+class SocialMediaPostResponseSerializer(serializers.Serializer):
+    """Serializer for social media posting responses"""
+    success = serializers.BooleanField()
+    platform = serializers.CharField()
+    post_id = serializers.CharField(required=False)
+    url = serializers.URLField(required=False)
+    message = serializers.CharField()
+    posted_at = serializers.DateTimeField()
+    organization = serializers.CharField()
+
+
+# Catalog Builder serializers
+class CatalogCreateRequestSerializer(serializers.Serializer):
+    """Serializer for catalog creation requests"""
+    product_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        help_text="List of product IDs to include in catalog"
+    )
+    template = serializers.ChoiceField(
+        choices=[
+            ('festival_collection', 'Festival Collection'),
+            ('wedding_collection', 'Wedding Collection'),
+            ('casual_wear', 'Casual Wear'),
+            ('premium_collection', 'Premium Collection'),
+        ],
+        help_text="Catalog template"
+    )
+    style = serializers.ChoiceField(
+        choices=[
+            ('modern', 'Modern'),
+            ('traditional', 'Traditional'),
+            ('elegant', 'Elegant'),
+            ('bohemian', 'Bohemian'),
+        ],
+        help_text="Design style"
+    )
+    color_scheme = serializers.CharField(
+        max_length=100,
+        help_text="Color scheme for the catalog"
+    )
+
+
+class CatalogCreateResponseSerializer(serializers.Serializer):
+    """Serializer for catalog creation responses"""
+    success = serializers.BooleanField()
+    catalog_url = serializers.URLField()
+    catalog_name = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    organization = serializers.CharField()

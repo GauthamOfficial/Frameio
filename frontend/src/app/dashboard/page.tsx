@@ -5,10 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useOrganization } from "@/contexts/organization-context"
-import { Plus, TrendingUp, Calendar, Image, User } from "lucide-react"
+import { useApp } from "@/contexts/app-context"
+import { DashboardErrorBoundary } from "@/components/common/error-boundary"
+import { useToastHelpers } from "@/components/common"
+import { Plus, TrendingUp, Calendar, Image, User, Settings } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function DashboardPage() {
   const { userRole, isLoading } = useOrganization()
+  const { userRole: appUserRole, permissions } = useApp()
+  // const { showSuccess } = useToastHelpers() // Removed unused variable
+  const router = useRouter()
 
   const getRoleBadgeVariant = (role: string | null) => {
     switch (role) {
@@ -20,11 +27,22 @@ export default function DashboardPage() {
   }
 
   const getQuickActions = () => {
-    return [
+    const actions = [
       { name: "Generate AI Poster", href: "/dashboard/poster-generator", icon: Image },
       { name: "Schedule Post", href: "/dashboard/scheduler", icon: Calendar },
       { name: "View Analytics", href: "/dashboard/analytics", icon: TrendingUp },
     ]
+
+    // Add admin action if user has admin permissions
+    if (appUserRole === 'Admin' || permissions.includes('admin_access')) {
+      actions.push({ name: "Admin Panel", href: "/admin", icon: Settings })
+    }
+
+    return actions
+  }
+
+  const handleQuickAction = (href: string) => {
+    router.push(href)
   }
 
   if (isLoading) {
@@ -39,7 +57,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <DashboardErrorBoundary>
+      <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -121,7 +140,7 @@ export default function DashboardPage() {
                     key={index}
                     className="w-full justify-start" 
                     variant="outline"
-                    onClick={() => window.location.href = action.href}
+                    onClick={() => handleQuickAction(action.href)}
                   >
                     <Icon className="mr-2 h-4 w-4" />
                     {action.name}
@@ -152,5 +171,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+    </DashboardErrorBoundary>
   )
 }

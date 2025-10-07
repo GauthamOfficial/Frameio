@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views, textile_views, scheduling_views, test_views
+from . import views, textile_views, scheduling_views, test_views, file_upload_views, social_media_views, catalog_views
 
 # Create router for AI service-related views
 router = DefaultRouter()
@@ -23,8 +23,21 @@ router.register(r'textile/caption', textile_views.TextileCaptionViewSet, basenam
 # Phase 1 Week 3 - Scheduling system endpoints
 router.register(r'schedule', scheduling_views.ScheduledPostViewSet, basename='scheduled-post')
 
+# Social Media Posting endpoints
+router.register(r'social', social_media_views.SocialMediaPostViewSet, basename='social-media')
+
+# Catalog Builder endpoints
+router.register(r'catalog', catalog_views.CatalogBuilderViewSet, basename='catalog-builder')
+
 urlpatterns = [
     path('', include(router.urls)),
+    
+    # File Upload URLs
+    path('upload/', file_upload_views.upload_file, name='upload-file'),
+    path('upload/multiple/', file_upload_views.upload_multiple_files, name='upload-multiple-files'),
+    path('upload/info/<str:filename>/', file_upload_views.get_file_info, name='get-file-info'),
+    path('upload/<str:filename>/', file_upload_views.delete_file, name='delete-file'),
+    
     # Test interface URLs
     path('test/', test_views.test_interface, name='test-interface'),
     path('test/poster/', test_views.test_poster_generation, name='test-poster'),
