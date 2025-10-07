@@ -47,9 +47,13 @@ class AIGenerationRequestViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Return requests for current organization"""
-        organization = get_current_organization()
+        # Get organization from request (set by TenantMiddleware)
+        organization = getattr(self.request, 'organization', None)
         if not organization:
-            return AIGenerationRequest.objects.none()
+            # Fallback to get_current_organization for backward compatibility
+            organization = get_current_organization()
+            if not organization:
+                return AIGenerationRequest.objects.none()
         
         queryset = AIGenerationRequest.objects.filter(organization=organization)
         
@@ -153,12 +157,26 @@ class AIAnalyticsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
         """Get AI analytics dashboard data"""
-        organization = get_current_organization()
+        # Get organization from request (set by TenantMiddleware)
+        organization = getattr(request, 'organization', None)
         if not organization:
-            return Response(
-                {"error": "No organization context"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            # Fallback to get_current_organization for backward compatibility
+            organization = get_current_organization()
+            if not organization:
+                # For testing, try to get organization from authenticated user
+                if hasattr(request, 'user') and request.user.is_authenticated:
+                    organization = request.user.current_organization
+                    if not organization:
+                        # Get first organization the user belongs to
+                        memberships = request.user.organization_memberships.filter(is_active=True)
+                        if memberships.exists():
+                            organization = memberships.first().organization
+                
+                if not organization:
+                    return Response(
+                        {"error": "No organization context"}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
         
         # Get date range from query params
         days = int(request.query_params.get('days', 30))

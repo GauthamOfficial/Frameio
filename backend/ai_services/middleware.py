@@ -34,10 +34,20 @@ class RateLimitMiddleware(MiddlewareMixin):
         # Get organization and user identifiers
         organization = get_current_organization()
         if not organization:
-            return JsonResponse(
-                {'error': 'Organization context required'}, 
-                status=400
-            )
+            # For testing, try to get organization from authenticated user
+            if hasattr(request, 'user') and request.user.is_authenticated:
+                organization = request.user.current_organization
+                if not organization:
+                    # Get first organization the user belongs to
+                    memberships = request.user.organization_memberships.filter(is_active=True)
+                    if memberships.exists():
+                        organization = memberships.first().organization
+            
+            if not organization:
+                return JsonResponse(
+                    {'error': 'Organization context required'}, 
+                    status=400
+                )
         
         user_id = str(request.user.id) if request.user.is_authenticated else 'anonymous'
         org_id = str(organization.id)

@@ -188,8 +188,20 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # Clerk configuration
-CLERK_PUBLISHABLE_KEY = os.getenv('CLERK_PUBLISHABLE_KEY', '')
-CLERK_SECRET_KEY = os.getenv('CLERK_SECRET_KEY', '')
+CLERK_PUBLISHABLE_KEY = os.getenv('CLERK_PUBLISHABLE_KEY', 'pk_test_c291bmQtbXVsZS0yNC5jbGVyay5hY2NvdW50cy5kZXYk')
+CLERK_SECRET_KEY = os.getenv('CLERK_SECRET_KEY', 'sk_test_Wm0T8Fgwo91YCUKguAG6huVnrzop146mNpqS4bE5eN')
+NEXT_PUBLIC_CLERK_FRONTEND_API = os.getenv('NEXT_PUBLIC_CLERK_FRONTEND_API', 'https://sound-mule-24.clerk.accounts.dev')
+
+# Validate Clerk configuration
+CLERK_CONFIGURED = bool(CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_FRONTEND_API)
+
+if not CLERK_CONFIGURED and not DEBUG:
+    raise ValueError(
+        "Clerk configuration is incomplete. Please set the following environment variables:\n"
+        "- CLERK_PUBLISHABLE_KEY\n"
+        "- CLERK_SECRET_KEY\n"
+        "- NEXT_PUBLIC_CLERK_FRONTEND_API"
+    )
 
 # Arcjet configuration
 ARCJET_KEY = os.getenv('ARCJET_KEY', '')

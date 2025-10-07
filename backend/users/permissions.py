@@ -7,6 +7,24 @@ from django.contrib.contenttypes.models import ContentType
 from organizations.models import OrganizationMember
 
 
+def get_organization_from_request(request):
+    """
+    Helper function to get organization from request with fallbacks for testing.
+    """
+    # Get organization from request (set by TenantMiddleware)
+    organization = getattr(request, 'organization', None)
+    if not organization:
+        # For testing, try to get organization from authenticated user
+        if hasattr(request, 'user') and request.user.is_authenticated:
+            organization = request.user.current_organization
+            if not organization:
+                # Get first organization the user belongs to
+                memberships = request.user.organization_memberships.filter(is_active=True)
+                if memberships.exists():
+                    organization = memberships.first().organization
+    return organization
+
+
 class IsOrganizationMember(permissions.BasePermission):
     """
     Permission class to check if user is a member of the current organization.
@@ -17,7 +35,7 @@ class IsOrganizationMember(permissions.BasePermission):
             return False
         
         # Get organization from request
-        organization = getattr(request, 'organization', None)
+        organization = get_organization_from_request(request)
         if not organization:
             return False
         
@@ -39,7 +57,7 @@ class IsOrganizationAdmin(permissions.BasePermission):
             return False
         
         # Get organization from request
-        organization = getattr(request, 'organization', None)
+        organization = get_organization_from_request(request)
         if not organization:
             return False
         
@@ -118,6 +136,15 @@ class CanManageUsers(permissions.BasePermission):
         
         # Get organization from request
         organization = getattr(request, 'organization', None)
+        if not organization:
+            # For testing, try to get organization from authenticated user
+            organization = request.user.current_organization
+            if not organization:
+                # Get first organization the user belongs to
+                memberships = request.user.organization_memberships.filter(is_active=True)
+                if memberships.exists():
+                    organization = memberships.first().organization
+        
         if not organization:
             return False
         

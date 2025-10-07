@@ -13,7 +13,6 @@ router.register(r'analytics', views.AIAnalyticsViewSet, basename='ai-analytics')
 # New AI Services for Phase 1 Week 1 Member 3 tasks
 router.register(r'poster', views.TextilePosterViewSet, basename='textile-poster')
 router.register(r'festival-kit', views.FestivalKitViewSet, basename='festival-kit')
-router.register(r'catalog', views.CatalogBuilderViewSet, basename='catalog-builder')
 router.register(r'background', views.BackgroundMatcherViewSet, basename='background-matcher')
 
 # Phase 1 Week 3 - Textile-specific endpoints

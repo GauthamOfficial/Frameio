@@ -9,6 +9,7 @@ import json
 
 from .models import AIProvider, AIGenerationRequest, AIUsageQuota, AITemplate
 from organizations.models import Organization, OrganizationMember
+from test_utils import TenantAPITestCase
 
 User = get_user_model()
 
@@ -299,42 +300,16 @@ class AITemplateAPITest(APITestCase):
         self.assertEqual(response.data['results'][0]['category'], 'textile')
 
 
-class AIAnalyticsAPITest(APITestCase):
+class AIAnalyticsAPITest(TenantAPITestCase):
     """Test cases for AI Analytics API endpoints"""
     
     def setUp(self):
-        self.organization = Organization.objects.create(
-            name="Test Org",
-            slug="test-org"
-        )
-        
-        self.user = User.objects.create_user(
-            username="testuser",
-            email="test@example.com",
-            clerk_id="test_clerk_123"
-        )
-        
-        OrganizationMember.objects.create(
-            organization=self.organization,
-            user=self.user,
-            role="admin"
-        )
+        super().setUp()
         
         self.provider = AIProvider.objects.create(
             name='nanobanana',
             is_active=True
         )
-        
-        self.client = APIClient()
-        self.client.force_authenticate(user=self.user)
-        
-        # Mock organization context
-        self.patcher = patch('ai_services.views.get_current_organization')
-        self.mock_get_org = self.patcher.start()
-        self.mock_get_org.return_value = self.organization
-    
-    def tearDown(self):
-        self.patcher.stop()
     
     def test_analytics_dashboard(self):
         """Test analytics dashboard endpoint"""
@@ -361,6 +336,11 @@ class AIAnalyticsAPITest(APITestCase):
         
         url = reverse('ai-analytics-dashboard')
         response = self.client.get(url)
+        
+        # Debug: Print response details if test fails
+        if response.status_code != status.HTTP_200_OK:
+            print(f"Response status: {response.status_code}")
+            print(f"Response content: {response.content}")
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         

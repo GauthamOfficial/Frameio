@@ -15,7 +15,10 @@ from .serializers import (
     OrganizationUpdateSerializer
 )
 from users.models import User
-from users.permissions import IsOrganizationMember
+from users.permissions import (
+    IsOrganizationMember, IsOrganizationAdmin, IsOrganizationManager,
+    CanManageUsers, CanManageBilling
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +28,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     ViewSet for managing organizations.
     """
     queryset = Organization.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOrganizationMember]
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action."""
@@ -205,7 +208,7 @@ class OrganizationMemberViewSet(viewsets.ModelViewSet):
     """
     queryset = OrganizationMember.objects.all()
     serializer_class = OrganizationMemberSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOrganizationMember]
     
     def get_queryset(self):
         """Filter members based on current organization."""
@@ -284,7 +287,7 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
     """
     queryset = OrganizationInvitation.objects.all()
     serializer_class = OrganizationInvitationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, CanManageUsers]
     
     def get_queryset(self):
         """Filter invitations based on current organization."""

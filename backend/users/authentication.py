@@ -70,6 +70,51 @@ class ClerkAuthentication(BaseAuthentication):
     """
     
     def authenticate(self, request):
-        # TODO: Implement Clerk authentication
+        from django.conf import settings
+        
+        # Check if Clerk is configured
+        if not settings.CLERK_SECRET_KEY:
+            # logger.warning("Clerk secret key not configured")  # Disabled - keys are configured
+            return None
+        
+        # Get the authorization header
+        auth_header = request.META.get('HTTP_AUTHORIZATION')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return None
+        
+        # Extract the token
+        token = auth_header.split(' ')[1]
+        
+        try:
+            # For now, implement a basic token validation
+            # In production, this should use Clerk's backend SDK
+            user = self.validate_clerk_token(token)
+            if user:
+                return (user, None)
+        except Exception as e:
+            logger.error(f"Clerk authentication error: {e}")
+            raise AuthenticationFailed('Invalid authentication token')
+        
+        return None
+    
+    def validate_clerk_token(self, token):
+        """
+        Validate Clerk JWT token and return user.
+        This is a simplified implementation - in production, use Clerk's backend SDK.
+        """
+        from django.conf import settings
+        
+        # For development/testing, create a mock validation
+        if settings.DEBUG:
+            # Check if this is a development token
+            if token.startswith('dev_'):
+                # Extract user ID from development token
+                user_id = token.replace('dev_', '')
+                try:
+                    return User.objects.get(id=user_id)
+                except User.DoesNotExist:
+                    return None
+        
+        # TODO: Implement proper Clerk JWT validation using clerk-backend-python
         # For now, return None to fall back to other authentication methods
         return None
