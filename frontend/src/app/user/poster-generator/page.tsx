@@ -19,7 +19,7 @@ export default function PosterGeneratorPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            This feature is coming soon. You'll be able to create AI-generated posters here.
+            This feature is coming soon. You&apos;ll be able to create AI-generated posters here.
           </p>
         </CardContent>
       </Card>

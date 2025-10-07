@@ -10,8 +10,7 @@ import {
   Settings, 
   LogOut,
   User,
-  Building2,
-  Shield
+  Building2
 } from "lucide-react"
 
 interface NavbarProps {
@@ -65,10 +64,10 @@ export function Navbar({
 
           <div className="flex items-center space-x-3">
             <Badge 
-              variant={userRole === 'Admin' ? 'destructive' : 'secondary'}
+              variant="secondary"
               className="flex items-center space-x-1"
             >
-              <Shield className="w-3 h-3" />
+              <User className="w-3 h-3" />
               <span>{userRole}</span>
             </Badge>
             <UserButton 

@@ -2,7 +2,6 @@
 
 import { Sidebar } from "@/components/common/sidebar"
 import { Navbar } from "@/components/common/navbar"
-import { AdminSetup } from "@/components/dev/admin-setup"
 import { 
   LayoutDashboard,
   Image,
@@ -65,7 +64,6 @@ export function UserLayoutStructure({ children }: UserLayoutStructureProps) {
           {children}
         </main>
       </div>
-      <AdminSetup />
     </div>
   )
 }

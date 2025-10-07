@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useUser, useAuth } from '@clerk/nextjs'
+import { useUser } from '@clerk/nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,17 +11,15 @@ import { useOrganization } from "@/contexts/organization-context"
 import { 
   User, 
   Bell, 
-  Shield, 
+  Lock, 
   Palette, 
-  Globe,
   Save,
   Check
 } from "lucide-react"
 
 export default function SettingsPage() {
   const { user } = useUser()
-  const { getToken } = useAuth()
-  const { userRole, permissions, isLoading: orgLoading } = useOrganization()
+  const { isLoading: orgLoading } = useOrganization()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
@@ -314,7 +312,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Shield className="h-5 w-5 mr-2" />
+              <Lock className="h-5 w-5 mr-2" />
               Security
             </CardTitle>
           </CardHeader>

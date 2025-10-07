@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, TrendingUp, Plus } from "lucide-react"
+import { Calendar, TrendingUp, Plus } from "lucide-react"
 
 export default function SchedulerPage() {
   const scheduledPosts = [
@@ -39,7 +39,7 @@ export default function SchedulerPage() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Calendar className="mr-2 h-5 w-5 text-chart-1" />
-                This Week's Schedule
+                This Week&apos;s Schedule
               </CardTitle>
             </CardHeader>
             <CardContent>

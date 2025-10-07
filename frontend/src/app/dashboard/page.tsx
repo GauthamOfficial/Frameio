@@ -5,17 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useOrganization } from "@/contexts/organization-context"
-import { Plus, TrendingUp, Calendar, Image, Users, Building, CreditCard, Shield } from "lucide-react"
+import { Plus, TrendingUp, Calendar, Image, User } from "lucide-react"
 
 export default function DashboardPage() {
-  const { userRole, permissions, isLoading } = useOrganization()
+  const { userRole, isLoading } = useOrganization()
 
   const getRoleBadgeVariant = (role: string | null) => {
     switch (role) {
-      case 'Admin':
-        return 'destructive'
-      case 'Manager':
-        return 'default'
       case 'Designer':
         return 'secondary'
       default:
@@ -24,21 +20,10 @@ export default function DashboardPage() {
   }
 
   const getQuickActions = () => {
-    const baseActions = [
+    return [
       { name: "Generate AI Poster", href: "/dashboard/poster-generator", icon: Image },
       { name: "Schedule Post", href: "/dashboard/scheduler", icon: Calendar },
       { name: "View Analytics", href: "/dashboard/analytics", icon: TrendingUp },
-    ]
-
-    const adminActions = [
-      { name: "Manage Users", href: "/dashboard/users", icon: Users },
-      { name: "Organization Settings", href: "/dashboard/organization", icon: Building },
-      { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
-    ]
-
-    return [
-      ...baseActions,
-      ...(permissions.includes('manage_users') ? adminActions : [])
     ]
   }
 
@@ -62,13 +47,13 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
               {userRole && (
                 <Badge variant={getRoleBadgeVariant(userRole)} className="text-xs">
-                  <Shield className="mr-1 h-3 w-3" />
+                  <User className="mr-1 h-3 w-3" />
                   {userRole}
                 </Badge>
               )}
             </div>
             <p className="text-muted-foreground">
-              Welcome back! Here's what's happening with your textile marketing.
+              Welcome back! Here&apos;s what&apos;s happening with your textile marketing.
             </p>
           </div>
           <Button className="bg-textile-accent">

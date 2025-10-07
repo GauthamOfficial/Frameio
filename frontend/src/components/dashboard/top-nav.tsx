@@ -19,10 +19,6 @@ export function TopNav({ className }: TopNavProps) {
 
   const getRoleBadgeVariant = (role: string | null) => {
     switch (role) {
-      case 'Admin':
-        return 'destructive'
-      case 'Manager':
-        return 'default'
       case 'Designer':
         return 'secondary'
       default:

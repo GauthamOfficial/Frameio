@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useUser, useAuth } from '@clerk/nextjs'
 import { userApi, testApi } from '@/lib/api'
 
-export type UserRole = 'Admin' | 'Manager' | 'Designer'
+export type UserRole = 'Designer'
 
 export interface OrganizationContextType {
   organizationId: string | null
@@ -49,18 +49,15 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       if (!testRole && !testOrgId) {
         console.log('Setting up test data for development')
         if (typeof window !== 'undefined') {
-          localStorage.setItem('user-role', 'Admin')
+          localStorage.setItem('user-role', 'Designer')
           localStorage.setItem('organization-id', '0a4e8956-b626-4ac5-b082-b13febeb5bfe')
           localStorage.setItem('organization-name', 'Test Organization')
           localStorage.setItem('dev-user-id', '96e65d2a-9139-404e-b8c8-582d5a3ff525')
           localStorage.setItem('dev-org-id', '0a4e8956-b626-4ac5-b082-b13febeb5bfe')
           localStorage.setItem('user-permissions', JSON.stringify([
-            'manage_users',
-            'manage_organization',
-            'view_billing',
             'manage_designs',
-            'view_analytics',
-            'manage_templates'
+            'view_templates',
+            'view_analytics'
           ]))
         }
       }
@@ -150,22 +147,6 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
 
   const getRolePermissions = (role: UserRole): string[] => {
     switch (role) {
-      case 'Admin':
-        return [
-          'manage_users',
-          'manage_organization',
-          'view_billing',
-          'manage_designs',
-          'view_analytics',
-          'manage_templates'
-        ]
-      case 'Manager':
-        return [
-          'manage_designs',
-          'view_analytics',
-          'manage_templates',
-          'moderate_users'
-        ]
       case 'Designer':
         return [
           'manage_designs',

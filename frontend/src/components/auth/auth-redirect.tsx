@@ -10,12 +10,8 @@ export function AuthRedirect() {
 
   useEffect(() => {
     if (!isLoading && userRole) {
-      // Redirect based on user role
-      if (userRole === 'Admin') {
-        router.push('/admin')
-      } else {
-        router.push('/dashboard')
-      }
+      // Redirect to dashboard for all users
+      router.push('/dashboard')
     }
   }, [userRole, isLoading, router])
 

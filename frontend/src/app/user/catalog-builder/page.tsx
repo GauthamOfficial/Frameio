@@ -19,7 +19,7 @@ export default function CatalogBuilderPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            This feature is coming soon. You'll be able to build and manage catalogs here.
+            This feature is coming soon. You&apos;ll be able to build and manage catalogs here.
           </p>
         </CardContent>
       </Card>

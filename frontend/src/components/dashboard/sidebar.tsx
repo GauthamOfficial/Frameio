@@ -17,14 +17,11 @@ import {
   BarChart3,
   Settings,
   Menu,
-  X,
-  Users,
-  CreditCard,
-  Building
+  X
 } from "lucide-react"
 
 const getNavigationItems = (userRole: string | null, permissions: string[]) => {
-  const baseItems = [
+  const designerItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: null },
     { name: "AI Poster Generator", href: "/dashboard/poster-generator", icon: Image, permission: "manage_designs" },
     { name: "Catalog Builder", href: "/dashboard/catalog-builder", icon: BookOpen, permission: "manage_designs" },
@@ -35,22 +32,10 @@ const getNavigationItems = (userRole: string | null, permissions: string[]) => {
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, permission: "view_analytics" },
   ]
 
-  const adminItems = [
-    { name: "User Management", href: "/dashboard/users", icon: Users, permission: "manage_users" },
-    { name: "Organization Settings", href: "/dashboard/organization", icon: Building, permission: "manage_organization" },
-    { name: "Billing", href: "/dashboard/billing", icon: CreditCard, permission: "view_billing" },
-  ]
-
-  // Filter items based on permissions
-  const filteredBaseItems = baseItems.filter(item => 
+  // Filter items based on permissions - only show designer-related items
+  return designerItems.filter(item => 
     !item.permission || permissions.includes(item.permission)
   )
-
-  const filteredAdminItems = adminItems.filter(item => 
-    permissions.includes(item.permission)
-  )
-
-  return [...filteredBaseItems, ...filteredAdminItems]
 }
 
 interface SidebarProps {

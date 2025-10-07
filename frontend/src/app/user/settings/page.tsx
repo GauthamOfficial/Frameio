@@ -19,7 +19,7 @@ export default function UserSettingsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            This feature is coming soon. You'll be able to manage your profile settings here.
+            This feature is coming soon. You&apos;ll be able to manage your profile settings here.
           </p>
         </CardContent>
       </Card>

@@ -2,7 +2,7 @@
 
 import { useOrganization } from "@/contexts/organization-context"
 import { Button } from "@/components/ui/button"
-import { Shield, User } from "lucide-react"
+import { User } from "lucide-react"
 import Link from "next/link"
 
 export function PanelNavigation() {
@@ -23,21 +23,12 @@ export function PanelNavigation() {
 
   return (
     <div className="flex items-center space-x-2">
-      {userRole === 'Admin' ? (
-        <Button asChild variant="outline" size="sm">
-          <Link href="/admin" className="flex items-center space-x-2">
-            <Shield className="h-4 w-4" />
-            <span>Admin Panel</span>
-          </Link>
-        </Button>
-      ) : (
-        <Button asChild variant="outline" size="sm">
-          <Link href="/user" className="flex items-center space-x-2">
-            <User className="h-4 w-4" />
-            <span>User Panel</span>
-          </Link>
-        </Button>
-      )}
+      <Button asChild variant="outline" size="sm">
+        <Link href="/dashboard" className="flex items-center space-x-2">
+          <User className="h-4 w-4" />
+          <span>Designer Panel</span>
+        </Link>
+      </Button>
     </div>
   )
 }
