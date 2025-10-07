@@ -224,3 +224,7 @@ class AIGenerationHistory(models.Model):
     
     def __str__(self):
         return f"History for {self.request}"
+
+
+# Import scheduling models
+from .scheduling_models import ScheduledPost

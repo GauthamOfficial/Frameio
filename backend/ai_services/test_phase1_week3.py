@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth import get_user_model
-from organizations.models import Organization
+from organizations.models import Organization, OrganizationMember
 from ai_services.models import AIProvider, AIGenerationRequest
 from ai_services.scheduling_models import ScheduledPost
 from ai_services.social_media import SocialMediaService
@@ -30,7 +30,11 @@ class TextilePosterEndpointTest(APITestCase):
             name='Test Organization',
             slug='test-org'
         )
-        self.user.organizations.add(self.organization)
+        OrganizationMember.objects.create(
+            organization=self.organization,
+            user=self.user,
+            role='admin'
+        )
         
         # Create AI provider
         self.provider = AIProvider.objects.create(
@@ -42,7 +46,7 @@ class TextilePosterEndpointTest(APITestCase):
     
     def test_generate_poster_success(self):
         """Test successful poster generation"""
-        url = reverse('textile-poster-new-generate-poster')
+        url = '/api/ai/textile/poster/generate_poster/'
         data = {
             'product_image_url': 'https://example.com/product.jpg',
             'fabric_type': 'saree',
@@ -54,7 +58,20 @@ class TextilePosterEndpointTest(APITestCase):
             'offer_details': 'Buy 2 get 1 free'
         }
         
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(
+            url, 
+            data, 
+            format='json',
+            HTTP_X_ORGANIZATION=self.organization.slug
+        )
+        
+        # Debug: Print response details
+        if response.status_code != 200:
+            print(f"Response status: {response.status_code}")
+            if hasattr(response, 'data'):
+                print(f"Response data: {response.data}")
+            else:
+                print(f"Response content: {response.content}")
         
         # Should return 200 with success response
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -66,7 +83,7 @@ class TextilePosterEndpointTest(APITestCase):
     
     def test_generate_poster_missing_image(self):
         """Test poster generation with missing image URL"""
-        url = reverse('textile-poster-new-generate-poster')
+        url = '/api/ai/textile/poster/generate_poster/'
         data = {
             'fabric_type': 'saree',
             'festival': 'deepavali'
@@ -80,7 +97,7 @@ class TextilePosterEndpointTest(APITestCase):
     
     def test_generate_poster_invalid_data(self):
         """Test poster generation with invalid data"""
-        url = reverse('textile-poster-new-generate-poster')
+        url = '/api/ai/textile/poster/generate_poster/'
         data = {
             'product_image_url': 'not-a-url',
             'fabric_type': 'invalid_fabric'
@@ -106,13 +123,17 @@ class TextileCaptionEndpointTest(APITestCase):
             name='Test Organization',
             slug='test-org'
         )
-        self.user.organizations.add(self.organization)
+        OrganizationMember.objects.create(
+            organization=self.organization,
+            user=self.user,
+            role='admin'
+        )
         
         self.client.force_authenticate(user=self.user)
     
     def test_generate_caption_success(self):
         """Test successful caption generation"""
-        url = reverse('textile-caption-generate-caption')
+        url = '/api/ai/textile/caption/generate_caption/'
         data = {
             'product_name': 'Elegant Silk Saree',
             'fabric_type': 'silk',
@@ -135,7 +156,7 @@ class TextileCaptionEndpointTest(APITestCase):
     
     def test_generate_caption_missing_product_name(self):
         """Test caption generation with missing product name"""
-        url = reverse('textile-caption-generate-caption')
+        url = '/api/ai/textile/caption/generate_caption/'
         data = {
             'fabric_type': 'silk',
             'festival': 'deepavali'
@@ -149,7 +170,7 @@ class TextileCaptionEndpointTest(APITestCase):
     
     def test_generate_caption_empty_product_name(self):
         """Test caption generation with empty product name"""
-        url = reverse('textile-caption-generate-caption')
+        url = '/api/ai/textile/caption/generate_caption/'
         data = {
             'product_name': '',
             'fabric_type': 'silk'
@@ -176,7 +197,11 @@ class ScheduledPostModelTest(TestCase):
             name='Test Organization',
             slug='test-org'
         )
-        self.user.organizations.add(self.organization)
+        OrganizationMember.objects.create(
+            organization=self.organization,
+            user=self.user,
+            role='admin'
+        )
     
     def test_create_scheduled_post(self):
         """Test creating a scheduled post"""
@@ -304,13 +329,17 @@ class ScheduledPostEndpointTest(APITestCase):
             name='Test Organization',
             slug='test-org'
         )
-        self.user.organizations.add(self.organization)
+        OrganizationMember.objects.create(
+            organization=self.organization,
+            user=self.user,
+            role='admin'
+        )
         
         self.client.force_authenticate(user=self.user)
     
     def test_create_scheduled_post(self):
         """Test creating a scheduled post"""
-        url = reverse('scheduled-post-list')
+        url = '/api/ai/schedule/'
         scheduled_time = timezone.now() + timezone.timedelta(hours=1)
         
         data = {
@@ -330,7 +359,7 @@ class ScheduledPostEndpointTest(APITestCase):
     
     def test_create_scheduled_post_past_time(self):
         """Test creating a scheduled post with past time"""
-        url = reverse('scheduled-post-list')
+        url = '/api/ai/schedule/'
         past_time = timezone.now() - timezone.timedelta(hours=1)
         
         data = {
@@ -348,7 +377,7 @@ class ScheduledPostEndpointTest(APITestCase):
     
     def test_create_scheduled_post_invalid_platform(self):
         """Test creating a scheduled post with invalid platform"""
-        url = reverse('scheduled-post-list')
+        url = '/api/ai/schedule/'
         scheduled_time = timezone.now() + timezone.timedelta(hours=1)
         
         data = {
@@ -385,7 +414,7 @@ class ScheduledPostEndpointTest(APITestCase):
             scheduled_time=timezone.now() + timezone.timedelta(hours=2)
         )
         
-        url = reverse('scheduled-post-list')
+        url = '/api/ai/schedule/'
         response = self.client.get(url)
         
         # Should return 200 with list of posts
@@ -413,7 +442,7 @@ class ScheduledPostEndpointTest(APITestCase):
             scheduled_time=timezone.now() + timezone.timedelta(hours=2)
         )
         
-        url = reverse('scheduled-post-list')
+        url = '/api/ai/schedule/'
         response = self.client.get(url, {'platform': 'facebook'})
         
         # Should return only Facebook posts
@@ -444,7 +473,7 @@ class ScheduledPostEndpointTest(APITestCase):
             status='posted'
         )
         
-        url = reverse('scheduled-post-list')
+        url = '/api/ai/schedule/'
         response = self.client.get(url, {'status': 'pending'})
         
         # Should return only pending posts
@@ -464,7 +493,7 @@ class ScheduledPostEndpointTest(APITestCase):
             scheduled_time=timezone.now() + timezone.timedelta(hours=1)
         )
         
-        url = reverse('scheduled-post-detail', kwargs={'pk': post.id})
+        url = f'/api/ai/schedule/{post.id}/'
         new_scheduled_time = timezone.now() + timezone.timedelta(hours=2)
         
         data = {
@@ -490,7 +519,7 @@ class ScheduledPostEndpointTest(APITestCase):
             scheduled_time=timezone.now() + timezone.timedelta(hours=1)
         )
         
-        url = reverse('scheduled-post-cancel', kwargs={'pk': post.id})
+        url = f'/api/ai/schedule/{post.id}/cancel/'
         response = self.client.post(url)
         
         # Should return 200 with cancelled post
@@ -510,7 +539,7 @@ class ScheduledPostEndpointTest(APITestCase):
             status='posted'
         )
         
-        url = reverse('scheduled-post-cancel', kwargs={'pk': post.id})
+        url = f'/api/ai/schedule/{post.id}/cancel/'
         response = self.client.post(url)
         
         # Should return 400 with error
@@ -532,7 +561,7 @@ class ScheduledPostEndpointTest(APITestCase):
             max_retries=3
         )
         
-        url = reverse('scheduled-post-retry', kwargs={'pk': post.id})
+        url = f'/api/ai/schedule/{post.id}/retry/'
         response = self.client.post(url)
         
         # Should return 200 with retried post
@@ -552,7 +581,7 @@ class ScheduledPostEndpointTest(APITestCase):
             status='pending'
         )
         
-        url = reverse('scheduled-post-retry', kwargs={'pk': post.id})
+        url = f'/api/ai/schedule/{post.id}/retry/'
         response = self.client.post(url)
         
         # Should return 400 with error
@@ -592,7 +621,7 @@ class ScheduledPostEndpointTest(APITestCase):
             status='pending'
         )
         
-        url = reverse('scheduled-post-analytics')
+        url = '/api/ai/schedule/analytics/'
         response = self.client.get(url)
         
         # Should return 200 with analytics data
@@ -747,7 +776,11 @@ class IntegrationTest(APITestCase):
             name='Test Organization',
             slug='test-org'
         )
-        self.user.organizations.add(self.organization)
+        OrganizationMember.objects.create(
+            organization=self.organization,
+            user=self.user,
+            role='admin'
+        )
         
         self.client.force_authenticate(user=self.user)
     
@@ -783,7 +816,7 @@ class IntegrationTest(APITestCase):
         self.assertTrue(caption_response.data['success'])
         
         # Step 3: Schedule post
-        schedule_url = reverse('scheduled-post-list')
+        schedule_url = '/api/ai/schedule/'
         scheduled_time = timezone.now() + timezone.timedelta(hours=1)
         
         schedule_data = {
@@ -812,7 +845,7 @@ class IntegrationTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         
         # Test scheduling with past time
-        schedule_url = reverse('scheduled-post-list')
+        schedule_url = '/api/ai/schedule/'
         past_time = timezone.now() - timezone.timedelta(hours=1)
         
         schedule_data = {

@@ -20,6 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.utils import timezone
+from django.shortcuts import render
 
 def api_status(request):
     """Simple API status endpoint for the root URL"""
@@ -45,10 +46,15 @@ def health_check(request):
         'timestamp': timezone.now().isoformat()
     })
 
+def test_interface(request):
+    """Test interface for Phase 1 Week 3"""
+    return render(request, 'ai_services/test_interface.html')
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", api_status, name="api_status"),
     path("health/", health_check, name="health_check"),
+    path("test/", test_interface, name="test_interface"),
     path("api/", include("organizations.urls")),
     path("api/", include("users.urls")),
     path("api/", include("designs.urls")),

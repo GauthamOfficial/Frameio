@@ -3,6 +3,7 @@ from .models import (
     AIProvider, AIGenerationRequest, AIUsageQuota, 
     AITemplate, AIGenerationHistory
 )
+from .scheduling_models import ScheduledPost
 
 
 class AIProviderSerializer(serializers.ModelSerializer):
@@ -173,4 +174,204 @@ class AIAnalyticsSerializer(serializers.Serializer):
     most_used_generation_type = serializers.CharField()
     most_used_provider = serializers.CharField()
     quota_usage_by_type = serializers.DictField()
+
+
+# Textile-specific serializers for Phase 1 Week 3
+class TextilePosterRequestSerializer(serializers.Serializer):
+    """Serializer for textile poster generation requests"""
+    product_image_url = serializers.URLField(help_text="URL of the product image")
+    fabric_type = serializers.ChoiceField(
+        choices=[
+            ('saree', 'Saree'),
+            ('cotton', 'Cotton'),
+            ('silk', 'Silk'),
+            ('linen', 'Linen'),
+            ('wool', 'Wool'),
+            ('denim', 'Denim')
+        ],
+        help_text="Type of fabric"
+    )
+    festival = serializers.ChoiceField(
+        choices=[
+            ('deepavali', 'Deepavali'),
+            ('pongal', 'Pongal'),
+            ('wedding', 'Wedding'),
+            ('general', 'General')
+        ],
+        help_text="Festival or occasion"
+    )
+    price_range = serializers.CharField(
+        max_length=50,
+        help_text="Price range (e.g., ₹2999)"
+    )
+    style = serializers.ChoiceField(
+        choices=[
+            ('elegant', 'Elegant'),
+            ('modern', 'Modern'),
+            ('traditional', 'Traditional'),
+            ('bohemian', 'Bohemian'),
+            ('casual', 'Casual')
+        ],
+        help_text="Design style"
+    )
+    color_scheme = serializers.CharField(
+        max_length=200,
+        required=False,
+        help_text="Color scheme description"
+    )
+    custom_text = serializers.CharField(
+        max_length=500,
+        required=False,
+        help_text="Custom text to include in poster"
+    )
+    offer_details = serializers.CharField(
+        max_length=500,
+        required=False,
+        help_text="Special offer details"
+    )
+
+
+class TextilePosterResponseSerializer(serializers.Serializer):
+    """Serializer for textile poster generation responses"""
+    success = serializers.BooleanField()
+    poster_url = serializers.URLField()
+    caption_suggestions = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="AI-generated caption suggestions"
+    )
+    hashtags = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Relevant hashtags"
+    )
+    metadata = serializers.DictField()
+
+
+class TextileCaptionRequestSerializer(serializers.Serializer):
+    """Serializer for textile caption generation requests"""
+    product_name = serializers.CharField(
+        max_length=200,
+        help_text="Name of the product"
+    )
+    fabric_type = serializers.ChoiceField(
+        choices=[
+            ('saree', 'Saree'),
+            ('cotton', 'Cotton'),
+            ('silk', 'Silk'),
+            ('linen', 'Linen'),
+            ('wool', 'Wool'),
+            ('denim', 'Denim')
+        ],
+        help_text="Type of fabric"
+    )
+    festival = serializers.ChoiceField(
+        choices=[
+            ('deepavali', 'Deepavali'),
+            ('pongal', 'Pongal'),
+            ('wedding', 'Wedding'),
+            ('general', 'General')
+        ],
+        required=False,
+        help_text="Festival or occasion"
+    )
+    price_range = serializers.CharField(
+        max_length=50,
+        help_text="Price range (e.g., ₹2999)"
+    )
+    style = serializers.ChoiceField(
+        choices=[
+            ('elegant', 'Elegant'),
+            ('modern', 'Modern'),
+            ('traditional', 'Traditional'),
+            ('bohemian', 'Bohemian'),
+            ('casual', 'Casual')
+        ],
+        help_text="Design style"
+    )
+    custom_text = serializers.CharField(
+        max_length=500,
+        required=False,
+        help_text="Custom text to include in caption"
+    )
+    offer_details = serializers.CharField(
+        max_length=500,
+        required=False,
+        help_text="Special offer details"
+    )
+
+
+class TextileCaptionResponseSerializer(serializers.Serializer):
+    """Serializer for textile caption generation responses"""
+    success = serializers.BooleanField()
+    captions = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="AI-generated caption suggestions"
+    )
+    hashtags = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Relevant hashtags"
+    )
+    metadata = serializers.DictField()
+
+
+# Scheduling system serializers
+class ScheduledPostSerializer(serializers.ModelSerializer):
+    """Serializer for ScheduledPost model"""
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    platform_display = serializers.CharField(source='get_platform_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    
+    class Meta:
+        model = ScheduledPost
+        fields = [
+            'id', 'organization', 'user', 'user_email', 'platform', 'platform_display',
+            'asset_url', 'caption', 'scheduled_time', 'status', 'status_display',
+            'created_at', 'updated_at', 'posted_at', 'error_message', 'retry_count',
+            'max_retries', 'metadata'
+        ]
+        read_only_fields = [
+            'id', 'organization', 'user', 'user_email', 'platform_display',
+            'status_display', 'created_at', 'updated_at', 'posted_at',
+            'error_message', 'retry_count'
+        ]
+
+
+class ScheduledPostCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating scheduled posts"""
+    
+    class Meta:
+        model = ScheduledPost
+        fields = [
+            'platform', 'asset_url', 'caption', 'scheduled_time', 'metadata'
+        ]
+    
+    def validate_scheduled_time(self, value):
+        """Validate scheduled time is in the future"""
+        from django.utils import timezone
+        if value <= timezone.now():
+            raise serializers.ValidationError("Scheduled time must be in the future")
+        return value
+    
+    def validate_platform(self, value):
+        """Validate platform is supported"""
+        supported_platforms = [choice[0] for choice in ScheduledPost.PLATFORM_CHOICES]
+        if value not in supported_platforms:
+            raise serializers.ValidationError(f"Unsupported platform: {value}")
+        return value
+
+
+class ScheduledPostUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating scheduled posts"""
+    
+    class Meta:
+        model = ScheduledPost
+        fields = [
+            'platform', 'asset_url', 'caption', 'scheduled_time', 'metadata'
+        ]
+    
+    def validate_scheduled_time(self, value):
+        """Validate scheduled time is in the future"""
+        from django.utils import timezone
+        if value <= timezone.now():
+            raise serializers.ValidationError("Scheduled time must be in the future")
+        return value
 

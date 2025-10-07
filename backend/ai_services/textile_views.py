@@ -15,6 +15,7 @@ from .serializers import (
 )
 from .services import AIGenerationService
 from .poster_generator import TextilePosterGenerator
+from .arcjet_service import ArcjetService
 from organizations.middleware import get_current_organization
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class TextilePosterViewSet(viewsets.ViewSet):
         super().__init__(**kwargs)
         self.poster_generator = TextilePosterGenerator()
         self.ai_service = AIGenerationService()
+        self.arcjet_service = ArcjetService()
     
     @action(detail=False, methods=['post'])
     def generate_poster(self, request):
@@ -51,10 +53,20 @@ class TextilePosterViewSet(viewsets.ViewSet):
         data = serializer.validated_data
         
         try:
-            # Check Arcjet limits (placeholder for now)
-            if not self._check_arcjet_limits(organization):
+            # Check Arcjet limits
+            limit_check = self.arcjet_service.check_usage_limit(organization, 'poster_generation')
+            if not limit_check['within_limits']:
                 return Response(
-                    {"error": "Usage limit exceeded. Please upgrade your plan."}, 
+                    {
+                        "error": "Usage limit exceeded. Please upgrade your plan.",
+                        "details": {
+                            "plan": limit_check.get('plan', 'unknown'),
+                            "monthly_exceeded": limit_check.get('monthly_exceeded', False),
+                            "daily_exceeded": limit_check.get('daily_exceeded', False),
+                            "remaining_monthly": limit_check.get('remaining_monthly', 0),
+                            "remaining_daily": limit_check.get('remaining_daily', 0)
+                        }
+                    }, 
                     status=status.HTTP_429_TOO_MANY_REQUESTS
                 )
             
@@ -87,6 +99,9 @@ class TextilePosterViewSet(viewsets.ViewSet):
                 }
             }
             
+            # Increment usage counter
+            self.arcjet_service.increment_usage(organization, 'poster_generation')
+            
             # Validate response
             response_serializer = TextilePosterResponseSerializer(data=response_data)
             if response_serializer.is_valid():
@@ -103,16 +118,7 @@ class TextilePosterViewSet(viewsets.ViewSet):
             return Response(
                 {"error": f"Poster generation failed: {str(e)}"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    def _check_arcjet_limits(self, organization):
-        """
-        Check Arcjet usage limits
-        TODO: Implement actual Arcjet integration
-        """
-        # Placeholder implementation
-        # In real implementation, this would check against Arcjet API
-        return True
+                )
 
 
 class TextileCaptionViewSet(viewsets.ViewSet):
@@ -123,6 +129,7 @@ class TextileCaptionViewSet(viewsets.ViewSet):
         super().__init__(**kwargs)
         self.poster_generator = TextilePosterGenerator()
         self.ai_service = AIGenerationService()
+        self.arcjet_service = ArcjetService()
     
     @action(detail=False, methods=['post'])
     def generate_caption(self, request):
@@ -146,10 +153,20 @@ class TextileCaptionViewSet(viewsets.ViewSet):
         data = serializer.validated_data
         
         try:
-            # Check Arcjet limits (placeholder for now)
-            if not self._check_arcjet_limits(organization):
+            # Check Arcjet limits
+            limit_check = self.arcjet_service.check_usage_limit(organization, 'caption_generation')
+            if not limit_check['within_limits']:
                 return Response(
-                    {"error": "Usage limit exceeded. Please upgrade your plan."}, 
+                    {
+                        "error": "Usage limit exceeded. Please upgrade your plan.",
+                        "details": {
+                            "plan": limit_check.get('plan', 'unknown'),
+                            "monthly_exceeded": limit_check.get('monthly_exceeded', False),
+                            "daily_exceeded": limit_check.get('daily_exceeded', False),
+                            "remaining_monthly": limit_check.get('remaining_monthly', 0),
+                            "remaining_daily": limit_check.get('remaining_daily', 0)
+                        }
+                    }, 
                     status=status.HTTP_429_TOO_MANY_REQUESTS
                 )
             
@@ -185,6 +202,9 @@ class TextileCaptionViewSet(viewsets.ViewSet):
                     'organization': organization.name
                 }
             }
+            
+            # Increment usage counter
+            self.arcjet_service.increment_usage(organization, 'caption_generation')
             
             # Validate response
             response_serializer = TextileCaptionResponseSerializer(data=response_data)
@@ -245,12 +265,3 @@ class TextileCaptionViewSet(viewsets.ViewSet):
         
         # Remove duplicates and limit to 20 hashtags
         return list(set(hashtags))[:20]
-    
-    def _check_arcjet_limits(self, organization):
-        """
-        Check Arcjet usage limits
-        TODO: Implement actual Arcjet integration
-        """
-        # Placeholder implementation
-        # In real implementation, this would check against Arcjet API
-        return True

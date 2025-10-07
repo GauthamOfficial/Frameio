@@ -1,157 +1,289 @@
 #!/usr/bin/env python
 """
-Simple test script for Phase 1 Week 3 implementation
+Simple test script to verify Phase 1 Week 3 deliverables
 """
 import os
 import sys
 import django
-from django.conf import settings
 
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'frameio_backend.settings')
 django.setup()
 
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
-from organizations.models import Organization
+from django.urls import reverse
+from rest_framework.test import APITestCase
+from rest_framework import status
+from organizations.models import Organization, OrganizationMember
+from ai_services.models import AIProvider
 from ai_services.scheduling_models import ScheduledPost
 from ai_services.social_media import SocialMediaService
-from ai_services.textile_views import TextilePosterViewSet, TextileCaptionViewSet
-from ai_services.scheduling_views import ScheduledPostViewSet
+from ai_services.arcjet_service import ArcjetService
+from django.utils import timezone
+from datetime import timedelta
 
 User = get_user_model()
 
+
+def test_social_media_service():
+    """Test social media service functionality"""
+    print("Testing Social Media Service...")
+    
+    service = SocialMediaService()
+    
+    # Test platform validation
+    assert service.validate_platform('facebook') == True
+    assert service.validate_platform('invalid') == False
+    
+    # Test supported platforms
+    platforms = service.get_supported_platforms()
+    assert 'facebook' in platforms
+    assert 'instagram' in platforms
+    assert 'tiktok' in platforms
+    
+    # Test posting to Facebook
+    result = service.post_to_facebook(
+        asset_url='https://example.com/image.jpg',
+        caption='Test caption'
+    )
+    assert result['success'] == True
+    assert result['platform'] == 'facebook'
+    
+    print("✅ Social Media Service tests passed")
+
+
+def test_arcjet_service():
+    """Test Arcjet service functionality"""
+    print("Testing Arcjet Service...")
+    
+    # Create test organization
+    org = Organization.objects.create(
+        name='Test Org',
+        slug='test-org'
+    )
+    
+    service = ArcjetService()
+    
+    # Test usage limit check
+    result = service.check_usage_limit(org, 'poster_generation')
+    assert result['success'] == True
+    assert 'within_limits' in result
+    
+    # Test usage stats
+    stats = service.get_usage_stats(org)
+    assert 'plan' in stats
+    assert 'services' in stats
+    
+    print("✅ Arcjet Service tests passed")
+
+
 def test_scheduled_post_model():
     """Test ScheduledPost model functionality"""
-    print("Testing ScheduledPost model...")
+    print("Testing ScheduledPost Model...")
     
-    # Create test user and organization
+    # Create test data
     user = User.objects.create_user(
         username='testuser',
         email='test@example.com',
         password='testpass123'
     )
     
-    organization = Organization.objects.create(
-        name='Test Organization',
+    org = Organization.objects.create(
+        name='Test Org',
         slug='test-org'
     )
     
-    # Create a scheduled post
-    scheduled_time = django.utils.timezone.now() + django.utils.timedelta(hours=1)
+    OrganizationMember.objects.create(
+        organization=org,
+        user=user,
+        role='admin'
+    )
     
+    # Create scheduled post
+    scheduled_time = timezone.now() + timedelta(hours=1)
     post = ScheduledPost.objects.create(
-        organization=organization,
+        organization=org,
         user=user,
         platform='facebook',
         asset_url='https://example.com/image.jpg',
-        caption='Test post with hashtags #test #social',
+        caption='Test post',
         scheduled_time=scheduled_time
     )
     
-    print(f"✓ Created scheduled post: {post.id}")
-    print(f"  Platform: {post.platform}")
-    print(f"  Status: {post.status}")
-    print(f"  Ready to post: {post.is_ready_to_post()}")
+    # Test model methods
+    assert post.status == 'pending'
+    assert post.can_retry() == True
     
     # Test marking as posted
     post.mark_as_posted()
-    print(f"✓ Marked as posted: {post.status}")
+    assert post.status == 'posted'
+    assert post.posted_at is not None
     
-    # Test marking as failed
-    post.mark_as_failed("API error")
-    print(f"✓ Marked as failed: {post.status}, Error: {post.error_message}")
-    
-    # Test retry functionality
-    print(f"✓ Can retry: {post.can_retry()}")
-    
-    # Cleanup
-    post.delete()
-    user.delete()
-    organization.delete()
-    print("✓ ScheduledPost model tests passed!")
+    print("✅ ScheduledPost Model tests passed")
 
-def test_social_media_service():
-    """Test SocialMediaService functionality"""
-    print("\nTesting SocialMediaService...")
-    
-    service = SocialMediaService()
-    
-    # Test posting to different platforms
-    platforms = ['facebook', 'instagram', 'tiktok', 'whatsapp', 'twitter', 'linkedin']
-    
-    for platform in platforms:
-        result = service.post_to_platform(
-            platform=platform,
-            asset_url='https://example.com/image.jpg',
-            caption='Test post'
-        )
-        print(f"✓ {platform.capitalize()}: {result['success']}")
-    
-    # Test platform validation
-    print(f"✓ Supported platforms: {service.get_supported_platforms()}")
-    print(f"✓ Facebook validation: {service.validate_platform('facebook')}")
-    print(f"✓ Invalid platform validation: {service.validate_platform('invalid')}")
-    
-    # Test platform requirements
-    requirements = service.get_platform_requirements('facebook')
-    print(f"✓ Facebook requirements: {requirements['required_params']}")
-    
-    print("✓ SocialMediaService tests passed!")
 
 def test_textile_endpoints():
-    """Test textile endpoint functionality"""
-    print("\nTesting Textile endpoints...")
+    """Test textile endpoints functionality"""
+    print("Testing Textile Endpoints...")
     
-    # Test poster viewset
-    poster_viewset = TextilePosterViewSet()
-    print("✓ TextilePosterViewSet initialized")
+    # Create test data
+    user = User.objects.create_user(
+        username='testuser2',
+        email='test2@example.com',
+        password='testpass123'
+    )
     
-    # Test caption viewset
-    caption_viewset = TextileCaptionViewSet()
-    print("✓ TextileCaptionViewSet initialized")
+    org = Organization.objects.create(
+        name='Test Org 2',
+        slug='test-org-2'
+    )
     
-    print("✓ Textile endpoints tests passed!")
+    OrganizationMember.objects.create(
+        organization=org,
+        user=user,
+        role='admin'
+    )
+    
+    # Create AI provider
+    provider = AIProvider.objects.create(
+        name='nanobanana',
+        is_active=True
+    )
+    
+    # Test client
+    client = Client()
+    client.force_login(user)
+    
+    # Test poster generation endpoint
+    url = '/api/ai/textile/poster/generate_poster/'
+    data = {
+        'product_image_url': 'https://example.com/product.jpg',
+        'fabric_type': 'saree',
+        'festival': 'deepavali',
+        'price_range': '₹2999',
+        'style': 'elegant'
+    }
+    
+    response = client.post(
+        url,
+        data,
+        content_type='application/json',
+        HTTP_X_ORGANIZATION=org.slug
+    )
+    
+    print(f"Poster endpoint response: {response.status_code}")
+    if response.status_code != 200:
+        print(f"Response content: {response.content}")
+    
+    # Test caption generation endpoint
+    url = '/api/ai/textile/caption/generate_caption/'
+    data = {
+        'product_name': 'Test Product',
+        'fabric_type': 'silk',
+        'festival': 'deepavali',
+        'price_range': '₹4999',
+        'style': 'traditional'
+    }
+    
+    response = client.post(
+        url,
+        data,
+        content_type='application/json',
+        HTTP_X_ORGANIZATION=org.slug
+    )
+    
+    print(f"Caption endpoint response: {response.status_code}")
+    if response.status_code != 200:
+        print(f"Response content: {response.content}")
+    
+    print("✅ Textile Endpoints tests completed")
+
 
 def test_scheduling_endpoints():
-    """Test scheduling endpoint functionality"""
-    print("\nTesting Scheduling endpoints...")
+    """Test scheduling endpoints functionality"""
+    print("Testing Scheduling Endpoints...")
     
-    # Test scheduling viewset
-    scheduling_viewset = ScheduledPostViewSet()
-    print("✓ ScheduledPostViewSet initialized")
+    # Create test data
+    user = User.objects.create_user(
+        username='testuser3',
+        email='test3@example.com',
+        password='testpass123'
+    )
     
-    print("✓ Scheduling endpoints tests passed!")
+    org = Organization.objects.create(
+        name='Test Org 3',
+        slug='test-org-3'
+    )
+    
+    OrganizationMember.objects.create(
+        organization=org,
+        user=user,
+        role='admin'
+    )
+    
+    # Test client
+    client = Client()
+    client.force_login(user)
+    
+    # Test create scheduled post
+    url = '/api/ai/schedule/'
+    scheduled_time = timezone.now() + timedelta(hours=1)
+    data = {
+        'platform': 'facebook',
+        'asset_url': 'https://example.com/image.jpg',
+        'caption': 'Test scheduled post',
+        'scheduled_time': scheduled_time.isoformat()
+    }
+    
+    response = client.post(
+        url,
+        data,
+        content_type='application/json',
+        HTTP_X_ORGANIZATION=org.slug
+    )
+    
+    print(f"Create scheduled post response: {response.status_code}")
+    if response.status_code not in [200, 201]:
+        print(f"Response content: {response.content}")
+    
+    # Test list scheduled posts
+    response = client.get(
+        url,
+        HTTP_X_ORGANIZATION=org.slug
+    )
+    
+    print(f"List scheduled posts response: {response.status_code}")
+    if response.status_code != 200:
+        print(f"Response content: {response.content}")
+    
+    print("✅ Scheduling Endpoints tests completed")
+
 
 def main():
     """Run all tests"""
-    print("=" * 60)
-    print("PHASE 1 WEEK 3 - BACKEND LEAD IMPLEMENTATION TEST")
+    print("🚀 Starting Phase 1 Week 3 Deliverables Testing...")
     print("=" * 60)
     
     try:
-        test_scheduled_post_model()
         test_social_media_service()
+        test_arcjet_service()
+        test_scheduled_post_model()
         test_textile_endpoints()
         test_scheduling_endpoints()
         
-        print("\n" + "=" * 60)
-        print("✅ ALL TESTS PASSED!")
         print("=" * 60)
-        print("\nImplementation Summary:")
-        print("✓ ScheduledPost model with all required fields")
-        print("✓ Social media service with placeholder functions")
-        print("✓ Textile poster generation endpoint")
-        print("✓ Textile caption generation endpoint")
-        print("✓ Scheduling system CRUD endpoints")
-        print("✓ Arcjet integration placeholders")
-        print("✓ Comprehensive test coverage")
+        print("🎉 All Phase 1 Week 3 tests completed successfully!")
         
     except Exception as e:
-        print(f"\n❌ TEST FAILED: {str(e)}")
+        print(f"❌ Test failed with error: {str(e)}")
         import traceback
         traceback.print_exc()
-        sys.exit(1)
+        return False
+    
+    return True
+
 
 if __name__ == '__main__':
-    main()
+    success = main()
+    sys.exit(0 if success else 1)

@@ -29,7 +29,8 @@ class TextilePosterGenerator:
                                    price_range: str = '₹2999',
                                    style: str = 'elegant',
                                    color_scheme: str = None,
-                                   custom_text: str = None) -> Dict[str, Any]:
+                                   custom_text: str = None,
+                                   offer_details: str = None) -> Dict[str, Any]:
         """
         Generate a textile poster with AI-suggested caption
         
@@ -132,7 +133,9 @@ class TextilePosterGenerator:
                                    festival: str = None,
                                    price_range: str = None,
                                    style: str = 'elegant',
-                                   custom_text: str = None) -> List[Dict[str, Any]]:
+                                   custom_text: str = None,
+                                   product_name: str = None,
+                                   offer_details: str = None) -> List[Dict[str, Any]]:
         """
         Generate AI-powered caption suggestions for textile posters
         
