@@ -48,8 +48,12 @@ class TenantMiddleware(MiddlewareMixin):
         if any(request.path.startswith(path) for path in skip_paths):
             return None
         
-        # Get organization from various sources
-        organization = self.get_organization_from_request(request)
+        # Check if organization is already set by authentication
+        organization = getattr(request, 'organization', None)
+        
+        # If not set, get organization from various sources
+        if not organization:
+            organization = self.get_organization_from_request(request)
         
         if organization:
             request.organization = organization

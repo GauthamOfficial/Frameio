@@ -43,6 +43,11 @@ class RateLimitMiddleware(MiddlewareMixin):
                     if memberships.exists():
                         organization = memberships.first().organization
             
+            # If still no organization and user is not authenticated, skip rate limiting
+            # This allows the authentication middleware to run first
+            if not organization and (not hasattr(request, 'user') or not request.user.is_authenticated):
+                return None
+            
             if not organization:
                 return JsonResponse(
                     {'error': 'Organization context required'}, 

@@ -233,7 +233,7 @@ class TextilePosterViewSet(viewsets.ViewSet):
         organization = get_current_organization()
         if not organization:
             return Response(
-                {"error": "No organization context"}, 
+                {"error": "Organization context required"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
