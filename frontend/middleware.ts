@@ -9,6 +9,13 @@ export default authMiddleware({
   // Routes that can always be accessed, and have
   // no authentication information
   ignoredRoutes: ["/api/webhooks"],
+  // Allow dashboard access for authenticated users
+  afterAuth(auth, req) {
+    // Allow access to dashboard if user is signed in
+    if (auth.userId && req.nextUrl.pathname.startsWith('/dashboard')) {
+      return;
+    }
+  },
 });
 
 export const config = {

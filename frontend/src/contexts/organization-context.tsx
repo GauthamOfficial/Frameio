@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useUser, useAuth } from '@clerk/nextjs'
 import { userApi, testApi } from '@/lib/api'
-import { useApp } from './app-context'
+// Removed useApp import to avoid circular dependency
 
 export type UserRole = 'Designer'
 
@@ -25,7 +25,7 @@ interface OrganizationProviderProps {
 export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const { user, isLoaded } = useUser()
   const { getToken } = useAuth()
-  const { setGlobalLoading, setError: setAppError } = useApp()
+  // Removed useApp to avoid circular dependency - using local state instead
   const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
@@ -37,7 +37,6 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
 
     try {
       setIsLoading(true)
-      setGlobalLoading(true)
       setError(null)
 
       // Check if we're in a test environment or have localStorage data

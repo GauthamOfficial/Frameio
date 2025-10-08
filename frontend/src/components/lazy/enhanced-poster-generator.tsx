@@ -24,7 +24,7 @@ import React, { useState, useRef, useEffect } from "react"
 import { useToastHelpers } from "@/components/common"
 import { useAppContext } from "@/contexts/app-context"
 import { apiClient } from "@/lib/api-client"
-import { nanoBananaService } from "@/lib/ai/nanobanana"
+import { nanoBananaService, isNanoBananaConfigured } from "@/lib/ai/nanobanana"
 import { generateTextilePrompt, extractKeywordsFromInput, suggestPromptImprovements } from "@/lib/ai/promptUtils"
 import ColorPaletteExtractor, { ColorInfo } from "@/components/ColorPaletteExtractor"
 import TemplateRecommender, { Template } from "@/components/TemplateRecommender"
@@ -84,7 +84,7 @@ export default function EnhancedPosterGenerator() {
   // Check AI service availability
   useEffect(() => {
     const checkAiService = () => {
-      if (nanoBananaService.isConfigured()) {
+      if (isNanoBananaConfigured()) {
         setAiServiceStatus('available')
       } else {
         setAiServiceStatus('fallback')
@@ -149,19 +149,23 @@ export default function EnhancedPosterGenerator() {
       })
 
       // Try NanoBanana API first
+      if (!nanoBananaService) {
+        throw new Error('NanoBanana service not configured')
+      }
+      
       const aiResponse = await nanoBananaService.generateImage(
         textilePrompt.enhancedPrompt,
         {
-          style: selectedStyle,
-          aspect_ratio: '1:1',
-          quality: 'hd'
+          size: '1024x1024',
+          quality: 'hd',
+          style: 'vivid'
         }
       )
 
-      if (aiResponse.success && aiResponse.image_url) {
+      if (aiResponse && aiResponse.url) {
         // AI generation successful
         setGeneratedPoster({
-          url: aiResponse.image_url,
+          url: aiResponse.url,
           captions: [
             `Discover our ${selectedFabric || 'textile'} collection`,
             `Perfect for ${selectedOccasion || 'any occasion'}`,

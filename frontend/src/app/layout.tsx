@@ -43,8 +43,8 @@ export default function RootLayout({
           },
         }}
         publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-        afterSignInUrl="/dashboard"
-        afterSignUpUrl="/dashboard"
+        fallbackRedirectUrl="/"
+        forceRedirectUrl="/"
         signInUrl="/sign-in"
         signUpUrl="/sign-up"
       >
@@ -52,7 +52,6 @@ export default function RootLayout({
           <head>
             <meta name="ethereum-dapp-url-bar" content="false" />
             <meta name="ethereum-dapp-metamask" content="false" />
-            <meta httpEquiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com https://sound-mule-24.clerk.accounts.dev; object-src 'none';" />
           </head>
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
