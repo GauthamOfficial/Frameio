@@ -46,12 +46,16 @@ INSTALLED_APPS = [
     # Third-party apps
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
     
     # Local apps
     "organizations",
     "users", 
     "designs",
     "ai_services",
+    "poster_generation",
+    "design_export",
+    "collaboration",
 ]
 
 MIDDLEWARE = [
@@ -177,6 +181,43 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# drf-spectacular settings for API documentation
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Frameio AI Services API',
+    'DESCRIPTION': 'Advanced AI capabilities for color intelligence, background synthesis, and usage metering',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': '/api/',
+    'TAGS': [
+        {'name': 'AI Services', 'description': 'Core AI generation and analysis services'},
+        {'name': 'Fabric Analysis', 'description': 'Fabric color extraction and texture analysis'},
+        {'name': 'Background Generation', 'description': 'AI-generated background synthesis'},
+        {'name': 'Usage Tracking', 'description': 'Usage quotas and billing management'},
+        {'name': 'Color Matching', 'description': 'Smart color matching algorithms'},
+    ],
+    'EXTENSIONS_INFO': {
+        'x-logo': {
+            'url': 'https://example.com/logo.png',
+            'altText': 'Frameio Logo'
+        }
+    },
+    'CONTACT': {
+        'name': 'Frameio API Support',
+        'email': 'api-support@frameio.com',
+        'url': 'https://frameio.com/support'
+    },
+    'LICENSE': {
+        'name': 'MIT License',
+        'url': 'https://opensource.org/licenses/MIT'
+    },
+    'EXTERNAL_DOCS': {
+        'description': 'Frameio Documentation',
+        'url': 'https://docs.frameio.com'
+    }
 }
 
 # CORS settings
@@ -209,6 +250,44 @@ ARCJET_KEY = os.getenv('ARCJET_KEY', '')
 # AI Services configuration
 NANOBANANA_API_KEY = os.getenv('NANOBANANA_API_KEY', '')
 NANOBANANA_MODEL_KEY = os.getenv('NANOBANANA_MODEL_KEY', '')
+
+# Google Gemini configuration
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+GEMINI_MODEL_NAME = os.getenv('GEMINI_MODEL_NAME', 'gemini-2.5-flash-image')
+
+# Redis configuration
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
+# Cache configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'frameio',
+        'TIMEOUT': 300,  # 5 minutes default timeout
+    },
+    'ai_results': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'frameio:ai',
+        'TIMEOUT': 3600,  # 1 hour for AI results
+    }
+}
+
+# Celery configuration for background tasks
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
 
 # Multi-tenancy settings
 TENANT_MODEL = 'organizations.Organization'

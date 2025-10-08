@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.utils import timezone
 from django.shortcuts import render
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 def api_status(request):
     """Simple API status endpoint for the root URL"""
@@ -31,10 +32,17 @@ def api_status(request):
         'endpoints': {
             'admin': '/admin/',
             'api': '/api/',
+            'api_docs': '/api/schema/',
+            'swagger': '/api/docs/',
+            'redoc': '/api/redoc/',
             'organizations': '/api/organizations/',
             'users': '/api/users/',
             'designs': '/api/designs/',
-            'ai_services': '/api/ai-services/'
+            'ai_services': '/api/ai/',
+            'fabric_analysis': '/api/ai/fabric/',
+            'poster_generation': '/api/poster-generation/',
+            'design_export': '/api/design-export/',
+            'collaboration': '/api/collaboration/'
         }
     })
 
@@ -55,10 +63,20 @@ urlpatterns = [
     path("", api_status, name="api_status"),
     path("health/", health_check, name="health_check"),
     path("test/", test_interface, name="test_interface"),
+    
+    # API Documentation
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    
+    # API Endpoints
     path("api/", include("organizations.urls")),
     path("api/", include("users.urls")),
     path("api/", include("designs.urls")),
     path("api/ai/", include("ai_services.urls")),
+    path("api/poster-generation/", include("poster_generation.urls")),
+    path("api/design-export/", include("design_export.urls")),
+    path("api/collaboration/", include("collaboration.urls")),
 ]
 
 # Serve media files in development

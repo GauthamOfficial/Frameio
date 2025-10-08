@@ -47,6 +47,8 @@ class AIGenerationService:
             # Route to appropriate AI service
             if provider.name == 'nanobanana':
                 result = self._process_nanobanana_request(request)
+            elif provider.name == 'gemini':
+                result = self._process_gemini_request(request)
             elif provider.name == 'openai':
                 result = self._process_openai_request(request)
             elif provider.name == 'stability':
@@ -183,6 +185,83 @@ class AIGenerationService:
             if settings.DEBUG:
                 return self._get_mock_nanobanana_result(request)
             raise AIServiceError(f"NanoBanana API error: {str(e)}")
+    
+    def _process_gemini_request(self, request: AIGenerationRequest) -> Dict[str, Any]:
+        """Process Google Gemini API request"""
+        try:
+            from .gemini_service import gemini_service
+            
+            # Get request parameters
+            parameters = request.parameters or {}
+            generation_type = request.generation_type
+            
+            # Route based on generation type
+            if generation_type == 'poster':
+                result = gemini_service.generate_textile_poster(
+                    fabric_type=parameters.get('fabric_type', 'textile'),
+                    festival=parameters.get('festival'),
+                    price_range=parameters.get('price_range'),
+                    style=parameters.get('style', 'modern'),
+                    width=parameters.get('width', 1024),
+                    height=parameters.get('height', 1024)
+                )
+            elif generation_type == 'caption':
+                captions = gemini_service.generate_captions(
+                    fabric_type=parameters.get('fabric_type', 'textile'),
+                    festival=parameters.get('festival'),
+                    price_range=parameters.get('price_range'),
+                    num_captions=parameters.get('num_captions', 5)
+                )
+                result = {
+                    "success": True,
+                    "data": {
+                        "captions": captions,
+                        "generation_id": f"gemini_{request.id}",
+                        "model_used": "gemini-2.5-flash-image"
+                    },
+                    "urls": [],
+                    "cost": 0.001  # Estimated cost
+                }
+            else:
+                # Generic image generation
+                prompt = parameters.get('prompt', 'Generate a beautiful image')
+                result = gemini_service.generate_image(
+                    prompt=prompt,
+                    width=parameters.get('width', 1024),
+                    height=parameters.get('height', 1024)
+                )
+            
+            if result.get('success'):
+                logger.info(f"Successfully processed Gemini request {request.id}")
+                return result
+            else:
+                raise AIServiceError(f"Gemini generation failed: {result.get('error', 'Unknown error')}")
+                
+        except ImportError:
+            logger.error("Gemini service not available")
+            # Fallback to mock data for development
+            return self._get_mock_gemini_result(request)
+        except Exception as e:
+            logger.error(f"Gemini API error for request {request.id}: {str(e)}")
+            # For development, return mock data instead of failing
+            if settings.DEBUG:
+                return self._get_mock_gemini_result(request)
+            raise AIServiceError(f"Gemini API error: {str(e)}")
+    
+    def _get_mock_gemini_result(self, request: AIGenerationRequest) -> Dict[str, Any]:
+        """Generate mock result for Gemini (development only)"""
+        return {
+            "success": True,
+            "data": {
+                "prompt_used": request.parameters.get('prompt', 'Mock prompt'),
+                "generation_id": f"mock_gemini_{request.id}",
+                "model_used": "gemini-2.5-flash-image",
+                "processing_time": 2.5,
+                "image_url": "https://via.placeholder.com/1024x1024/FF6B6B/FFFFFF?text=Mock+Gemini+Image"
+            },
+            "urls": ["https://via.placeholder.com/1024x1024/FF6B6B/FFFFFF?text=Mock+Gemini+Image"],
+            "cost": 0.001
+        }
     
     def _enhance_textile_poster_prompt(self, base_prompt: str, parameters: Dict) -> str:
         """Enhance prompt specifically for textile poster generation"""

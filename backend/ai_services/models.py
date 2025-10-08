@@ -11,6 +11,7 @@ class AIProvider(models.Model):
     """Model to store AI service provider configurations"""
     PROVIDER_CHOICES = [
         ('nanobanana', 'NanoBanana'),
+        ('gemini', 'Google Gemini'),
         ('openai', 'OpenAI'),
         ('stability', 'Stability AI'),
         ('midjourney', 'Midjourney'),
