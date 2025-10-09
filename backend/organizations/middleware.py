@@ -60,8 +60,11 @@ class TenantMiddleware(MiddlewareMixin):
             request.tenant = organization
             set_current_organization(organization)
         else:
-            # For API requests, return error if no organization found
-            if request.path.startswith('/api/'):
+            # For API requests, only return error if user is authenticated but no organization found
+            # This allows authentication middleware to run first
+            if (request.path.startswith('/api/') and 
+                hasattr(request, 'user') and 
+                request.user.is_authenticated):
                 return JsonResponse({
                     'error': 'Organization not found or access denied'
                 }, status=403)

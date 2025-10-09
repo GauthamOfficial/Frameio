@@ -30,7 +30,8 @@ export function WelcomePage({ className }: WelcomePageProps) {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-8 h-8 bg-primary rounded-lg mx-auto mb-4 animate-pulse"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Loading Frameio...</p>
+          <p className="text-sm text-muted-foreground mt-2">Initializing authentication...</p>
         </div>
       </div>
     )

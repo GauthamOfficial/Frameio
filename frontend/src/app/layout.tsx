@@ -47,12 +47,13 @@ export default function RootLayout({
         afterSignUpUrl="/dashboard"
         signInUrl="/sign-in"
         signUpUrl="/sign-up"
+        frontendApi={process.env.NEXT_PUBLIC_CLERK_FRONTEND_API}
       >
         <html lang="en">
           <head>
             <meta name="ethereum-dapp-url-bar" content="false" />
             <meta name="ethereum-dapp-metamask" content="false" />
-            <meta httpEquiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com https://sound-mule-24.clerk.accounts.dev; object-src 'none';" />
+            <meta httpEquiv="Content-Security-Policy" content={`script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com ${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API}; object-src 'none';`} />
           </head>
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}

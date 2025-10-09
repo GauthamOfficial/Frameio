@@ -48,11 +48,10 @@ class RateLimitMiddleware(MiddlewareMixin):
             if not organization and (not hasattr(request, 'user') or not request.user.is_authenticated):
                 return None
             
+            # If user is authenticated but no organization found, skip rate limiting
+            # Let the tenant middleware handle organization validation
             if not organization:
-                return JsonResponse(
-                    {'error': 'Organization context required'}, 
-                    status=400
-                )
+                return None
         
         user_id = str(request.user.id) if request.user.is_authenticated else 'anonymous'
         org_id = str(organization.id)
@@ -249,10 +248,11 @@ class AIUsageTrackingMiddleware(MiddlewareMixin):
         # Log usage
         organization = get_current_organization()
         org_name = organization.name if organization else 'unknown'
+        user_id = request.user.id if (hasattr(request, 'user') and request.user.is_authenticated) else 'anonymous'
         
         logger.info(
             f"AI API Usage - Org: {org_name}, "
-            f"User: {request.user.id if request.user.is_authenticated else 'anonymous'}, "
+            f"User: {user_id}, "
             f"Path: {request.path}, Method: {request.method}, "
             f"Status: {response.status_code}, Time: {response_time:.3f}s"
         )
