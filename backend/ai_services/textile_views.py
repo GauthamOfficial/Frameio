@@ -84,18 +84,30 @@ class TextilePosterViewSet(viewsets.ViewSet):
                 offer_details=data.get('offer_details')
             )
             
-            # Format response
+            # Format response with cache-busting
+            import time
+            timestamp = int(time.time() * 1000)
+            
+            # Add cache-busting parameter to poster URL if it exists
+            poster_url = result.get('poster_url', '')
+            if poster_url and '?' not in poster_url:
+                poster_url += f'?t={timestamp}'
+            elif poster_url and '?' in poster_url:
+                poster_url += f'&t={timestamp}'
+            
             response_data = {
                 'success': True,
-                'poster_url': result.get('poster_url', ''),
+                'poster_url': poster_url,
                 'caption_suggestions': result.get('caption_suggestions', []),
                 'hashtags': result.get('hashtags', []),
+                'cache_bust': timestamp,  # Add cache-busting timestamp
                 'metadata': {
                     'fabric_type': data['fabric_type'],
                     'festival': data['festival'],
                     'style': data['style'],
                     'generated_at': timezone.now().isoformat(),
-                    'organization': organization.name
+                    'organization': organization.name,
+                    'unique_id': f"gen_{timestamp}"  # Add unique ID
                 }
             }
             
@@ -188,11 +200,15 @@ class TextileCaptionViewSet(viewsets.ViewSet):
                 style=data['style']
             )
             
-            # Format response
+            # Format response with cache-busting
+            import time
+            timestamp = int(time.time() * 1000)
+            
             response_data = {
                 'success': True,
                 'captions': captions,
                 'hashtags': hashtags,
+                'cache_bust': timestamp,  # Add cache-busting timestamp
                 'metadata': {
                     'product_name': data['product_name'],
                     'fabric_type': data['fabric_type'],

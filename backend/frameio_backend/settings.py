@@ -252,8 +252,8 @@ NANOBANANA_API_KEY = os.getenv('NANOBANANA_API_KEY', '')
 NANOBANANA_MODEL_KEY = os.getenv('NANOBANANA_MODEL_KEY', '')
 
 # Google Gemini configuration
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', 'AIzaSyDtjWMwLhP4nZIv5LeShDX_cqIQ9y2Rhuc')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyDtjWMwLhP4nZIv5LeShDX_cqIQ9y2Rhuc')
 GEMINI_MODEL_NAME = os.getenv('GEMINI_MODEL_NAME', 'gemini-2.5-flash-image')
 
 # Redis configuration
