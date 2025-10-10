@@ -42,12 +42,15 @@ export default function RootLayout({
             colorPrimary: '#3b82f6',
           },
         }}
-        publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_c291bmQtbXVsZS0yNC5jbGVyay5hY2NvdW50cy5kZXYk'}
         afterSignInUrl="/dashboard"
         afterSignUpUrl="/dashboard"
         signInUrl="/sign-in"
         signUpUrl="/sign-up"
-        frontendApi={process.env.NEXT_PUBLIC_CLERK_FRONTEND_API}
+        frontendApi={process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://sound-mule-24.clerk.accounts.dev'}
+        signInFallbackRedirectUrl="/dashboard"
+        signUpFallbackRedirectUrl="/dashboard"
+        loadingFallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div></div>}
       >
         <html lang="en">
           <head>

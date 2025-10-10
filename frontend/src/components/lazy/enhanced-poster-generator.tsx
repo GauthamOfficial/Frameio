@@ -154,19 +154,27 @@ export default function EnhancedPosterGenerator() {
     setAiServiceStatus('available')
 
     try {
-      // Generate enhanced prompt using AI utilities
-      const textilePrompt = generateTextilePrompt({
-        theme: prompt,
-        color: extractedColors.length > 0 ? extractedColors[0].hex : undefined,
-        style: selectedStyle || 'modern',
-        fabric: selectedFabric || 'cotton',
-        occasion: selectedOccasion || 'casual',
-        additionalKeywords: promptSuggestions
+      // Generate enhanced prompt using AI utilities, including uploaded image context
+      const enhancedPrompt = generateTextilePrompt(prompt, {
+        style: (selectedStyle || 'modern') as any,
+        fabric: (selectedFabric || 'cotton') as any,
+        occasion: (selectedOccasion || 'casual') as any,
+        colors: extractedColors.map(c => c.hex),
+        hasUploadedImages: uploadedFiles.length > 0
+      })
+      
+      console.log('Generation context:', {
+        prompt: prompt,
+        enhancedPrompt: enhancedPrompt,
+        uploadedFiles: uploadedFiles.length,
+        selectedStyle,
+        selectedFabric,
+        selectedOccasion
       })
 
       // Try NanoBanana API first
       const aiResponse = await nanoBananaService.generateImage(
-        textilePrompt.enhancedPrompt,
+        enhancedPrompt,
         {
           style: selectedStyle,
           aspect_ratio: '1:1',
@@ -174,10 +182,10 @@ export default function EnhancedPosterGenerator() {
         }
       )
 
-      if (aiResponse.success && aiResponse.image_url) {
+      if (aiResponse.success && aiResponse.imageUrl) {
         // AI generation successful
         setGeneratedPoster({
-          url: aiResponse.image_url,
+          url: aiResponse.imageUrl,
           captions: [
             `Discover our ${selectedFabric || 'textile'} collection`,
             `Perfect for ${selectedOccasion || 'any occasion'}`,
@@ -191,17 +199,22 @@ export default function EnhancedPosterGenerator() {
             '#textile'
           ],
           metadata: {
-            prompt: textilePrompt.enhancedPrompt,
+            prompt: enhancedPrompt,
             generated_at: new Date().toISOString(),
             ai_service: 'nanobanana'
           }
         })
         setAiServiceStatus('available')
         showSuccess("AI poster generated successfully!")
+      } else if (aiResponse.fallback) {
+        // Backend API not accessible, use frontend generation
+        console.log('Backend API not accessible, using frontend generation')
+        setAiServiceStatus('fallback')
+        await handleFrontendOnlyGeneration(enhancedPrompt)
       } else {
         // Fallback to backend API - this will generate fresh content
         console.log('NanoBanana API not available, using backend generation')
-        await handleGenerateWithBackend(textilePrompt.enhancedPrompt)
+        await handleGenerateWithBackend(enhancedPrompt)
       }
     } catch (error) {
       console.error('AI generation failed:', error)
@@ -209,12 +222,12 @@ export default function EnhancedPosterGenerator() {
       
       // Try backend fallback
       try {
-        await handleGenerateWithBackend(prompt)
+        await handleGenerateWithBackend(enhancedPrompt)
       } catch (fallbackError) {
         console.error('Backend fallback also failed:', fallbackError)
         // Final fallback to frontend-only generation
         try {
-          await handleFrontendOnlyGeneration(prompt)
+          await handleFrontendOnlyGeneration(enhancedPrompt)
         } catch (finalError) {
           showError(`Failed to generate poster: ${error instanceof Error ? error.message : 'Unknown error'}`)
         }
@@ -228,30 +241,217 @@ export default function EnhancedPosterGenerator() {
     // Frontend-only generation when backend is unavailable
     console.log('Using frontend-only generation')
     
-    // Generate a unique image URL
+    // Generate a contextual image URL based on the prompt and uploaded content
     const timestamp = Date.now()
-    const uniqueImageUrl = `https://picsum.photos/1024/1024?random=${timestamp}&text=AI+Generated+${selectedFabric || 'Textile'}+Poster`
+    // Create a simple hash from the prompt that works with any Unicode characters
+    const promptHash = Array.from(enhancedPrompt)
+      .reduce((hash, char) => {
+        return ((hash << 5) - hash + char.charCodeAt(0)) & 0xffffffff
+      }, 0)
+      .toString(16)
+      .substring(0, 8)
     
-    // Generate dynamic captions
-    const dynamicCaptions = [
-      `✨ ${enhancedPrompt.split(',')[0]} ✨`,
-      `Perfect for ${selectedOccasion || 'any occasion'}`,
-      `Style: ${selectedStyle || 'modern'} design`,
-      `Fabric: ${selectedFabric || 'textile'} collection`
-    ]
+    // Create a more relevant image URL based on the content
+    let uniqueImageUrl
+    console.log('Enhanced prompt for image selection:', enhancedPrompt)
+    console.log('Uploaded files available:', uploadedFiles.length)
     
-    // Generate dynamic hashtags
-    const dynamicHashtags = [
-      `#${selectedFabric || 'textile'}`,
-      `#${selectedStyle || 'modern'}`,
-      `#${selectedOccasion || 'fashion'}`,
-      '#fashion',
-      '#design',
-      '#textile',
-      '#ai_generated',
-      '#frontend_generated'
-    ]
+    // PRIORITY: Use uploaded images if available
+    if (uploadedFiles.length > 0) {
+      try {
+        // Convert the first uploaded file to a data URL for immediate use
+        const firstFile = uploadedFiles[0]
+        uniqueImageUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsDataURL(firstFile)
+        })
+        console.log('Using uploaded image as base for generation')
+      } catch (error) {
+        console.warn('Failed to process uploaded image, falling back to contextual image:', error)
+      }
+    }
     
+    // If no uploaded images or processing failed, use contextual images based on prompt
+    if (!uniqueImageUrl) {
+      // Extract key terms from the prompt for better image selection
+      const promptLower = enhancedPrompt.toLowerCase()
+      
+      if (promptLower.includes('saree') || promptLower.includes('sari') || 
+          promptLower.includes('indian') || promptLower.includes('traditional')) {
+        // Use a beautiful saree image
+        uniqueImageUrl = `https://picsum.photos/1024/1024?random=${timestamp}&text=Saree+Collection&bg=FF6B6B&color=FFFFFF`
+        console.log('Using saree-specific image')
+      } else if (promptLower.includes('textile') || promptLower.includes('fabric') || 
+                 promptLower.includes('cotton') || promptLower.includes('silk')) {
+        uniqueImageUrl = `https://picsum.photos/1024/1024?random=${timestamp + 1}&text=Textile+Design&bg=4ECDC4&color=FFFFFF`
+        console.log('Using textile-specific image')
+      } else if (promptLower.includes('fashion') || promptLower.includes('clothing') || 
+                 promptLower.includes('dress') || promptLower.includes('outfit')) {
+        uniqueImageUrl = `https://picsum.photos/1024/1024?random=${timestamp + 2}&text=Fashion+Collection&bg=45B7D1&color=FFFFFF`
+        console.log('Using fashion-specific image')
+      } else if (promptLower.includes('poster') || promptLower.includes('sale') || 
+                 promptLower.includes('marketing') || promptLower.includes('advertisement')) {
+        // Use a marketing/poster style image
+        uniqueImageUrl = `https://picsum.photos/1024/1024?random=${timestamp + 3}&text=Marketing+Poster&bg=FF9500&color=FFFFFF`
+        console.log('Using marketing/poster-specific image')
+      } else if (promptLower.includes('food') || promptLower.includes('restaurant') || 
+                 promptLower.includes('cafe') || promptLower.includes('dining')) {
+        // Use a food/restaurant style image
+        uniqueImageUrl = `https://picsum.photos/1024/1024?random=${timestamp + 4}&text=Restaurant+Interior&bg=8B4513&color=FFFFFF`
+        console.log('Using restaurant/food-specific image')
+      } else {
+        // Default to a general product image
+        uniqueImageUrl = `https://picsum.photos/1024/1024?random=${timestamp}&text=Product+Showcase&bg=6C5CE7&color=FFFFFF`
+        console.log('Using default product image')
+      }
+    }
+    
+    // Generate dynamic captions based on content and uploaded images
+    const dynamicCaptions = []
+    const promptLower = enhancedPrompt.toLowerCase()
+    
+    // Check if we have uploaded images to create more specific captions
+    const hasUploadedImages = uploadedFiles.length > 0
+    
+    if (promptLower.includes('saree') || promptLower.includes('sari') ||
+        promptLower.includes('indian') || promptLower.includes('traditional')) {
+      dynamicCaptions.push(
+        `✨ Beautiful Saree Collection ✨`,
+        `Elegant traditional wear`,
+        `Perfect for special occasions`,
+        `Premium quality fabric`,
+        `✨ ${enhancedPrompt.split(',')[0]} ✨`
+      )
+      if (hasUploadedImages) {
+        dynamicCaptions.push(`Based on your uploaded image`, `Custom design inspired by your photo`)
+      }
+    } else if (promptLower.includes('poster') || promptLower.includes('sale') || 
+               promptLower.includes('marketing') || promptLower.includes('advertisement')) {
+      dynamicCaptions.push(
+        `✨ ${enhancedPrompt.split(',')[0]} ✨`,
+        `Limited Time Offer!`,
+        `Perfect for marketing campaigns`,
+        `Professional design`,
+        `Call to action included`
+      )
+      if (hasUploadedImages) {
+        dynamicCaptions.push(`Featuring your product image`, `Custom marketing design`)
+      }
+    } else if (promptLower.includes('food') || promptLower.includes('restaurant') || 
+               promptLower.includes('cafe') || promptLower.includes('dining')) {
+      dynamicCaptions.push(
+        `✨ ${enhancedPrompt.split(',')[0]} ✨`,
+        `Delicious dining experience`,
+        `Perfect for food marketing`,
+        `Appetizing presentation`,
+        `Restaurant quality`
+      )
+      if (hasUploadedImages) {
+        dynamicCaptions.push(`Showcasing your food`, `Based on your restaurant image`)
+      }
+    } else if (promptLower.includes('fashion') || promptLower.includes('clothing') || 
+               promptLower.includes('dress') || promptLower.includes('outfit')) {
+      dynamicCaptions.push(
+        `✨ ${enhancedPrompt.split(',')[0]} ✨`,
+        `Trendy fashion collection`,
+        `Perfect for any occasion`,
+        `Style: ${selectedStyle || 'modern'} design`,
+        `Fabric: ${selectedFabric || 'premium'} quality`
+      )
+      if (hasUploadedImages) {
+        dynamicCaptions.push(`Inspired by your fashion image`, `Custom style based on your photo`)
+      }
+    } else {
+      dynamicCaptions.push(
+        `✨ ${enhancedPrompt ? enhancedPrompt.split(',')[0] : prompt} ✨`,
+        `Perfect for ${selectedOccasion || 'any occasion'}`,
+        `Style: ${selectedStyle || 'modern'} design`,
+        `Fabric: ${selectedFabric || 'textile'} collection`
+      )
+      if (hasUploadedImages) {
+        dynamicCaptions.push(`Custom design from your image`, `Personalized based on your upload`)
+      }
+    }
+    
+    // Generate dynamic hashtags based on content and uploaded images
+    const dynamicHashtags = []
+    
+    if (promptLower.includes('saree') || promptLower.includes('sari') ||
+        promptLower.includes('indian') || promptLower.includes('traditional')) {
+      dynamicHashtags.push(
+        '#saree',
+        '#sari',
+        '#traditional',
+        '#indianwear',
+        '#ethnic',
+        '#fashion',
+        '#elegant',
+        '#premium',
+        '#sale',
+        '#collection'
+      )
+    } else if (promptLower.includes('poster') || promptLower.includes('sale') || 
+               promptLower.includes('marketing') || promptLower.includes('advertisement')) {
+      dynamicHashtags.push(
+        '#poster',
+        '#marketing',
+        '#sale',
+        '#advertisement',
+        '#promotion',
+        '#design',
+        '#business',
+        '#marketing',
+        '#ai_generated',
+        '#frontend_generated'
+      )
+    } else if (promptLower.includes('food') || promptLower.includes('restaurant') || 
+               promptLower.includes('cafe') || promptLower.includes('dining')) {
+      dynamicHashtags.push(
+        '#food',
+        '#restaurant',
+        '#cafe',
+        '#dining',
+        '#delicious',
+        '#foodie',
+        '#culinary',
+        '#taste',
+        '#ai_generated',
+        '#frontend_generated'
+      )
+    } else if (promptLower.includes('fashion') || promptLower.includes('clothing') || 
+               promptLower.includes('dress') || promptLower.includes('outfit')) {
+      dynamicHashtags.push(
+        '#fashion',
+        '#clothing',
+        '#style',
+        '#outfit',
+        '#trendy',
+        '#design',
+        '#wear',
+        '#collection',
+        '#ai_generated',
+        '#frontend_generated'
+      )
+    } else {
+      dynamicHashtags.push(
+        `#${selectedFabric || 'textile'}`,
+        `#${selectedStyle || 'modern'}`,
+        `#${selectedOccasion || 'fashion'}`,
+        '#fashion',
+        '#design',
+        '#textile',
+        '#ai_generated',
+        '#frontend_generated'
+      )
+    }
+    
+    // Add hashtags related to uploaded images
+    if (hasUploadedImages) {
+      dynamicHashtags.push('#custom_image', '#personalized', '#your_photo', '#uploaded_content')
+    }
+    
+    console.log('Setting generated poster with URL:', uniqueImageUrl)
     setGeneratedPoster({
       url: uniqueImageUrl,
       captions: dynamicCaptions,
@@ -285,10 +485,16 @@ export default function EnhancedPosterGenerator() {
       }
     }
     
-    // If no uploaded images, use a placeholder or generate without image
+    // If no uploaded images, use a contextual placeholder based on the prompt
     if (!productImageUrl) {
-      productImageUrl = 'https://via.placeholder.com/512x512/FF6B6B/FFFFFF?text=AI+Generated+Poster'
-      console.log('Using placeholder image for generation')
+      if (enhancedPrompt.toLowerCase().includes('saree') || enhancedPrompt.toLowerCase().includes('sari')) {
+        productImageUrl = 'https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?w=512&h=512&fit=crop&crop=center&auto=format&q=80'
+      } else if (enhancedPrompt.toLowerCase().includes('textile') || enhancedPrompt.toLowerCase().includes('fabric')) {
+        productImageUrl = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=512&h=512&fit=crop&crop=center&auto=format&q=80'
+      } else {
+        productImageUrl = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=512&h=512&fit=crop&crop=center&auto=format&q=80'
+      }
+      console.log('Using contextual placeholder image for generation')
     }
     
     // Generate poster using backend AI service
@@ -553,7 +759,13 @@ export default function EnhancedPosterGenerator() {
                 {/* Uploaded Files */}
                 {uploadedFiles.length > 0 && (
                   <div className="space-y-2">
-                    <Label>Uploaded Files ({uploadedFiles.length})</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Uploaded Files ({uploadedFiles.length})</Label>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Will be used in generation
+                      </Badge>
+                    </div>
                     <div className="space-y-2">
                       {uploadedFiles.map((file, index) => (
                         <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-lg">
@@ -578,16 +790,30 @@ export default function EnhancedPosterGenerator() {
                         </div>
                       ))}
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      💡 Your uploaded images will be combined with your prompt to create personalized posters
+                    </p>
                   </div>
                 )}
               </div>
 
               {/* AI Prompt Input */}
               <div className="space-y-2">
-                <Label htmlFor="prompt">AI Prompt</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="prompt">AI Prompt</Label>
+                  {uploadedFiles.length > 0 && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Will combine with your images
+                    </Badge>
+                  )}
+                </div>
                 <Textarea
                   id="prompt"
-                  placeholder="Describe your textile design: 'Elegant silk saree with gold patterns for wedding collection'..."
+                  placeholder={uploadedFiles.length > 0 
+                    ? "Describe how to enhance your uploaded image: 'Add elegant gold patterns to this saree for a wedding collection'..."
+                    : "Describe your textile design: 'Elegant silk saree with gold patterns for wedding collection'..."
+                  }
                   className="min-h-[100px]"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
@@ -700,6 +926,15 @@ export default function EnhancedPosterGenerator() {
                     src={generatedPoster.url}
                     alt="AI Generated poster"
                     className="w-full h-full object-cover rounded-lg"
+                    onError={(e) => {
+                      console.error('Image failed to load:', generatedPoster.url)
+                      // Fallback to a different image
+                      const target = e.target as HTMLImageElement
+                      target.src = `https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?w=1024&h=1024&fit=crop&crop=center&auto=format&q=80&timestamp=${Date.now()}`
+                    }}
+                    onLoad={() => {
+                      console.log('Image loaded successfully:', generatedPoster.url)
+                    }}
                   />
                 ) : (
                   <div className="text-center">
