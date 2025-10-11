@@ -274,3 +274,93 @@ def poster_service_status(request):
             "service_available": False,
             "error": "Failed to check service status"
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def add_text_overlay(request):
+    """
+    POST /api/ai/ai-poster/add_text_overlay/
+    Add text overlay to an uploaded textile image
+    
+    Form data:
+    - image: Uploaded textile image file
+    - text_prompt: Text to add to the image
+    - text_style: Optional text style (elegant, bold, modern, vintage)
+    """
+    try:
+        # Get uploaded image
+        if 'image' not in request.FILES:
+            return Response({
+                "success": False,
+                "error": "Image file is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        image_file = request.FILES['image']
+        text_prompt = request.data.get('text_prompt', '')
+        text_style = request.data.get('text_style', 'elegant')
+        
+        if not text_prompt:
+            return Response({
+                "success": False,
+                "error": "Text prompt is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate text style
+        valid_styles = ['elegant', 'bold', 'modern', 'vintage']
+        if text_style not in valid_styles:
+            text_style = 'elegant'
+        
+        logger.info(f"Adding text overlay with prompt: {text_prompt[:50]}...")
+        
+        # Check if service is available first
+        if not ai_poster_service.is_available():
+            return Response({
+                "success": False,
+                "error": "AI poster service is not available. Please check configuration."
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        # Save uploaded image temporarily
+        import uuid
+        temp_filename = f"temp_{uuid.uuid4().hex}_{image_file.name}"
+        temp_path = default_storage.save(f"temp_images/{temp_filename}", ContentFile(image_file.read()))
+        full_temp_path = default_storage.path(temp_path)
+        
+        try:
+            # Add text overlay using AI service
+            result = ai_poster_service.add_text_overlay(full_temp_path, text_prompt, text_style)
+            
+            if result.get('status') == 'success':
+                return Response({
+                    "success": True,
+                    "message": "Text overlay added successfully",
+                    "image_path": result.get('image_path'),
+                    "image_url": result.get('image_url'),
+                    "filename": result.get('filename'),
+                    "text_added": result.get('text_added'),
+                    "style": result.get('style')
+                }, status=status.HTTP_200_OK)
+            else:
+                error_message = result.get('message', 'Failed to add text overlay')
+                logger.error(f"Text overlay failed: {error_message}")
+                return Response({
+                    "success": False,
+                    "error": error_message
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        finally:
+            # Clean up temporary file
+            try:
+                if os.path.exists(full_temp_path):
+                    os.remove(full_temp_path)
+                default_storage.delete(temp_path)
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to clean up temporary file: {str(cleanup_error)}")
+            
+    except Exception as e:
+        logger.error(f"Error in add_text_overlay: {str(e)}")
+        return Response({
+            "success": False,
+            "error": "Internal server error"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

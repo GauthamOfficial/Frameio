@@ -134,6 +134,9 @@ class AIPosterService:
                             
                             saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
                             image_url = default_storage.url(saved_path)
+                            # Ensure full URL for download
+                            if not image_url.startswith('http'):
+                                image_url = f"http://localhost:8000{image_url}"
                             
                             logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}")
                             return {
@@ -217,6 +220,9 @@ class AIPosterService:
                     
                     saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
                     image_url = default_storage.url(saved_path)
+                    # Ensure full URL for download
+                    if not image_url.startswith('http'):
+                        image_url = f"http://localhost:8000{image_url}"
                     
                     logger.info(f"Edited poster generated successfully: {saved_path}")
                     return {
@@ -303,6 +309,9 @@ class AIPosterService:
                     
                     saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
                     image_url = default_storage.url(saved_path)
+                    # Ensure full URL for download
+                    if not image_url.startswith('http'):
+                        image_url = f"http://localhost:8000{image_url}"
                     
                     logger.info(f"Composite poster generated successfully: {saved_path}")
                     return {
@@ -316,6 +325,98 @@ class AIPosterService:
             
         except Exception as e:
             logger.error(f"Error generating composite poster: {str(e)}")
+            return {"status": "error", "message": str(e)}
+    
+    def add_text_overlay(self, image_path: str, text_prompt: str, text_style: str = "elegant") -> Dict[str, Any]:
+        """
+        Add text overlay to an existing textile image using AI
+        
+        Args:
+            image_path: Path to the uploaded textile image
+            text_prompt: Text to add to the image
+            text_style: Style of the text (elegant, bold, modern, vintage)
+            
+        Returns:
+            Dict containing status and image path
+        """
+        try:
+            if not self.client:
+                return {"status": "error", "message": "Gemini client not available"}
+            
+            logger.info(f"Adding text overlay to image with prompt: {text_prompt[:50]}...")
+            
+            # Load and prepare image
+            with open(image_path, "rb") as f:
+                image_data = f.read()
+            
+            # Create image part
+            image_part = types.Part(
+                inline_data=types.Blob(
+                    data=image_data,
+                    mime_type="image/jpeg"
+                )
+            )
+            
+            # Create enhanced prompt for text overlay
+            enhanced_prompt = f"""
+            Add the following text to this textile image: "{text_prompt}"
+            
+            Style requirements:
+            - Text style: {text_style}
+            - Make the text clearly visible and readable
+            - Position the text appropriately on the textile
+            - Use colors that complement the textile design
+            - Ensure the text enhances the overall design
+            - Maintain the textile's aesthetic appeal
+            """
+            
+            # Configure image generation
+            image_config = types.ImageConfig(aspect_ratio="1:1")
+            
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash-image",
+                contents=[image_part, enhanced_prompt],
+                config=types.GenerateContentConfig(
+                    response_modalities=['Image'],
+                    image_config=image_config,
+                ),
+            )
+            
+            # Process response and save image
+            for part in response.candidates[0].content.parts:
+                if part.inline_data is not None:
+                    edited_image = Image.open(BytesIO(part.inline_data.data))
+                    
+                    # Generate unique filename
+                    timestamp = int(time.time())
+                    filename = f"text_overlay_{timestamp}.png"
+                    output_path = f"generated_posters/{filename}"
+                    
+                    # Save to media storage
+                    image_bytes = BytesIO()
+                    edited_image.save(image_bytes, format='PNG')
+                    image_bytes.seek(0)
+                    
+                    saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
+                    image_url = default_storage.url(saved_path)
+                    # Ensure full URL for download
+                    if not image_url.startswith('http'):
+                        image_url = f"http://localhost:8000{image_url}"
+                    
+                    logger.info(f"Text overlay added successfully: {saved_path}")
+                    return {
+                        "status": "success", 
+                        "image_path": saved_path,
+                        "image_url": image_url,
+                        "filename": filename,
+                        "text_added": text_prompt,
+                        "style": text_style
+                    }
+            
+            return {"status": "error", "message": "No edited image returned from model"}
+            
+        except Exception as e:
+            logger.error(f"Error adding text overlay: {str(e)}")
             return {"status": "error", "message": str(e)}
     
     def is_available(self) -> bool:

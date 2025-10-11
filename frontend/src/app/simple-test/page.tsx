@@ -153,18 +153,6 @@ export default function SimpleTestPage() {
         </Card>
       </div>
 
-      {result && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-sm">Raw API Response</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto max-h-64">
-              {JSON.stringify(result, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -224,19 +224,6 @@ export default function AIPosterGeneratorPage() {
         </Card>
       </div>
 
-      {/* Debug Information */}
-      {result && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-sm">Debug Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto">
-              {JSON.stringify(result, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
