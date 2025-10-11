@@ -140,3 +140,4 @@ if __name__ == "__main__":
         print("\n✅ AI Service is ready to use!")
         print("🎯 You can now generate images through the frontend")
 
+
