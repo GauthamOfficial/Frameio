@@ -12,6 +12,7 @@ from PIL import Image
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from .ai_caption_service import AICaptionService
 
 # Import Google GenAI
 try:
@@ -34,6 +35,7 @@ class AIPosterService:
         """Initialize the AI poster service"""
         self.api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, 'GEMINI_API_KEY', None)
         self.client = None
+        self.caption_service = AICaptionService()
         
         if not GENAI_AVAILABLE:
             logger.error("Google GenAI library not available")
@@ -139,11 +141,20 @@ class AIPosterService:
                                 image_url = f"http://localhost:8000{image_url}"
                             
                             logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}")
+                            
+                            # Generate caption and hashtags for the poster
+                            caption_result = self.generate_caption_and_hashtags(prompt, image_url)
+                            
                             return {
                                 "status": "success", 
                                 "image_path": saved_path,
                                 "image_url": image_url,
-                                "filename": filename
+                                "filename": filename,
+                                "caption": caption_result.get("caption", ""),
+                                "full_caption": caption_result.get("full_caption", ""),
+                                "hashtags": caption_result.get("hashtags", []),
+                                "emoji": caption_result.get("emoji", ""),
+                                "call_to_action": caption_result.get("call_to_action", "")
                             }
                         except Exception as img_error:
                             logger.error(f"Error processing image: {str(img_error)}")
@@ -237,11 +248,20 @@ class AIPosterService:
                         image_url = f"http://localhost:8000{image_url}"
                     
                     logger.info(f"Edited poster generated successfully: {saved_path}")
+                    
+                    # Generate caption and hashtags for the poster
+                    caption_result = self.generate_caption_and_hashtags(prompt, image_url)
+                    
                     return {
                         "status": "success", 
                         "image_path": saved_path,
                         "image_url": image_url,
-                        "filename": filename
+                        "filename": filename,
+                        "caption": caption_result.get("caption", ""),
+                        "full_caption": caption_result.get("full_caption", ""),
+                        "hashtags": caption_result.get("hashtags", []),
+                        "emoji": caption_result.get("emoji", ""),
+                        "call_to_action": caption_result.get("call_to_action", "")
                     }
             
             return {"status": "error", "message": "No edited image returned from model"}
@@ -334,11 +354,20 @@ class AIPosterService:
                         image_url = f"http://localhost:8000{image_url}"
                     
                     logger.info(f"Composite poster generated successfully: {saved_path}")
+                    
+                    # Generate caption and hashtags for the poster
+                    caption_result = self.generate_caption_and_hashtags(prompt, image_url)
+                    
                     return {
                         "status": "success", 
                         "image_path": saved_path,
                         "image_url": image_url,
-                        "filename": filename
+                        "filename": filename,
+                        "caption": caption_result.get("caption", ""),
+                        "full_caption": caption_result.get("full_caption", ""),
+                        "hashtags": caption_result.get("hashtags", []),
+                        "emoji": caption_result.get("emoji", ""),
+                        "call_to_action": caption_result.get("call_to_action", "")
                     }
             
             return {"status": "error", "message": "No composite image returned"}
@@ -436,13 +465,22 @@ class AIPosterService:
                         image_url = f"http://localhost:8000{image_url}"
                     
                     logger.info(f"Text overlay added successfully: {saved_path}")
+                    
+                    # Generate caption and hashtags for the poster
+                    caption_result = self.generate_caption_and_hashtags(text_prompt, image_url)
+                    
                     return {
                         "status": "success", 
                         "image_path": saved_path,
                         "image_url": image_url,
                         "filename": filename,
                         "text_added": text_prompt,
-                        "style": text_style
+                        "style": text_style,
+                        "caption": caption_result.get("caption", ""),
+                        "full_caption": caption_result.get("full_caption", ""),
+                        "hashtags": caption_result.get("hashtags", []),
+                        "emoji": caption_result.get("emoji", ""),
+                        "call_to_action": caption_result.get("call_to_action", "")
                     }
             
             return {"status": "error", "message": "No edited image returned from model"}
@@ -450,6 +488,123 @@ class AIPosterService:
         except Exception as e:
             logger.error(f"Error adding text overlay: {str(e)}")
             return {"status": "error", "message": str(e)}
+    
+    def generate_caption_and_hashtags(self, prompt: str, image_url: str = None) -> Dict[str, Any]:
+        """
+        Generate caption and hashtags for the generated poster
+        
+        Args:
+            prompt: Original prompt used to generate the poster
+            image_url: URL of the generated image (optional)
+            
+        Returns:
+            Dict containing caption and hashtags
+        """
+        try:
+            if not self.caption_service.client:
+                return {"status": "error", "message": "Caption service not available"}
+            
+            logger.info(f"Generating caption and hashtags for prompt: {prompt[:50]}...")
+            
+            # Create enhanced content for better social media captions
+            enhanced_content = f"""
+            Create an engaging social media caption for a textile/fashion poster with the following description: {prompt}
+            
+            The caption should be:
+            - Engaging and attention-grabbing
+            - Perfect for Instagram, Facebook, and other social platforms
+            - Include emotional appeal and storytelling
+            - Mention the beauty and elegance of the textile/fashion item
+            - Create desire and interest in the product
+            - Be conversational and relatable
+            - Include relevant fashion/beauty keywords
+            """
+            
+            # Generate social media caption with enhanced content
+            caption_result = self.caption_service.generate_social_media_caption(
+                content=enhanced_content,
+                platform="instagram",
+                post_type="product_showcase",
+                style="engaging",
+                tone="friendly",
+                include_hashtags=True,
+                include_emoji=True,
+                call_to_action=True
+            )
+            
+            if caption_result.get("status") == "success":
+                caption_data = caption_result.get("caption", {})
+                
+                # Extract hashtags from the caption
+                hashtags = []
+                if "hashtags" in caption_data:
+                    hashtags = caption_data["hashtags"]
+                elif "full_caption" in caption_data:
+                    # Extract hashtags from full caption
+                    import re
+                    hashtag_matches = re.findall(r'#\w+', caption_data["full_caption"])
+                    hashtags = list(set(hashtag_matches))  # Remove duplicates
+                
+                # Generate additional textile-specific hashtags
+                textile_hashtags = [
+                    "#textile", "#fashion", "#design", "#style", "#trendy",
+                    "#handmade", "#artisan", "#craft", "#beautiful", "#elegant"
+                ]
+                
+                # Combine hashtags and remove duplicates
+                all_hashtags = list(set(hashtags + textile_hashtags))
+                
+                logger.info(f"Caption and hashtags generated successfully")
+                return {
+                    "status": "success",
+                    "caption": caption_data.get("main_text", ""),
+                    "full_caption": caption_data.get("full_caption", ""),
+                    "hashtags": all_hashtags[:15],  # Limit to 15 hashtags
+                    "emoji": caption_data.get("emoji", ""),
+                    "call_to_action": caption_data.get("call_to_action", "")
+                }
+            else:
+                logger.warning(f"Caption generation failed: {caption_result.get('message', 'Unknown error')}")
+                # Create more meaningful fallback captions
+                fallback_captions = [
+                    f"✨ Discover the elegance of {prompt[:40]}... Perfect for making a statement! ✨",
+                    f"🌟 Elevate your style with this stunning {prompt[:40]}... A must-have for your wardrobe! 🌟",
+                    f"💫 Fall in love with this gorgeous {prompt[:40]}... Timeless beauty meets modern elegance! 💫",
+                    f"🌸 Embrace the beauty of {prompt[:40]}... Where tradition meets contemporary fashion! 🌸"
+                ]
+                
+                import random
+                selected_caption = random.choice(fallback_captions)
+                
+                return {
+                    "status": "success",
+                    "caption": selected_caption,
+                    "full_caption": f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸",
+                    "hashtags": ["#fashion", "#style", "#elegant", "#beautiful", "#textile", "#design", "#trendy", "#outfit", "#fashionista", "#styleinspo", "#ootd", "#fashionblogger", "#stylegoals", "#fashionlover", "#styletips"],
+                    "emoji": "✨",
+                    "call_to_action": "✨ Shop now and elevate your style! ✨"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error generating caption and hashtags: {str(e)}")
+            # Create meaningful fallback even for exceptions
+            fallback_captions = [
+                f"✨ Discover the elegance of {prompt[:40]}... Perfect for making a statement! ✨",
+                f"🌟 Elevate your style with this stunning {prompt[:40]}... A must-have for your wardrobe! 🌟",
+                f"💫 Fall in love with this gorgeous {prompt[:40]}... Timeless beauty meets modern elegance! 💫"
+            ]
+            
+            import random
+            selected_caption = random.choice(fallback_captions)
+            
+            return {
+                "status": "success",
+                "caption": selected_caption,
+                "full_caption": f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸",
+                "hashtags": ["#fashion", "#style", "#elegant", "#beautiful", "#textile", "#design", "#trendy", "#outfit", "#fashionista", "#styleinspo", "#ootd", "#fashionblogger", "#stylegoals", "#fashionlover", "#styletips"],
+                "emoji": "✨",
+                "call_to_action": "✨ Shop now and elevate your style! ✨"
+            }
     
     def is_available(self) -> bool:
         """Check if the AI poster service is available"""

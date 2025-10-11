@@ -70,7 +70,12 @@ def generate_poster(request):
                 "image_url": result.get('image_url'),
                 "filename": result.get('filename'),
                 "aspect_ratio": aspect_ratio,
-                "prompt": prompt
+                "prompt": prompt,
+                "caption": result.get('caption', ''),
+                "full_caption": result.get('full_caption', ''),
+                "hashtags": result.get('hashtags', []),
+                "emoji": result.get('emoji', ''),
+                "call_to_action": result.get('call_to_action', '')
             }, status=status.HTTP_200_OK)
         else:
             error_message = result.get('message', 'Failed to generate poster')
@@ -144,7 +149,12 @@ def edit_poster(request):
                     "image_url": result.get('image_url'),
                     "filename": result.get('filename'),
                     "aspect_ratio": aspect_ratio,
-                    "prompt": prompt
+                    "prompt": prompt,
+                    "caption": result.get('caption', ''),
+                    "full_caption": result.get('full_caption', ''),
+                    "hashtags": result.get('hashtags', []),
+                    "emoji": result.get('emoji', ''),
+                    "call_to_action": result.get('call_to_action', '')
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({
@@ -227,7 +237,12 @@ def composite_poster(request):
                     "filename": result.get('filename'),
                     "aspect_ratio": aspect_ratio,
                     "prompt": prompt,
-                    "images_used": len(temp_paths)
+                    "images_used": len(temp_paths),
+                    "caption": result.get('caption', ''),
+                    "full_caption": result.get('full_caption', ''),
+                    "hashtags": result.get('hashtags', []),
+                    "emoji": result.get('emoji', ''),
+                    "call_to_action": result.get('call_to_action', '')
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({
@@ -339,7 +354,12 @@ def add_text_overlay(request):
                     "image_url": result.get('image_url'),
                     "filename": result.get('filename'),
                     "text_added": result.get('text_added'),
-                    "style": result.get('style')
+                    "style": result.get('style'),
+                    "caption": result.get('caption', ''),
+                    "full_caption": result.get('full_caption', ''),
+                    "hashtags": result.get('hashtags', []),
+                    "emoji": result.get('emoji', ''),
+                    "call_to_action": result.get('call_to_action', '')
                 }, status=status.HTTP_200_OK)
             else:
                 error_message = result.get('message', 'Failed to add text overlay')

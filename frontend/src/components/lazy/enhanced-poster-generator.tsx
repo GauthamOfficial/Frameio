@@ -11,7 +11,11 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  Upload
+  Upload,
+  Copy,
+  Hash,
+  MessageSquare,
+  Sparkles
 } from "lucide-react"
 import React, { useState, useRef } from "react"
 
@@ -24,6 +28,11 @@ interface GenerationResult {
   error?: string
   text_added?: string
   style?: string
+  caption?: string
+  full_caption?: string
+  hashtags?: string[]
+  emoji?: string
+  call_to_action?: string
 }
 
 export default function EnhancedPosterGenerator() {
@@ -38,6 +47,10 @@ export default function EnhancedPosterGenerator() {
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Caption and hashtag functionality
+  const [showCaption, setShowCaption] = useState(false)
+  const [copiedItem, setCopiedItem] = useState<string | null>(null)
 
   const generatePoster = async () => {
     if (!prompt.trim()) {
@@ -165,6 +178,29 @@ export default function EnhancedPosterGenerator() {
     setPreviewUrl(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+  }
+
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedItem(type)
+      setTimeout(() => setCopiedItem(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
+  }
+
+  const copyHashtags = async () => {
+    if (result?.hashtags) {
+      const hashtagText = result.hashtags.join(' ')
+      await copyToClipboard(hashtagText, 'hashtags')
+    }
+  }
+
+  const copyFullCaption = async () => {
+    if (result?.full_caption) {
+      await copyToClipboard(result.full_caption, 'caption')
     }
   }
 
@@ -313,22 +349,111 @@ export default function EnhancedPosterGenerator() {
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>Filename:</span>
-                    <span className="font-mono">{result.filename}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>Path:</span>
-                    <span className="font-mono text-xs break-all">{result.image_path}</span>
-                  </div>
-                </div>
 
                 <Button onClick={downloadImage} className="w-full">
                   <Download className="mr-2 h-4 w-4" />
                   Download Image
                 </Button>
+
+                {/* Caption and Hashtags Section */}
+                {(result.caption || result.hashtags) && (
+                  <div className="mt-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-purple-500" />
+                        AI Generated Content
+                      </h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowCaption(!showCaption)}
+                      >
+                        {showCaption ? 'Hide' : 'Show'} Content
+                      </Button>
+                    </div>
+
+                    {showCaption && (
+                      <div className="space-y-4">
+                        {/* Caption Section */}
+                        {result.caption && (
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                Caption
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <p className="text-sm text-gray-700 mb-3">{result.caption}</p>
+                              {result.full_caption && (
+                                <div className="space-y-2">
+                                  <p className="text-xs text-gray-500">Full Caption:</p>
+                                  <div className="bg-gray-50 p-3 rounded-md">
+                                    <p className="text-sm">{result.full_caption}</p>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={copyFullCaption}
+                                    className="w-full"
+                                  >
+                                    <Copy className="mr-2 h-3 w-3" />
+                                    {copiedItem === 'caption' ? 'Copied!' : 'Copy Full Caption'}
+                                  </Button>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Hashtags Section */}
+                        {result.hashtags && result.hashtags.length > 0 && (
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm flex items-center gap-2">
+                                <Hash className="h-4 w-4" />
+                                Hashtags ({result.hashtags.length})
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {result.hashtags.map((hashtag, index) => (
+                                  <span
+                                    key={index}
+                                    className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs"
+                                  >
+                                    {hashtag}
+                                  </span>
+                                ))}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={copyHashtags}
+                                className="w-full"
+                              >
+                                <Copy className="mr-2 h-3 w-3" />
+                                {copiedItem === 'hashtags' ? 'Copied!' : 'Copy All Hashtags'}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Call to Action */}
+                        {result.call_to_action && (
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm">Call to Action</CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <p className="text-sm text-gray-700">{result.call_to_action}</p>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

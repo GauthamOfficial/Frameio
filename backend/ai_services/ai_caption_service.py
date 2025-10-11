@@ -438,16 +438,37 @@ class AICaptionService:
         Post Type: {post_type_instructions.get(post_type, 'Create engaging content')}
         Style: {style} - Use {style} language and approach
         Tone: {tone} - Maintain a {tone} tone throughout
+        
+        IMPORTANT: Create a caption that:
+        - Tells a story and creates emotional connection
+        - Uses power words like "stunning", "elegant", "breathtaking", "gorgeous"
+        - Includes sensory descriptions (colors, textures, feelings)
+        - Creates urgency or FOMO (fear of missing out)
+        - Mentions the craftsmanship and quality
+        - Appeals to the target audience's aspirations
+        - Uses conversational language that feels personal
+        - Includes relatable scenarios or occasions
         """
         
         if include_hashtags:
-            prompt += "\n- Include 5-10 relevant hashtags for textile/fashion industry"
+            prompt += """
+        - Include 8-12 highly relevant hashtags for textile/fashion industry
+        - Mix popular hashtags (#fashion, #style) with niche ones (#handmade, #artisan)
+        - Include seasonal/occasion hashtags when relevant
+        - Use trending fashion hashtags
+        - Include location-based hashtags if applicable
+        - Add lifestyle and aspiration hashtags"""
         
         if include_emoji:
             prompt += "\n- Use 2-3 appropriate emojis"
         
         if call_to_action:
-            prompt += "\n- Include a compelling call-to-action"
+            prompt += """
+        - Include a compelling call-to-action that creates urgency
+        - Use action words like "Shop now", "Get yours", "Don't miss out"
+        - Create FOMO with phrases like "Limited time", "Exclusive", "Only a few left"
+        - Include contact information or next steps
+        - Make it feel personal and direct"""
         
         prompt += """
         
