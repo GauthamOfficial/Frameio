@@ -167,7 +167,7 @@ class AIPosterService:
         
         Args:
             prompt: Text description for the edit
-            image_path: Path to uploaded image
+            image_path: Path to uploaded image (Django storage path)
             aspect_ratio: Image aspect ratio (1:1, 16:9, 4:5)
             
         Returns:
@@ -179,9 +179,21 @@ class AIPosterService:
             
             logger.info(f"Generating edited poster with prompt: {prompt[:50]}...")
             
-            # Load and prepare image
-            with open(image_path, "rb") as f:
-                image_data = f.read()
+            # Load and prepare image from Django storage
+            try:
+                # Try to get the file from Django storage
+                with default_storage.open(image_path, 'rb') as f:
+                    image_data = f.read()
+            except Exception as storage_error:
+                logger.error(f"Failed to open image from storage: {str(storage_error)}")
+                # Fallback: try direct file system access
+                try:
+                    full_path = default_storage.path(image_path)
+                    with open(full_path, "rb") as f:
+                        image_data = f.read()
+                except Exception as fs_error:
+                    logger.error(f"Failed to open image from file system: {str(fs_error)}")
+                    return {"status": "error", "message": f"Failed to load image: {str(fs_error)}"}
             
             # Create image part
             image_part = types.Part(
@@ -260,8 +272,16 @@ class AIPosterService:
             image_parts = []
             for image_path in image_paths:
                 try:
-                    with open(image_path, "rb") as f:
-                        image_data = f.read()
+                    # Try to get the file from Django storage first
+                    try:
+                        with default_storage.open(image_path, 'rb') as f:
+                            image_data = f.read()
+                    except Exception as storage_error:
+                        logger.warning(f"Failed to open image from storage: {str(storage_error)}")
+                        # Fallback: try direct file system access
+                        full_path = default_storage.path(image_path)
+                        with open(full_path, "rb") as f:
+                            image_data = f.read()
                     
                     image_part = types.Part(
                         inline_data=types.Blob(
@@ -345,9 +365,21 @@ class AIPosterService:
             
             logger.info(f"Adding text overlay to image with prompt: {text_prompt[:50]}...")
             
-            # Load and prepare image
-            with open(image_path, "rb") as f:
-                image_data = f.read()
+            # Load and prepare image from Django storage
+            try:
+                # Try to get the file from Django storage
+                with default_storage.open(image_path, 'rb') as f:
+                    image_data = f.read()
+            except Exception as storage_error:
+                logger.error(f"Failed to open image from storage: {str(storage_error)}")
+                # Fallback: try direct file system access
+                try:
+                    full_path = default_storage.path(image_path)
+                    with open(full_path, "rb") as f:
+                        image_data = f.read()
+                except Exception as fs_error:
+                    logger.error(f"Failed to open image from file system: {str(fs_error)}")
+                    return {"status": "error", "message": f"Failed to load image: {str(fs_error)}"}
             
             # Create image part
             image_part = types.Part(
