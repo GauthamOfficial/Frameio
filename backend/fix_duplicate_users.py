@@ -114,7 +114,7 @@ def test_after_cleanup():
     print("\n🧪 Testing after cleanup...")
     
     try:
-        from ai_services.poster_generator import TextilePosterGenerator
+        # AI image generation has been disabled
         
         # Get clean test data
         user, org = create_clean_test_data()

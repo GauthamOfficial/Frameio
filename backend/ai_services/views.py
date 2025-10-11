@@ -18,9 +18,7 @@ from .serializers import (
 )
 from organizations.middleware import get_current_organization
 from .services import AIGenerationService
-from .poster_generator import TextilePosterGenerator, FestivalKitGenerator
-from .catalog_builder import TextileCatalogBuilder
-from .background_matcher import BackgroundMatcher, FabricColorDetector
+# Removed image generation imports
 
 logger = logging.getLogger(__name__)
 
@@ -219,17 +217,13 @@ class AIAnalyticsViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 
-class TextilePosterViewSet(viewsets.ViewSet):
-    """ViewSet for Textile Poster Generation"""
+class TextGenerationViewSet(viewsets.ViewSet):
+    """ViewSet for Text Generation"""
     permission_classes = [permissions.IsAuthenticated]
     
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.poster_generator = TextilePosterGenerator()
-    
     @action(detail=False, methods=['post'])
-    def generate_poster(self, request):
-        """Generate textile poster with AI caption suggestions"""
+    def generate_text(self, request):
+        """Generate text content using AI"""
         organization = get_current_organization()
         if not organization:
             return Response(
@@ -237,341 +231,139 @@ class TextilePosterViewSet(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Extract parameters from request
-        fabric_image_url = request.data.get('fabric_image_url')
-        fabric_type = request.data.get('fabric_type', 'saree')
-        festival = request.data.get('festival', 'deepavali')
-        price_range = request.data.get('price_range', '₹2999')
-        style = request.data.get('style', 'elegant')
-        color_scheme = request.data.get('color_scheme')
-        custom_text = request.data.get('custom_text')
+        prompt = request.data.get('prompt')
+        context = request.data.get('context', '')
+        style = request.data.get('style', 'professional')
+        length = request.data.get('length', 'medium')
+        
+        if not prompt:
+            return Response(
+                {"error": "Prompt is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         try:
-            result = self.poster_generator.generate_poster_with_caption(
+            # Create AI generation request
+            from .models import AIGenerationRequest, AIProvider
+            
+            # Get or create a Gemini provider
+            provider, created = AIProvider.objects.get_or_create(
+                name='gemini',
+                defaults={'is_active': True}
+            )
+            
+            # Create the request
+            ai_request = AIGenerationRequest.objects.create(
                 organization=organization,
                 user=request.user,
-                fabric_image_url=fabric_image_url,
-                fabric_type=fabric_type,
-                festival=festival,
-                price_range=price_range,
-                style=style,
-                color_scheme=color_scheme,
-                custom_text=custom_text
+                provider=provider,
+                generation_type='text_generation',
+                prompt=prompt,
+                parameters={
+                    'context': context,
+                    'style': style,
+                    'length': length
+                }
             )
             
-            return Response(result, status=status.HTTP_200_OK)
+            # Process the request
+            ai_service = AIGenerationService()
+            success = ai_service.process_generation_request(ai_request)
+            
+            if success:
+                return Response({
+                    "success": True,
+                    "generated_text": ai_request.result_text,
+                    "request_id": str(ai_request.id),
+                    "metadata": {
+                        "generated_at": ai_request.completed_at.isoformat() if ai_request.completed_at else None,
+                        "processing_time": ai_request.processing_time,
+                        "cost": float(ai_request.cost) if ai_request.cost else 0
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    "success": False,
+                    "error": ai_request.error_message or "Generation failed"
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         except Exception as e:
-            logger.error(f"Poster generation failed: {str(e)}")
+            logger.error(f"Text generation failed: {str(e)}")
             return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=False, methods=['post'])
-    def generate_captions(self, request):
-        """Generate AI caption suggestions only"""
-        fabric_type = request.data.get('fabric_type', 'saree')
-        festival = request.data.get('festival')
-        price_range = request.data.get('price_range', '₹2999')
-        style = request.data.get('style', 'elegant')
-        custom_text = request.data.get('custom_text')
-        
-        try:
-            captions = self.poster_generator.generate_caption_suggestions(
-                fabric_type=fabric_type,
-                festival=festival,
-                price_range=price_range,
-                style=style,
-                custom_text=custom_text
-            )
-            
-            return Response({
-                'success': True,
-                'caption_suggestions': captions
-            }, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Caption generation failed: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=False, methods=['get'])
-    def templates(self, request):
-        """Get available poster templates"""
-        try:
-            templates = self.poster_generator.get_poster_templates()
-            return Response({
-                'success': True,
-                'templates': templates
-            }, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Failed to get poster templates: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
+                {"error": f"Text generation failed: {str(e)}"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
-class FestivalKitViewSet(viewsets.ViewSet):
-    """ViewSet for Festival Kit Generation"""
+class ContentAnalysisViewSet(viewsets.ViewSet):
+    """ViewSet for Content Analysis"""
     permission_classes = [permissions.IsAuthenticated]
     
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.festival_generator = FestivalKitGenerator()
-    
     @action(detail=False, methods=['post'])
-    def generate_kit(self, request):
-        """Generate complete festival kit"""
+    def analyze_content(self, request):
+        """Analyze content using AI"""
         organization = get_current_organization()
         if not organization:
             return Response(
-                {"error": "No organization context"}, 
+                {"error": "Organization context required"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        festival = request.data.get('festival', 'deepavali')
-        fabric_types = request.data.get('fabric_types', ['saree', 'silk', 'cotton'])
-        color_schemes = request.data.get('color_schemes', ['golden', 'red and gold', 'traditional'])
-        price_ranges = request.data.get('price_ranges', ['₹1999', '₹2999', '₹4999'])
+        content = request.data.get('content')
+        analysis_type = request.data.get('analysis_type', 'general')
+        
+        if not content:
+            return Response(
+                {"error": "Content is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         try:
-            result = self.festival_generator.generate_festival_kit(
+            # Create AI generation request
+            from .models import AIGenerationRequest, AIProvider
+            
+            # Get or create a Gemini provider
+            provider, created = AIProvider.objects.get_or_create(
+                name='gemini',
+                defaults={'is_active': True}
+            )
+            
+            # Create the request
+            ai_request = AIGenerationRequest.objects.create(
                 organization=organization,
                 user=request.user,
-                festival=festival,
-                fabric_types=fabric_types,
-                color_schemes=color_schemes,
-                price_ranges=price_ranges
+                provider=provider,
+                generation_type='content_analysis',
+                prompt=content,
+                parameters={
+                    'analysis_type': analysis_type
+                }
             )
             
-            return Response(result, status=status.HTTP_200_OK)
+            # Process the request
+            ai_service = AIGenerationService()
+            success = ai_service.process_generation_request(ai_request)
             
-        except Exception as e:
-            logger.error(f"Festival kit generation failed: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=False, methods=['get'])
-    def themes(self, request):
-        """Get festival themes"""
-        festival = request.query_params.get('festival', 'deepavali')
-        
-        try:
-            themes = self.festival_generator.get_festival_themes(festival)
-            color_palettes = self.festival_generator.get_festival_color_palettes(festival)
-            
-            return Response({
-                'success': True,
-                'festival': festival,
-                'themes': themes,
-                'color_palettes': color_palettes
-            }, status=status.HTTP_200_OK)
+            if success:
+                return Response({
+                    "success": True,
+                    "analysis_result": ai_request.result_text,
+                    "request_id": str(ai_request.id),
+                    "metadata": {
+                        "generated_at": ai_request.completed_at.isoformat() if ai_request.completed_at else None,
+                        "processing_time": ai_request.processing_time,
+                        "cost": float(ai_request.cost) if ai_request.cost else 0
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    "success": False,
+                    "error": ai_request.error_message or "Analysis failed"
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         except Exception as e:
-            logger.error(f"Failed to get festival themes: {str(e)}")
+            logger.error(f"Content analysis failed: {str(e)}")
             return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class CatalogBuilderViewSet(viewsets.ViewSet):
-    """ViewSet for Catalog Builder"""
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.catalog_builder = TextileCatalogBuilder()
-    
-    @action(detail=False, methods=['post'])
-    def build_catalog(self, request):
-        """Build catalog with AI descriptions"""
-        organization = get_current_organization()
-        if not organization:
-            return Response(
-                {"error": "No organization context"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        products = request.data.get('products', [])
-        catalog_style = request.data.get('catalog_style', 'modern')
-        layout_type = request.data.get('layout_type', 'grid')
-        theme = request.data.get('theme', 'professional')
-        auto_generate_descriptions = request.data.get('auto_generate_descriptions', True)
-        
-        try:
-            result = self.catalog_builder.build_catalog_with_ai_descriptions(
-                organization=organization,
-                user=request.user,
-                products=products,
-                catalog_style=catalog_style,
-                layout_type=layout_type,
-                theme=theme,
-                auto_generate_descriptions=auto_generate_descriptions
-            )
-            
-            return Response(result, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Catalog building failed: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=False, methods=['post'])
-    def generate_description(self, request):
-        """Generate AI description for a single product"""
-        organization = get_current_organization()
-        if not organization:
-            return Response(
-                {"error": "No organization context"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        product_info = request.data.get('product_info', {})
-        
-        try:
-            result = self.catalog_builder.generate_product_description(
-                organization=organization,
-                user=request.user,
-                product_info=product_info
-            )
-            
-            return Response(result, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Product description generation failed: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=False, methods=['get'])
-    def templates(self, request):
-        """Get available catalog templates"""
-        try:
-            templates = self.catalog_builder.get_catalog_templates()
-            return Response({
-                'success': True,
-                'templates': templates
-            }, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Failed to get catalog templates: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=True, methods=['get'])
-    def export(self, request, pk=None):
-        """Export catalog data"""
-        format_type = request.query_params.get('format', 'json')
-        
-        try:
-            result = self.catalog_builder.export_catalog_data(pk, format_type)
-            return Response(result, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Catalog export failed: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class BackgroundMatcherViewSet(viewsets.ViewSet):
-    """ViewSet for Background Matching"""
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.background_matcher = BackgroundMatcher()
-        self.color_detector = FabricColorDetector()
-    
-    @action(detail=False, methods=['post'])
-    def generate_background(self, request):
-        """Generate matching background for fabric"""
-        organization = get_current_organization()
-        if not organization:
-            return Response(
-                {"error": "No organization context"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        fabric_image_url = request.data.get('fabric_image_url')
-        background_style = request.data.get('background_style', 'complementary')
-        pattern_type = request.data.get('pattern_type', 'seamless')
-        intensity = request.data.get('intensity', 'medium')
-        
-        if not fabric_image_url:
-            return Response(
-                {"error": "fabric_image_url is required"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            result = self.background_matcher.generate_matching_background(
-                organization=organization,
-                user=request.user,
-                fabric_image_url=fabric_image_url,
-                background_style=background_style,
-                pattern_type=pattern_type,
-                intensity=intensity
-            )
-            
-            return Response(result, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Background generation failed: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=False, methods=['post'])
-    def analyze_colors(self, request):
-        """Analyze fabric colors"""
-        fabric_image_url = request.data.get('fabric_image_url')
-        
-        if not fabric_image_url:
-            return Response(
-                {"error": "fabric_image_url is required"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            result = self.color_detector.analyze_fabric_colors(fabric_image_url)
-            return Response(result, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Color analysis failed: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=False, methods=['get'])
-    def presets(self, request):
-        """Get background presets"""
-        try:
-            presets = self.background_matcher.get_background_presets()
-            return Response({
-                'success': True,
-                'presets': presets
-            }, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Failed to get background presets: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
+                {"error": f"Content analysis failed: {str(e)}"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

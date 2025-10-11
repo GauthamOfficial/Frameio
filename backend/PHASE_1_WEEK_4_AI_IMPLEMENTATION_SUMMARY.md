@@ -52,7 +52,7 @@ Successfully implemented advanced AI capabilities for **color intelligence, back
 **File**: `backend/ai_services/background_generator.py`
 
 - **Fabric-Inspired Backgrounds**: AI-generated backgrounds that complement fabric colors and patterns
-- **NanoBanana API Integration**: Seamless integration with NanoBanana API for background generation
+- **Gemini API Integration**: Seamless integration with Gemini API for background generation
 - **Multiple Background Styles**: Complementary, harmonious, neutral, and artistic background styles
 - **Seamless Pattern Generation**: Tileable background patterns for textile photography
 - **Background Variation Generation**: Multiple variations with quality ranking
@@ -270,8 +270,7 @@ POST /api/ai/background/generate-fabric/
 ### Environment Variables Required
 
 ```bash
-NANOBANANA_API_KEY=your_nanobanana_api_key
-NANOBANANA_MODEL_KEY=your_model_key
+GEMINI_API_KEY=your_gemini_api_key
 STRIPE_SECRET_KEY=your_stripe_secret_key
 STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
@@ -303,7 +302,7 @@ Phase 1 Week 4 has been successfully completed with all deliverables implemented
 
 ✅ **Smart Color Matching Algorithms** - K-Means clustering and LAB color similarity  
 ✅ **Fabric Analysis & Color Extraction** - Advanced computer vision analysis  
-✅ **AI-Generated Background System** - NanoBanana API integration  
+✅ **AI-Generated Background System** - Gemini API integration  
 ✅ **Usage Quotas & Billing** - Stripe integration with comprehensive tracking  
 ✅ **Comprehensive API Documentation** - Swagger/OpenAPI with interactive docs  
 ✅ **Comprehensive Testing** - 95%+ test coverage with integration tests  

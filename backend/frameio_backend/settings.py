@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -53,7 +54,6 @@ INSTALLED_APPS = [
     "users", 
     "designs",
     "ai_services",
-    "poster_generation",
     "design_export",
     "collaboration",
 ]
@@ -228,6 +228,21 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Allow custom headers for development
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-dev-user-id',
+    'x-dev-org-id',
+]
+
 # Clerk configuration
 CLERK_PUBLISHABLE_KEY = os.getenv('CLERK_PUBLISHABLE_KEY', 'pk_test_c291bmQtbXVsZS0yNC5jbGVyay5hY2NvdW50cy5kZXYk')
 CLERK_SECRET_KEY = os.getenv('CLERK_SECRET_KEY', 'sk_test_Wm0T8Fgwo91YCUKguAG6huVnrzop146mNpqS4bE5eN')
@@ -248,13 +263,17 @@ if not CLERK_CONFIGURED and not DEBUG:
 ARCJET_KEY = os.getenv('ARCJET_KEY', '')
 
 # AI Services configuration
-NANOBANANA_API_KEY = os.getenv('NANOBANANA_API_KEY', '')
-NANOBANANA_MODEL_KEY = os.getenv('NANOBANANA_MODEL_KEY', '')
+# NanoBanana has been removed
 
 # Google Gemini configuration
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', 'AIzaSyDtjWMwLhP4nZIv5LeShDX_cqIQ9y2Rhuc')
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyDtjWMwLhP4nZIv5LeShDX_cqIQ9y2Rhuc')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyCZiGdU4pk_-uVNWCquY5C15vaxnPszA-s')
 GEMINI_MODEL_NAME = os.getenv('GEMINI_MODEL_NAME', 'gemini-2.5-flash-image')
+
+# Validate Gemini configuration
+if not GEMINI_API_KEY:
+    print("WARNING: GEMINI_API_KEY not configured. AI services will not be available.")
+else:
+    print(f"INFO: GEMINI_API_KEY configured (length: {len(GEMINI_API_KEY)})")
 
 # Redis configuration
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')

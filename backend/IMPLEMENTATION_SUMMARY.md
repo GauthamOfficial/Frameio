@@ -229,7 +229,7 @@ CLERK_WEBHOOK_SECRET=your-webhook-secret
 ARCJET_KEY=your-arcjet-key
 
 # AI Services
-NANOBANANA_API_KEY=your-nanobanana-key
+GEMINI_API_KEY=your-gemini-key
 ```
 
 ## 📝 Next Steps
@@ -257,7 +257,7 @@ NANOBANANA_API_KEY=your-nanobanana-key
 
 ### Integration Points
 - **Frontend Integration**: Ready for Next.js frontend
-- **AI Services**: Ready for NanoBanana integration
+- **AI Services**: Ready for Gemini integration
 - **Security**: Ready for Arcjet integration
 - **Authentication**: Ready for Clerk frontend integration
 

@@ -393,7 +393,7 @@ class TextileCatalogBuilder:
             )
             
             # Get provider
-            provider = self.get_nanobanana_provider()
+            provider = self.get_gemini_provider()
             
             # Create generation request
             request = AIGenerationRequest.objects.create(
@@ -494,13 +494,13 @@ class TextileCatalogBuilder:
         
         return prompt
     
-    def get_nanobanana_provider(self) -> AIProvider:
-        """Get or create NanoBanana AI provider"""
+    def get_gemini_provider(self) -> AIProvider:
+        """Get or create Gemini AI provider"""
         provider, created = AIProvider.objects.get_or_create(
-            name='nanobanana',
+            name='gemini',
             defaults={
-                'api_key': settings.NANOBANANA_API_KEY,
-                'api_url': 'https://api.banana.dev',
+                'api_key': settings.GEMINI_API_KEY,
+                'api_url': 'https://generativelanguage.googleapis.com',
                 'is_active': True,
                 'rate_limit_per_minute': 10,
                 'rate_limit_per_hour': 100

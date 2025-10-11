@@ -29,12 +29,12 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                # Setup NanoBanana provider
+                # Setup Gemini provider
                 provider, created = AIProvider.objects.get_or_create(
-                    name='nanobanana',
+                    name='gemini',
                     defaults={
-                        'api_key': os.getenv('NANOBANANA_API_KEY', 'test-key'),
-                        'api_url': 'https://api.banana.dev',
+                        'api_key': os.getenv('GEMINI_API_KEY', 'test-key'),
+                        'api_url': 'https://generativelanguage.googleapis.com',
                         'is_active': True,
                         'rate_limit_per_minute': 10,
                         'rate_limit_per_hour': 100
@@ -42,9 +42,9 @@ class Command(BaseCommand):
                 )
                 
                 if created:
-                    self.stdout.write('✅ Created NanoBanana provider')
+                    self.stdout.write('✅ Created Gemini provider')
                 else:
-                    self.stdout.write('✅ NanoBanana provider exists')
+                    self.stdout.write('✅ Gemini provider exists')
 
                 # Setup test organization
                 org, created = Organization.objects.get_or_create(
@@ -96,7 +96,7 @@ class Command(BaseCommand):
 
                 # Test imports
                 try:
-                    from ai_services.poster_generator import TextilePosterGenerator
+                    # AI image generation has been disabled
                     from ai_services.catalog_builder import TextileCatalogBuilder
                     from ai_services.background_matcher import BackgroundMatcher
                     
@@ -133,7 +133,7 @@ class Command(BaseCommand):
                 self.stdout.write('GET  /api/ai/background/presets/')
                 
                 self.stdout.write('\n🧪 Test with:')
-                self.stdout.write('python backend/test_ai_endpoints.py')
+                self.stdout.write('python manage.py runserver')
 
         except Exception as e:
             self.stdout.write(

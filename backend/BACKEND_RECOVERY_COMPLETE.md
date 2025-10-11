@@ -82,8 +82,7 @@
   CLERK_PUBLISHABLE_KEY=your_key_here
   CLERK_SECRET_KEY=your_key_here
   NEXT_PUBLIC_CLERK_FRONTEND_API=your_api_here
-  NANOBANANA_API_KEY=your_key_here
-  NANOBANANA_MODEL_KEY=your_key_here
+  GEMINI_API_KEY=your_key_here
   ARCJET_KEY=your_key_here
   ```
 

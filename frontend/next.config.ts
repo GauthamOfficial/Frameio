@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  outputFileTracingRoot: 'D:\\My Files\\Yarl IT Hub\\Framio',
+  async rewrites() {
+    return [
+      {
+        source: '/api/ai/:path*',
+        destination: 'http://localhost:8000/api/ai/:path*',
+      },
+    ]
+  },
   async headers() {
     return [
       {

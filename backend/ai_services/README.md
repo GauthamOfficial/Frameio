@@ -4,7 +4,7 @@
 
 The AI Services module provides comprehensive AI integration capabilities for the Frameio platform, including:
 
-- Multi-provider AI service integration (NanoBanana, OpenAI, Stability AI, Midjourney)
+- Multi-provider AI service integration (Gemini, OpenAI, Stability AI, Midjourney)
 - Rate limiting and security middleware
 - Usage quota management
 - Template system for AI prompts
@@ -137,7 +137,7 @@ MIDDLEWARE = [
 
 ## Environment Variables
 
-- `NANOBANANA_API_KEY` - API key for NanoBanana service
+- `GEMINI_API_KEY` - API key for Gemini service
 - `OPENAI_API_KEY` - API key for OpenAI service
 - `STABILITY_API_KEY` - API key for Stability AI service
 
@@ -148,7 +148,7 @@ MIDDLEWARE = [
 ```python
 from ai_services.models import AIProvider, AIGenerationRequest
 
-provider = AIProvider.objects.get(name='nanobanana')
+provider = AIProvider.objects.get(name='gemini')
 request = AIGenerationRequest.objects.create(
     organization=organization,
     user=user,

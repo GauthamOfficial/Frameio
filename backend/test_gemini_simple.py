@@ -1,100 +1,106 @@
 #!/usr/bin/env python3
 """
-Simple test for Gemini AI integration
+Simple Gemini API Test
+Run this from the backend directory: python test_gemini_simple.py
 """
+
 import os
 import sys
 import django
-from django.conf import settings
+from pathlib import Path
+
+# Add the backend directory to Python path
+backend_dir = Path(__file__).parent
+sys.path.insert(0, str(backend_dir))
 
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'frameio_backend.settings')
 django.setup()
 
-def test_gemini_config():
-    """Test Gemini configuration"""
-    print("🔑 Testing Gemini Configuration...")
+def test_gemini_simple():
+    print("🧪 Simple Gemini API Test\n")
     
     # Check API key
-    gemini_key = getattr(settings, 'GEMINI_API_KEY', None)
-    if gemini_key:
-        print(f"✅ GEMINI_API_KEY is set: {gemini_key[:10]}...")
-    else:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
         print("❌ GEMINI_API_KEY not found")
         return False
     
-    # Check Google API key
-    google_key = getattr(settings, 'GOOGLE_API_KEY', None)
-    if google_key:
-        print(f"✅ GOOGLE_API_KEY is set: {google_key[:10]}...")
-    else:
-        print("❌ GOOGLE_API_KEY not found")
+    print(f"✅ API Key found: {api_key[:10]}...")
     
-    return True
-
-def test_gemini_service():
-    """Test Gemini service"""
-    print("\n🤖 Testing Gemini Service...")
-    
+    # Test import
     try:
-        from ai_services.gemini_service import GeminiService
-        
-        service = GeminiService()
-        print(f"✅ Gemini service initialized")
-        print(f"   API Key: {service.api_key[:10] if service.api_key else 'None'}...")
-        print(f"   Model: {service.model_name}")
-        print(f"   Base URL: {service.base_url}")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Gemini service failed: {str(e)}")
+        from google import genai
+        from google.genai import types
+        print("✅ google-genai imported successfully")
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
         return False
-
-def test_image_generation():
-    """Test image generation"""
-    print("\n🎨 Testing Image Generation...")
     
+    # Test client creation
     try:
-        from ai_services.gemini_service import GeminiService
+        client = genai.Client(api_key=api_key)
+        print("✅ Gemini client created")
+    except Exception as e:
+        print(f"❌ Client creation failed: {e}")
+        return False
+    
+    # Test simple generation
+    try:
+        print("\n🔄 Testing simple image generation...")
         
-        service = GeminiService()
-        
-        # Test simple image generation
-        result = service.generate_image_from_prompt(
-            prompt="elegant silk saree",
-            style="textile"
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-image",
+            contents=["A simple red circle on white background"],
+            config=types.GenerateContentConfig(
+                response_modalities=['Image'],
+                image_config=types.ImageConfig(aspect_ratio="1:1"),
+            ),
         )
         
-        if result.get('success'):
-            print("✅ Image generation successful")
-            print(f"   Image URL: {result.get('image_url')}")
-            print(f"   Service: {result.get('service')}")
+        print(f"✅ Generation call successful")
+        print(f"📊 Response type: {type(response)}")
+        print(f"📊 Has candidates: {hasattr(response, 'candidates')}")
+        
+        if hasattr(response, 'candidates'):
+            print(f"📊 Candidates count: {len(response.candidates) if response.candidates else 0}")
+            
+            if response.candidates and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                print(f"📊 Candidate type: {type(candidate)}")
+                print(f"📊 Has content: {hasattr(candidate, 'content')}")
+                
+                if hasattr(candidate, 'content') and candidate.content:
+                    print(f"📊 Has parts: {hasattr(candidate.content, 'parts')}")
+                    print(f"📊 Parts count: {len(candidate.content.parts) if candidate.content.parts else 0}")
+                    
+                    if candidate.content.parts:
+                        for i, part in enumerate(candidate.content.parts):
+                            print(f"📊 Part {i}: {type(part)}")
+                            print(f"📊 Has inline_data: {hasattr(part, 'inline_data')}")
+                            if hasattr(part, 'inline_data'):
+                                print(f"📊 Inline data: {part.inline_data is not None}")
+                                if part.inline_data:
+                                    print(f"📊 Data size: {len(part.inline_data.data) if hasattr(part.inline_data, 'data') else 'No data'}")
+                else:
+                    print("❌ No content in candidate")
+            else:
+                print("❌ No candidates in response")
         else:
-            print(f"❌ Image generation failed: {result.get('error')}")
-            return False
-        
-        return True
-        
+            print("❌ No candidates attribute in response")
+            
     except Exception as e:
-        print(f"❌ Image generation test failed: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Generation failed: {e}")
         return False
+    
+    print("\n🎉 Gemini API test completed!")
+    return True
 
 if __name__ == "__main__":
-    print("🚀 Gemini AI Simple Test")
-    print("=" * 40)
-    
-    if test_gemini_config():
-        if test_gemini_service():
-            if test_image_generation():
-                print("\n✅ All tests passed! Gemini AI is working.")
-            else:
-                print("\n❌ Image generation failed")
-        else:
-            print("\n❌ Gemini service failed")
+    success = test_gemini_simple()
+    if not success:
+        print("\n❌ Test failed - check your API key and configuration")
+        sys.exit(1)
     else:
-        print("\n❌ Configuration failed")
-    
-    print("\n" + "=" * 40)
+        print("✅ Test passed!")
+

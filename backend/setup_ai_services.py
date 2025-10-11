@@ -25,14 +25,14 @@ def setup_ai_services():
     print("🚀 Setting up AI Services for Phase 1 Week 1 Member 3")
     print("=" * 60)
     
-    # Step 1: Create or verify NanoBanana provider
-    print("\n1. Setting up NanoBanana AI Provider...")
+    # Step 1: Create or verify Gemini provider
+    print("\n1. Setting up Gemini AI Provider...")
     try:
         provider, created = AIProvider.objects.get_or_create(
-            name='nanobanana',
+            name='gemini',
             defaults={
-                'api_key': os.getenv('NANOBANANA_API_KEY', 'test-key-for-development'),
-                'api_url': 'https://api.banana.dev',
+                'api_key': os.getenv('GEMINI_API_KEY', 'test-key-for-development'),
+                'api_url': 'https://generativelanguage.googleapis.com',
                 'is_active': True,
                 'rate_limit_per_minute': 10,
                 'rate_limit_per_hour': 100
@@ -40,12 +40,12 @@ def setup_ai_services():
         )
         
         if created:
-            print("✅ Created NanoBanana AI Provider")
+            print("✅ Created Gemini AI Provider")
         else:
-            print("✅ NanoBanana AI Provider already exists")
+            print("✅ Gemini AI Provider already exists")
             
     except Exception as e:
-        print(f"❌ Failed to create NanoBanana provider: {str(e)}")
+        print(f"❌ Failed to create Gemini provider: {str(e)}")
         return False
     
     # Step 2: Create test organization if needed
@@ -170,7 +170,7 @@ def setup_ai_services():
     # Step 6: Test AI service imports
     print("\n6. Testing AI service imports...")
     try:
-        from ai_services.poster_generator import TextilePosterGenerator, FestivalKitGenerator
+        # AI image generation has been disabled
         from ai_services.catalog_builder import TextileCatalogBuilder
         from ai_services.background_matcher import BackgroundMatcher, FabricColorDetector
         from ai_services.services import AIGenerationService
@@ -267,7 +267,7 @@ def setup_ai_services():
     print("=" * 60)
     
     print("\n📊 Summary:")
-    print(f"✅ NanoBanana AI Provider: Configured")
+    print(f"✅ Gemini AI Provider: Configured")
     print(f"✅ Test Organization: {org.name}")
     print(f"✅ Test User: {user.email}")
     print(f"✅ AI Templates: {AITemplate.objects.count()} available")
@@ -286,8 +286,8 @@ def setup_ai_services():
     print("POST /api/ai/background/analyze_colors/ - Analyze fabric colors")
     
     print("\n🧪 Test Commands:")
-    print("python manage.py test ai_services.test_nanobanana_integration")
-    print("python backend/verify_ai_deliverables.py")
+    print("python manage.py runserver")
+    print("python manage.py test ai_services")
     
     return True
 
@@ -300,7 +300,7 @@ def create_sample_data():
         # Get test org and user
         org = Organization.objects.get(slug='test-ai-org')
         user = User.objects.get(email='test-ai@example.com')
-        provider = AIProvider.objects.get(name='nanobanana')
+        provider = AIProvider.objects.get(name='gemini')
         
         # Create sample generation request
         sample_request, created = AIGenerationRequest.objects.get_or_create(

@@ -86,15 +86,16 @@ export default function PosterGenerator() {
         uploadedFiles.map(file => uploadFileToServer(file))
       )
       
-      // Generate poster using AI service
-      const result = await apiClient.generatePoster({
+      // Generate poster using new two-step AI service
+      const result = await apiClient.generatePosterTwoStep({
         product_image_url: uploadedUrls[0], // Use first image
         fabric_type: 'silk', // Default, could be made configurable
         festival: 'general',
         price_range: '₹2999',
         style: selectedStyle || 'modern',
         custom_text: prompt,
-        offer_details: 'Special offer available'
+        offer_details: 'Special offer available',
+        generation_type: 'poster'
       })
       
       if (!result.success) {

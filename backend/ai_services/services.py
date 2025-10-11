@@ -45,14 +45,10 @@ class AIGenerationService:
             provider = request.provider
             
             # Route to appropriate AI service
-            if provider.name == 'nanobanana':
-                result = self._process_nanobanana_request(request)
-            elif provider.name == 'gemini':
+            if provider.name == 'gemini':
                 result = self._process_gemini_request(request)
             elif provider.name == 'openai':
                 result = self._process_openai_request(request)
-            elif provider.name == 'stability':
-                result = self._process_stability_request(request)
             else:
                 raise AIServiceError(f"Unsupported provider: {provider.name}")
             
@@ -62,7 +58,7 @@ class AIGenerationService:
             # Mark as completed
             request.mark_completed(
                 result_data=result.get('data', {}),
-                result_urls=result.get('urls', [])
+                result_text=result.get('text', '')
             )
             request.processing_time = processing_time
             request.cost = result.get('cost', 0)
@@ -79,406 +75,105 @@ class AIGenerationService:
             request.mark_failed(str(e))
             return False
     
-    def _process_nanobanana_request(self, request: AIGenerationRequest) -> Dict[str, Any]:
-        """Process NanoBanana API request"""
+    def _process_text_generation_request(self, request: AIGenerationRequest) -> Dict[str, Any]:
+        """Process text generation request"""
         try:
-            import banana_dev as banana
-            from django.conf import settings
-            
-            # Get API credentials
-            api_key = settings.NANOBANANA_API_KEY
-            if not api_key:
-                raise AIServiceError("NanoBanana API key not configured")
-            
-            # Get model key from provider configuration or use default
-            model_key = getattr(request.provider, 'model_key', None) or settings.NANOBANANA_MODEL_KEY
-            if not model_key:
-                raise AIServiceError("NanoBanana model key not configured")
-            
-            provider = request.provider
-            
-            # Prepare request data based on generation type
-            if request.generation_type == 'poster':
-                # Textile poster generation
-                enhanced_prompt = self._enhance_textile_poster_prompt(request.prompt, request.parameters)
-                payload = {
-                    "text": enhanced_prompt,
-                    "width": request.parameters.get('width', 1024),
-                    "height": request.parameters.get('height', 1024),
-                    "steps": request.parameters.get('steps', 20),
-                    "guidance_scale": request.parameters.get('guidance_scale', 7.5),
-                    "negative_prompt": request.negative_prompt or self._get_default_negative_prompt('poster')
-                }
-            elif request.generation_type == 'catalog':
-                # Catalog generation with product layout
-                enhanced_prompt = self._enhance_catalog_prompt(request.prompt, request.parameters)
-                payload = {
-                    "text": enhanced_prompt,
-                    "width": request.parameters.get('width', 1200),
-                    "height": request.parameters.get('height', 800),
-                    "steps": request.parameters.get('steps', 25),
-                    "guidance_scale": request.parameters.get('guidance_scale', 8.0),
-                    "negative_prompt": request.negative_prompt or self._get_default_negative_prompt('catalog')
-                }
-            elif request.generation_type == 'background':
-                # Background pattern generation
-                enhanced_prompt = self._enhance_background_prompt(request.prompt, request.parameters)
-                payload = {
-                    "text": enhanced_prompt,
-                    "width": request.parameters.get('width', 1024),
-                    "height": request.parameters.get('height', 1024),
-                    "steps": request.parameters.get('steps', 15),
-                    "guidance_scale": request.parameters.get('guidance_scale', 6.0),
-                    "negative_prompt": request.negative_prompt or self._get_default_negative_prompt('background')
-                }
-            else:
-                # Default generation
-                payload = {
-                    "text": request.prompt,
-                    **request.parameters
-                }
-            
-            # Make API call to NanoBanana
-            logger.info(f"Making NanoBanana API call for request {request.id}")
-            result = banana.run(api_key, model_key, payload)
-            
-            # Process the response
-            if result and 'modelOutputs' in result:
-                model_outputs = result['modelOutputs'][0] if result['modelOutputs'] else {}
+            # AI image generation has been disabled
+            request.mark_failed("AI image generation services have been disabled")
+            return False
                 
-                # Extract generated image URLs
-                image_urls = []
-                if 'image_base64' in model_outputs:
-                    # If base64 image is returned, we would need to save it
-                    # For now, we'll assume URLs are returned
-                    image_urls = model_outputs.get('image_urls', [])
-                elif 'images' in model_outputs:
-                    image_urls = model_outputs['images']
-                
-                # Calculate cost (example pricing)
-                cost = self._calculate_nanobanana_cost(payload)
-                
-                processed_result = {
-                    'data': {
-                        'prompt_used': payload['text'],
-                        'parameters_used': payload,
-                        'generation_id': result.get('id', f"nano_{request.id}"),
-                        'model_outputs': model_outputs,
-                        'api_response': result
-                    },
-                    'urls': image_urls,
-                    'cost': cost
-                }
-                
-                logger.info(f"Successfully processed NanoBanana request {request.id}")
-                return processed_result
-            else:
-                raise AIServiceError(f"Invalid response from NanoBanana API: {result}")
-                
-        except ImportError:
-            logger.error("banana_dev package not installed")
-            # Fallback to mock data for development
-            return self._get_mock_nanobanana_result(request)
         except Exception as e:
-            logger.error(f"NanoBanana API error for request {request.id}: {str(e)}")
-            # For development, return mock data instead of failing
-            if settings.DEBUG:
-                return self._get_mock_nanobanana_result(request)
-            raise AIServiceError(f"NanoBanana API error: {str(e)}")
+            logger.error(f"Text generation error for request {request.id}: {str(e)}")
+            request.mark_failed(f"Text generation error: {str(e)}")
+            return False
     
     def _process_gemini_request(self, request: AIGenerationRequest) -> Dict[str, Any]:
-        """Process Google Gemini API request"""
+        """Process Google Gemini API request for text generation"""
         try:
-            from .gemini_service import gemini_service
-            
-            # Get request parameters
-            parameters = request.parameters or {}
-            generation_type = request.generation_type
-            
-            # Route based on generation type
-            if generation_type == 'poster':
-                result = gemini_service.generate_textile_poster(
-                    fabric_type=parameters.get('fabric_type', 'textile'),
-                    festival=parameters.get('festival'),
-                    price_range=parameters.get('price_range'),
-                    style=parameters.get('style', 'modern'),
-                    width=parameters.get('width', 1024),
-                    height=parameters.get('height', 1024)
-                )
-            elif generation_type == 'caption':
-                captions = gemini_service.generate_captions(
-                    fabric_type=parameters.get('fabric_type', 'textile'),
-                    festival=parameters.get('festival'),
-                    price_range=parameters.get('price_range'),
-                    num_captions=parameters.get('num_captions', 5)
-                )
-                result = {
-                    "success": True,
-                    "data": {
-                        "captions": captions,
-                        "generation_id": f"gemini_{request.id}",
-                        "model_used": "gemini-2.5-flash-image"
-                    },
-                    "urls": [],
-                    "cost": 0.001  # Estimated cost
-                }
-            else:
-                # Generic image generation
-                prompt = parameters.get('prompt', 'Generate a beautiful image')
-                result = gemini_service.generate_image(
-                    prompt=prompt,
-                    width=parameters.get('width', 1024),
-                    height=parameters.get('height', 1024)
-                )
-            
-            if result.get('success'):
-                logger.info(f"Successfully processed Gemini request {request.id}")
-                return result
-            else:
-                raise AIServiceError(f"Gemini generation failed: {result.get('error', 'Unknown error')}")
+            # AI image generation has been disabled
+            request.mark_failed("AI image generation services have been disabled")
+            return False
                 
-        except ImportError:
-            logger.error("Gemini service not available")
-            # Fallback to mock data for development
-            return self._get_mock_gemini_result(request)
         except Exception as e:
             logger.error(f"Gemini API error for request {request.id}: {str(e)}")
-            # For development, return mock data instead of failing
-            if settings.DEBUG:
-                return self._get_mock_gemini_result(request)
-            raise AIServiceError(f"Gemini API error: {str(e)}")
+            request.mark_failed(f"Gemini API error: {str(e)}")
+            return False
     
-    def _get_mock_gemini_result(self, request: AIGenerationRequest) -> Dict[str, Any]:
-        """Generate result using Gemini for image generation"""
-        from .gemini_service import GeminiService
-        
-        try:
-            gemini_service = GeminiService()
-            result = gemini_service.generate_image_from_prompt(
-                prompt=request.prompt,
-                style=request.parameters.get('style', 'photorealistic'),
-                width=request.parameters.get('width', 1024),
-                height=request.parameters.get('height', 1024)
-            )
-            
-            if result.get('success'):
-                return {
-                    "success": True,
-                    "data": {
-                        "prompt_used": request.prompt,
-                        "generation_id": f"gemini_{request.id}",
-                        "model_used": result.get('service', 'gemini'),
-                        "processing_time": 2.5,
-                        "image_url": result.get('image_url'),
-                        "generated_at": timezone.now().isoformat(),
-                        "unique_id": f"gen_{int(time.time() * 1000)}"
-                    },
-                    "urls": [result.get('image_url')],
-                    "cost": 0.001
-                }
-        except Exception as e:
-            logger.warning(f"Gemini generation failed: {str(e)}")
-        
-        # Fallback to enhanced random generation
+    def _get_mock_text_result(self, request: AIGenerationRequest) -> Dict[str, Any]:
+        """Generate mock text result for development"""
         import time
         timestamp = int(time.time() * 1000)
-        prompt_hash = hashlib.md5(request.prompt.encode()).hexdigest()[:8]
-        unique_image_url = f"https://picsum.photos/1024/1024?random={timestamp}&text={prompt_hash}"
+        
+        # Generate mock text based on prompt
+        mock_text = f"Generated text response for: {request.prompt[:100]}..."
         
         return {
             "success": True,
             "data": {
                 "prompt_used": request.prompt,
-                "generation_id": f"fallback_{request.id}",
-                "model_used": "fallback",
-                "processing_time": 2.5,
-                "image_url": unique_image_url,
+                "generation_id": f"mock_{request.id}",
+                "model_used": "mock-service",
+                "processing_time": 1.5,
                 "generated_at": timezone.now().isoformat(),
                 "unique_id": f"gen_{timestamp}"
             },
-            "urls": [unique_image_url],
+            "text": mock_text,
             "cost": 0.001
         }
     
-    def _enhance_textile_poster_prompt(self, base_prompt: str, parameters: Dict) -> str:
-        """Enhance prompt specifically for textile poster generation"""
-        fabric_type = parameters.get('fabric_type', '')
-        color_scheme = parameters.get('color_scheme', '')
-        style = parameters.get('style', 'modern')
-        festival = parameters.get('festival', '')
+    def _enhance_text_prompt(self, base_prompt: str, parameters: Dict) -> str:
+        """Enhance prompt for text generation"""
+        context = parameters.get('context', '')
+        style = parameters.get('style', 'professional')
+        length = parameters.get('length', 'medium')
         
         enhancements = []
         
-        # Add textile-specific enhancements
-        if fabric_type:
-            fabric_map = {
-                'saree': 'elegant silk saree, traditional Indian textile',
-                'cotton': 'soft cotton fabric, natural texture',
-                'silk': 'luxurious silk fabric, lustrous finish',
-                'linen': 'crisp linen fabric, breathable texture'
-            }
-            if fabric_type.lower() in fabric_map:
-                enhancements.append(fabric_map[fabric_type.lower()])
+        # Add context if provided
+        if context:
+            enhancements.append(f"Context: {context}")
         
-        # Add festival themes
-        if festival:
-            festival_map = {
-                'deepavali': 'Deepavali festival theme, golden colors, diyas, rangoli patterns',
-                'pongal': 'Pongal festival theme, harvest colors, traditional motifs',
-                'wedding': 'wedding celebration theme, auspicious colors, elegant design'
+        # Add style guidance
+        if style:
+            style_map = {
+                'professional': 'professional tone, clear and concise',
+                'casual': 'casual tone, friendly and approachable',
+                'technical': 'technical language, detailed explanations',
+                'creative': 'creative writing, engaging and imaginative'
             }
-            if festival.lower() in festival_map:
-                enhancements.append(festival_map[festival.lower()])
+            if style.lower() in style_map:
+                enhancements.append(style_map[style.lower()])
         
-        # Add color scheme
-        if color_scheme:
-            enhancements.append(f"color palette: {color_scheme}")
+        # Add length guidance
+        if length:
+            length_map = {
+                'short': 'brief and concise response',
+                'medium': 'moderate length, well-developed',
+                'long': 'comprehensive and detailed response'
+            }
+            if length.lower() in length_map:
+                enhancements.append(length_map[length.lower()])
         
         # Combine with base prompt
-        enhanced = f"{base_prompt}, {', '.join(enhancements)}" if enhancements else base_prompt
-        enhanced += ", professional textile poster design, high quality, commercial use"
+        enhanced = f"{base_prompt}"
+        if enhancements:
+            enhanced += f". Please provide a {', '.join(enhancements)} response."
         
         return enhanced
-    
-    def _enhance_catalog_prompt(self, base_prompt: str, parameters: Dict) -> str:
-        """Enhance prompt for catalog generation"""
-        layout_style = parameters.get('layout_style', 'grid')
-        product_count = parameters.get('product_count', 4)
-        
-        enhanced = f"{base_prompt}, {layout_style} layout catalog design"
-        enhanced += f", showcasing {product_count} textile products"
-        enhanced += ", clean professional layout, product catalog design, commercial quality"
-        
-        return enhanced
-    
-    def _enhance_background_prompt(self, base_prompt: str, parameters: Dict) -> str:
-        """Enhance prompt for background generation"""
-        pattern_type = parameters.get('pattern_type', 'seamless')
-        
-        enhanced = f"{base_prompt}, {pattern_type} background pattern"
-        enhanced += ", textile background, seamless pattern, high resolution"
-        
-        return enhanced
-    
-    def _get_default_negative_prompt(self, generation_type: str) -> str:
-        """Get default negative prompt based on generation type"""
-        base_negative = "low quality, blurry, distorted, ugly, bad anatomy, watermark"
-        
-        type_specific = {
-            'poster': "text overlay, poor typography, cluttered design",
-            'catalog': "messy layout, poor product arrangement, unprofessional",
-            'background': "foreground objects, text, cluttered elements"
-        }
-        
-        if generation_type in type_specific:
-            return f"{base_negative}, {type_specific[generation_type]}"
-        
-        return base_negative
-    
-    def _calculate_nanobanana_cost(self, payload: Dict) -> float:
-        """Calculate cost based on NanoBanana pricing"""
-        # Example pricing calculation
-        base_cost = 0.05
-        
-        # Adjust cost based on parameters
-        width = payload.get('width', 1024)
-        height = payload.get('height', 1024)
-        steps = payload.get('steps', 20)
-        
-        # Higher resolution costs more
-        resolution_multiplier = (width * height) / (1024 * 1024)
-        step_multiplier = steps / 20
-        
-        total_cost = base_cost * resolution_multiplier * step_multiplier
-        return round(total_cost, 4)
-    
-    def _get_mock_nanobanana_result(self, request: AIGenerationRequest) -> Dict[str, Any]:
-        """Get result using Gemini for NanoBanana fallback"""
-        from .gemini_service import GeminiService
-        
-        try:
-            gemini_service = GeminiService()
-            result = gemini_service.generate_image_from_prompt(
-                prompt=request.prompt,
-                style=request.parameters.get('style', 'photorealistic'),
-                width=request.parameters.get('width', 1024),
-                height=request.parameters.get('height', 1024)
-            )
-            
-            if result.get('success'):
-                return {
-                    'data': {
-                        'prompt_used': request.prompt,
-                        'parameters_used': request.parameters,
-                        'generation_id': f"gemini_nano_{request.id}",
-                        'note': 'Gemini generation - NanoBanana API not available',
-                        'generated_at': timezone.now().isoformat(),
-                        'unique_id': f"gen_{int(time.time() * 1000)}"
-                    },
-                    'urls': [result.get('image_url')],
-                    'cost': 0.05
-                }
-        except Exception as e:
-            logger.warning(f"Gemini generation failed: {str(e)}")
-        
-        # Fallback to enhanced random generation
-        import time
-        timestamp = int(time.time() * 1000)
-        prompt_hash = hashlib.md5(request.prompt.encode()).hexdigest()[:8]
-        
-        # Generate unique image URLs based on prompt
-        unique_urls = [
-            f"https://picsum.photos/1024/1024?random={timestamp}&text={prompt_hash}",
-            f"https://picsum.photos/1024/1024?random={timestamp + 1}&text={prompt_hash}_2",
-        ]
-        
-        return {
-            'data': {
-                'prompt_used': request.prompt,
-                'parameters_used': request.parameters,
-                'generation_id': f"fallback_nano_{request.id}",
-                'note': 'Fallback generation - NanoBanana API not available',
-                'generated_at': timezone.now().isoformat(),
-                'unique_id': f"gen_{timestamp}"
-            },
-            'urls': unique_urls,
-            'cost': 0.05
-        }
     
     def _process_openai_request(self, request: AIGenerationRequest) -> Dict[str, Any]:
-        """Process OpenAI DALL-E request"""
+        """Process OpenAI GPT request"""
         # Placeholder for OpenAI integration
-        # TODO: Implement actual OpenAI DALL-E API integration
+        # TODO: Implement actual OpenAI GPT API integration
         
         mock_result = {
             'data': {
                 'prompt_used': request.prompt,
-                'model': 'dall-e-3',
+                'model': 'gpt-4',
                 'generation_id': f"openai_{request.id}",
             },
-            'urls': [
-                f"https://mock-api.openai.com/generated/{request.id}.png",
-            ],
-            'cost': 0.08  # Mock cost
-        }
-        
-        return mock_result
-    
-    def _process_stability_request(self, request: AIGenerationRequest) -> Dict[str, Any]:
-        """Process Stability AI request"""
-        # Placeholder for Stability AI integration
-        # TODO: Implement actual Stability AI API integration
-        
-        mock_result = {
-            'data': {
-                'prompt_used': request.prompt,
-                'model': 'stable-diffusion-xl',
-                'generation_id': f"stability_{request.id}",
-            },
-            'urls': [
-                f"https://mock-api.stability.ai/generated/{request.id}.png",
-            ],
-            'cost': 0.03  # Mock cost
+            'text': f"Generated text response for: {request.prompt[:100]}...",
+            'cost': 0.02  # Mock cost
         }
         
         return mock_result
@@ -509,57 +204,51 @@ class AIPromptEngineeringService:
     """Service for AI prompt engineering and optimization"""
     
     @staticmethod
-    def enhance_textile_prompt(base_prompt: str, fabric_type: str = None, 
-                             color_scheme: str = None, style: str = None) -> str:
+    def enhance_text_prompt(base_prompt: str, context: str = None, 
+                          style: str = None, length: str = None) -> str:
         """
-        Enhance a basic prompt for textile design generation
+        Enhance a basic prompt for text generation
         
         Args:
             base_prompt: Basic prompt text
-            fabric_type: Type of fabric (cotton, silk, etc.)
-            color_scheme: Color scheme description
-            style: Design style (modern, traditional, etc.)
+            context: Additional context for the generation
+            style: Writing style (professional, casual, technical, creative)
+            length: Desired length (short, medium, long)
             
         Returns:
             Enhanced prompt string
         """
         enhancements = []
         
-        # Add fabric-specific enhancements
-        if fabric_type:
-            fabric_enhancements = {
-                'cotton': 'soft cotton texture, natural fiber appearance',
-                'silk': 'luxurious silk texture, smooth and lustrous',
-                'wool': 'warm wool texture, cozy and natural',
-                'linen': 'crisp linen texture, breathable and light',
-                'denim': 'denim fabric texture, sturdy and casual'
-            }
-            if fabric_type.lower() in fabric_enhancements:
-                enhancements.append(fabric_enhancements[fabric_type.lower()])
+        # Add context if provided
+        if context:
+            enhancements.append(f"Context: {context}")
         
-        # Add color scheme enhancements
-        if color_scheme:
-            enhancements.append(f"color palette: {color_scheme}")
-        
-        # Add style enhancements
+        # Add style guidance
         if style:
             style_enhancements = {
-                'modern': 'modern design, clean lines, minimalist',
-                'traditional': 'traditional patterns, classic motifs',
-                'bohemian': 'bohemian style, eclectic patterns, artistic',
-                'geometric': 'geometric patterns, structured design',
-                'floral': 'floral motifs, natural elements, organic shapes'
+                'professional': 'professional tone, clear and concise',
+                'casual': 'casual tone, friendly and approachable',
+                'technical': 'technical language, detailed explanations',
+                'creative': 'creative writing, engaging and imaginative'
             }
             if style.lower() in style_enhancements:
                 enhancements.append(style_enhancements[style.lower()])
         
+        # Add length guidance
+        if length:
+            length_enhancements = {
+                'short': 'brief and concise response',
+                'medium': 'moderate length, well-developed',
+                'long': 'comprehensive and detailed response'
+            }
+            if length.lower() in length_enhancements:
+                enhancements.append(length_enhancements[length.lower()])
+        
         # Combine base prompt with enhancements
         enhanced_prompt = base_prompt
         if enhancements:
-            enhanced_prompt += f", {', '.join(enhancements)}"
-        
-        # Add general textile design improvements
-        enhanced_prompt += ", high quality textile design, seamless pattern, professional design"
+            enhanced_prompt += f". Please provide a {', '.join(enhancements)} response."
         
         return enhanced_prompt
     
@@ -569,19 +258,18 @@ class AIPromptEngineeringService:
         Generate appropriate negative prompt based on generation type
         
         Args:
-            generation_type: Type of generation (poster, catalog, etc.)
+            generation_type: Type of generation (text_generation, content_analysis, etc.)
             
         Returns:
             Negative prompt string
         """
-        base_negative = "low quality, blurry, distorted, ugly, bad anatomy"
+        base_negative = "avoid vague, unclear, or unhelpful responses"
         
         type_specific = {
-            'poster': "text, watermark, logo, signature, low resolution",
-            'catalog': "messy layout, poor composition, unorganized",
-            'background': "foreground objects, text, cluttered",
-            'fabric_analysis': "non-fabric materials, synthetic appearance",
-            'color_palette': "muddy colors, poor color harmony"
+            'text_generation': "avoid repetitive content, ensure originality",
+            'content_analysis': "avoid superficial analysis, provide deep insights",
+            'data_processing': "avoid incomplete processing, ensure accuracy",
+            'reporting': "avoid unorganized information, ensure clear structure"
         }
         
         if generation_type in type_specific:
@@ -590,51 +278,52 @@ class AIPromptEngineeringService:
         return base_negative
 
 
-class AIColorAnalysisService:
-    """Service for AI-powered color analysis and extraction"""
+class AIContentAnalysisService:
+    """Service for AI-powered content analysis and processing"""
     
     @staticmethod
-    def extract_color_palette(image_url: str) -> List[Dict[str, Any]]:
+    def analyze_text_content(text: str) -> Dict[str, Any]:
         """
-        Extract color palette from an image
+        Analyze text content for various metrics
         
         Args:
-            image_url: URL of the image to analyze
+            text: Text content to analyze
             
         Returns:
-            List of color information dictionaries
+            Dictionary containing analysis results
         """
         # Placeholder implementation
-        # TODO: Implement actual color extraction using computer vision
+        # TODO: Implement actual text analysis using NLP
         
-        mock_palette = [
-            {'hex': '#FF6B6B', 'rgb': [255, 107, 107], 'name': 'Coral Red', 'percentage': 35},
-            {'hex': '#4ECDC4', 'rgb': [78, 205, 196], 'name': 'Turquoise', 'percentage': 25},
-            {'hex': '#45B7D1', 'rgb': [69, 183, 209], 'name': 'Sky Blue', 'percentage': 20},
-            {'hex': '#96CEB4', 'rgb': [150, 206, 180], 'name': 'Mint Green', 'percentage': 15},
-            {'hex': '#FFEAA7', 'rgb': [255, 234, 167], 'name': 'Light Yellow', 'percentage': 5}
-        ]
+        mock_analysis = {
+            'word_count': len(text.split()),
+            'character_count': len(text),
+            'sentiment': 'neutral',
+            'readability_score': 75,
+            'key_topics': ['topic1', 'topic2', 'topic3'],
+            'language': 'en'
+        }
         
-        return mock_palette
+        return mock_analysis
     
     @staticmethod
-    def suggest_complementary_colors(base_colors: List[str]) -> List[Dict[str, Any]]:
+    def extract_key_insights(text: str) -> List[str]:
         """
-        Suggest complementary colors based on base colors
+        Extract key insights from text content
         
         Args:
-            base_colors: List of hex color codes
+            text: Text content to analyze
             
         Returns:
-            List of complementary color suggestions
+            List of key insights
         """
         # Placeholder implementation
-        # TODO: Implement actual color theory algorithms
+        # TODO: Implement actual insight extraction
         
-        mock_suggestions = [
-            {'hex': '#FF9F43', 'name': 'Orange', 'relationship': 'complementary'},
-            {'hex': '#6C5CE7', 'name': 'Purple', 'relationship': 'triadic'},
-            {'hex': '#A29BFE', 'name': 'Light Purple', 'relationship': 'analogous'},
+        mock_insights = [
+            'Key insight 1 based on content analysis',
+            'Key insight 2 highlighting important points',
+            'Key insight 3 providing actionable information'
         ]
         
-        return mock_suggestions
+        return mock_insights

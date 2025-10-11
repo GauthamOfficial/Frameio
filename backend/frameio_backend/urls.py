@@ -21,7 +21,9 @@ from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.utils import timezone
 from django.shortcuts import render
+from django.views.generic import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+# Removed image generation test imports
 
 def api_status(request):
     """Simple API status endpoint for the root URL"""
@@ -40,7 +42,8 @@ def api_status(request):
             'designs': '/api/designs/',
             'ai_services': '/api/ai/',
             'fabric_analysis': '/api/ai/fabric/',
-            'poster_generation': '/api/poster-generation/',
+            'text_generation': '/api/ai/text-generation/',
+            'content_analysis': '/api/ai/content-analysis/',
             'design_export': '/api/design-export/',
             'collaboration': '/api/collaboration/'
         }
@@ -55,14 +58,19 @@ def health_check(request):
     })
 
 def test_interface(request):
-    """Test interface for Phase 1 Week 3"""
-    return render(request, 'ai_services/test_interface.html')
+    return api_status(request)
+
+def ai_image_generation_test(request):
+    return api_status(request)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", api_status, name="api_status"),
     path("health/", health_check, name="health_check"),
+    # Deprecated test routes kept as no-ops returning status for compatibility
     path("test/", test_interface, name="test_interface"),
+    path("ai-image-generation-test/", ai_image_generation_test, name="ai_image_generation_test"),
+    path("ai_image_generation_test.html", RedirectView.as_view(url="/", permanent=True)),
     
     # API Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
@@ -74,9 +82,13 @@ urlpatterns = [
     path("api/", include("users.urls")),
     path("api/", include("designs.urls")),
     path("api/ai/", include("ai_services.urls")),
-    path("api/poster-generation/", include("poster_generation.urls")),
+    path("api/", include("api.urls")),  # API endpoints
+    # Removed poster generation URLs
     path("api/design-export/", include("design_export.urls")),
     path("api/collaboration/", include("collaboration.urls")),
+    
+    # Test endpoints (no authentication required)
+    # Removed image generation test endpoints
 ]
 
 # Serve media files in development

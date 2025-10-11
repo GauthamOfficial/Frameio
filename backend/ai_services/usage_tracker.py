@@ -34,7 +34,7 @@ class UsageTracker:
                    user,
                    generation_type: str,
                    cost: float = 0.0,
-                   provider_name: str = 'nanobanana') -> Dict[str, Any]:
+                   provider_name: str = 'gemini') -> Dict[str, Any]:
         """
         Track AI usage and update quotas
         
@@ -120,7 +120,7 @@ class UsageTracker:
     def check_quota(self,
                    organization: Organization,
                    generation_type: str,
-                   provider_name: str = 'nanobanana') -> Dict[str, Any]:
+                   provider_name: str = 'gemini') -> Dict[str, Any]:
         """
         Check current quota status without updating
         

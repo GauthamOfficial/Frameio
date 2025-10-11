@@ -25,21 +25,20 @@ export function usePosterGeneration() {
     setIsLoading(true);
     
     try {
-      const token = await getToken();
-      
-      const response = await fetch('/api/poster-generation/api/generate-poster/', {
+      const response = await fetch('/api/test/two-step/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          prompt: request.prompt,
+          custom_text: request.prompt,
           style: request.style,
-          dimensions: request.dimensions,
+          fabric_type: 'silk', // Default fabric type
+          festival: 'general', // Default festival
+          price_range: '₹2999', // Default price range
+          offer_details: 'Special offer available',
+          generation_type: 'poster',
           color_scheme: request.colorScheme,
-          additional_instructions: request.additionalInstructions,
-          template_id: null, // Can be used for predefined templates
         }),
       });
 
@@ -51,8 +50,8 @@ export function usePosterGeneration() {
 
       return {
         success: true,
-        jobId: data.job_id,
-        imageUrl: data.image_url,
+        jobId: data.metadata?.generated_at || Date.now().toString(),
+        imageUrl: data.poster_url,
         metadata: data.metadata,
       };
     } catch (error) {

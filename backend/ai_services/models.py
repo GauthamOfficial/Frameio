@@ -10,7 +10,6 @@ User = get_user_model()
 class AIProvider(models.Model):
     """Model to store AI service provider configurations"""
     PROVIDER_CHOICES = [
-        ('nanobanana', 'NanoBanana'),
         ('gemini', 'Google Gemini'),
         ('openai', 'OpenAI'),
         ('stability', 'Stability AI'),
@@ -37,11 +36,9 @@ class AIProvider(models.Model):
 class AIGenerationRequest(models.Model):
     """Model to track AI generation requests"""
     GENERATION_TYPES = [
-        ('poster', 'Poster Generation'),
-        ('catalog', 'Catalog Generation'),
-        ('background', 'Background Generation'),
-        ('color_palette', 'Color Palette Extraction'),
-        ('fabric_analysis', 'Fabric Analysis'),
+        ('text_generation', 'Text Generation'),
+        ('content_analysis', 'Content Analysis'),
+        ('data_processing', 'Data Processing'),
     ]
     
     STATUS_CHOICES = [
@@ -66,7 +63,7 @@ class AIGenerationRequest(models.Model):
     
     # Response data
     result_data = models.JSONField(default=dict, blank=True)
-    result_urls = models.JSONField(default=list, blank=True)  # Store generated image URLs
+    result_text = models.TextField(blank=True, null=True)  # Store generated text content
     error_message = models.TextField(blank=True, null=True)
     
     # Metadata
@@ -87,15 +84,15 @@ class AIGenerationRequest(models.Model):
     def __str__(self):
         return f"{self.generation_type} - {self.status} ({self.organization.name})"
     
-    def mark_completed(self, result_data=None, result_urls=None):
+    def mark_completed(self, result_data=None, result_text=None):
         """Mark the request as completed"""
         self.status = 'completed'
         self.completed_at = timezone.now()
         if result_data:
             self.result_data = result_data
-        if result_urls:
-            self.result_urls = result_urls
-        self.save(update_fields=['status', 'completed_at', 'result_data', 'result_urls'])
+        if result_text:
+            self.result_text = result_text
+        self.save(update_fields=['status', 'completed_at', 'result_data', 'result_text'])
     
     def mark_failed(self, error_message):
         """Mark the request as failed"""
@@ -163,11 +160,10 @@ class AIUsageQuota(models.Model):
 class AITemplate(models.Model):
     """Model to store AI generation templates and prompts"""
     TEMPLATE_CATEGORIES = [
-        ('textile', 'Textile Design'),
-        ('poster', 'Poster Design'),
-        ('catalog', 'Catalog Layout'),
-        ('background', 'Background Pattern'),
-        ('branding', 'Branding Elements'),
+        ('text_generation', 'Text Generation'),
+        ('content_analysis', 'Content Analysis'),
+        ('data_processing', 'Data Processing'),
+        ('reporting', 'Report Generation'),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -216,7 +212,7 @@ class AIGenerationHistory(models.Model):
     user_satisfaction_rating = models.IntegerField(null=True, blank=True)  # 1-5 rating
     user_feedback = models.TextField(blank=True)
     regeneration_count = models.IntegerField(default=0)
-    final_selection = models.CharField(max_length=500, blank=True)  # URL of selected result
+    final_selection = models.TextField(blank=True)  # Text content of selected result
     
     created_at = models.DateTimeField(auto_now_add=True)
     

@@ -8,7 +8,7 @@ import { useOrganization } from "@/contexts/organization-context"
 import { useApp } from "@/contexts/app-context"
 import { DashboardErrorBoundary } from "@/components/common/error-boundary"
 import { useToastHelpers } from "@/components/common"
-import { Plus, TrendingUp, Calendar, Image, User, Settings } from "lucide-react"
+import { Plus, TrendingUp, Calendar, Image, User, Settings, Wand2, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function DashboardPage() {
@@ -29,6 +29,8 @@ export default function DashboardPage() {
   const getQuickActions = () => {
     const actions = [
       { name: "Generate AI Poster", href: "/dashboard/poster-generator", icon: Image },
+      { name: "AI Post Generator", href: "/dashboard/ai-post-generator", icon: Wand2 },
+      { name: "AI Image Generator", href: "/dashboard/ai-image-generator", icon: Sparkles },
       { name: "Schedule Post", href: "/dashboard/scheduler", icon: Calendar },
       { name: "View Analytics", href: "/dashboard/analytics", icon: TrendingUp },
     ]

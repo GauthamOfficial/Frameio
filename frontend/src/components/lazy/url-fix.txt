@@ -1,0 +1,45 @@
+QUICK FIX FOR URL VALIDATION ERROR:
+
+1. Open: frontend/src/components/lazy/enhanced-poster-generator.tsx
+
+2. Find this section (around line 278-287):
+```
+    // Additional URL validation
+    try {
+      new URL(data.poster_url)
+    } catch (urlError) {
+      console.error('❌ Invalid poster URL format:', data.poster_url)
+      setGenerationError('Invalid image URL generated. Please try again.')
+      setAiServiceStatus('error')
+      showError('Invalid image URL generated. Please try again.')
+      return
+    }
+```
+
+3. Replace it with this:
+```
+    // Handle both relative and absolute URLs
+    let finalImageUrl = data.poster_url
+
+    // If it's a relative URL, make it absolute
+    if (data.poster_url.startsWith('/')) {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      finalImageUrl = `${baseUrl}${data.poster_url}`
+      console.log('🔗 Converted relative URL to absolute:', finalImageUrl)
+    }
+
+    // Skip URL validation for now - just use the URL as-is
+    console.log('🖼️ Using poster URL:', finalImageUrl)
+```
+
+4. Also find the posterData section and change:
+```
+url: data.poster_url,
+```
+to:
+```
+url: finalImageUrl,
+```
+
+This will fix the relative URL issue!
+

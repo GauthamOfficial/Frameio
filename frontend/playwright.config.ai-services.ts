@@ -6,7 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
-  testMatch: ['**/ai-*.spec.ts'],
+  testMatch: ['**/ai-*.spec.ts', '**/ai-frontend-*.spec.ts', '**/ai-poster-*.spec.ts'],
   
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -15,10 +15,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 1,
+  retries: process.env.CI ? 2 : 0, // No retries for AI tests to avoid long waits
   
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 2 : 4,
+  workers: process.env.CI ? 1 : 2, // Reduce workers for AI tests to avoid rate limiting
   
   /* Reporter to use */
   reporter: [
@@ -42,10 +42,10 @@ export default defineConfig({
     video: 'retain-on-failure',
     
     /* Performance optimizations for AI testing */
-    actionTimeout: 10000, // AI operations might take longer
-    navigationTimeout: 15000,
+    actionTimeout: 120000, // AI operations take much longer - 2 minutes
+    navigationTimeout: 30000,
     expect: {
-      timeout: 5000,
+      timeout: 120000, // 2 minutes for AI operations
     },
     
     /* Ignore HTTPS errors for local development */
@@ -122,7 +122,7 @@ export default defineConfig({
     },
     {
       command: 'cd ../backend && python manage.py runserver 8000',
-      url: 'http://localhost:8000/api/',
+      url: 'http://localhost:8000/api/ai/',
       reuseExistingServer: !process.env.CI,
       timeout: 60000,
       env: {

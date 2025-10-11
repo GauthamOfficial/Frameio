@@ -156,7 +156,7 @@ class Migration(migrations.Migration):
                     "name",
                     models.CharField(
                         choices=[
-                            ("nanobanana", "NanoBanana"),
+                            ("gemini", "Google Gemini"),
                             ("openai", "OpenAI"),
                             ("stability", "Stability AI"),
                             ("midjourney", "Midjourney"),

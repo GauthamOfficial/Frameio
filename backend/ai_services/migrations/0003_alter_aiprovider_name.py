@@ -14,7 +14,6 @@ class Migration(migrations.Migration):
             name="name",
             field=models.CharField(
                 choices=[
-                    ("nanobanana", "NanoBanana"),
                     ("gemini", "Google Gemini"),
                     ("openai", "OpenAI"),
                     ("stability", "Stability AI"),
