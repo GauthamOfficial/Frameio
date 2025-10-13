@@ -9,7 +9,7 @@ import { Upload, Wand2, Calendar, Share2, Download, X } from "lucide-react"
 import React, { useState, useRef } from "react"
 import { useToastHelpers } from "@/components/common"
 import { useAppContext } from "@/contexts/app-context"
-import { apiClient } from "@/lib/api-client"
+import { apiClient, setAuthToken } from "@/lib/api-client"
 
 export default function PosterGenerator() {
   const { showSuccess, showError } = useToastHelpers()
@@ -20,7 +20,7 @@ export default function PosterGenerator() {
   // Set token in API client
   React.useEffect(() => {
     if (token) {
-      apiClient.setToken(token)
+      setAuthToken(token)
     }
   }, [token])
   

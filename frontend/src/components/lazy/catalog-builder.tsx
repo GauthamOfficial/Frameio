@@ -7,7 +7,7 @@ import { Plus, Palette, Download, Eye, Calendar, Share2 } from "lucide-react"
 import React, { useState } from "react"
 import { useToastHelpers } from "@/components/common"
 import { useAppContext } from "@/contexts/app-context"
-import { apiClient } from "@/lib/api-client"
+import { apiClient, setAuthToken } from "@/lib/api-client"
 
 export default function CatalogBuilder() {
   const { showSuccess, showError } = useToastHelpers()
@@ -18,7 +18,7 @@ export default function CatalogBuilder() {
   // Set token in API client
   React.useEffect(() => {
     if (token) {
-      apiClient.setToken(token)
+      setAuthToken(token)
     }
   }, [token])
   const [isCreating, setIsCreating] = useState(false)

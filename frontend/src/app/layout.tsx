@@ -8,6 +8,7 @@ import { AppProvider } from "@/contexts/app-context";
 import { OrganizationProvider } from "@/contexts/organization-context";
 import { ToastProvider } from "@/components/common";
 import { AppLayoutWrapper } from "@/components/layout/app-layout-wrapper";
+import { ClerkLoading } from "@/components/auth/clerk-loading";
 import "./globals.css";
 import "@/lib/test-data"; // Import test data utilities
 import "@/lib/wallet-error-handler"; // Handle wallet connection errors
@@ -47,13 +48,12 @@ export default function RootLayout({
         afterSignUpUrl="/dashboard"
         signInUrl="/sign-in"
         signUpUrl="/sign-up"
-        frontendApi={process.env.NEXT_PUBLIC_CLERK_FRONTEND_API}
       >
         <html lang="en">
           <head>
             <meta name="ethereum-dapp-url-bar" content="false" />
             <meta name="ethereum-dapp-metamask" content="false" />
-            <meta httpEquiv="Content-Security-Policy" content={`script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com ${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API}; object-src 'none';`} />
+            <meta httpEquiv="Content-Security-Policy" content={`script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com https://*.clerk.accounts.dev; object-src 'none';`} />
           </head>
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -62,9 +62,11 @@ export default function RootLayout({
               <ToastProvider>
                 <AppProvider>
                   <OrganizationProvider>
-                    <AppLayoutWrapper>
-                      {children}
-                    </AppLayoutWrapper>
+                    <ClerkLoading>
+                      <AppLayoutWrapper>
+                        {children}
+                      </AppLayoutWrapper>
+                    </ClerkLoading>
                   </OrganizationProvider>
                 </AppProvider>
               </ToastProvider>

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useToastHelpers } from '@/components/common'
 import { useAppContext } from '@/contexts/app-context'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, setAuthToken } from '@/lib/api-client'
 import { 
   Wand2, 
   Hash, 
@@ -79,7 +79,7 @@ export default function AIImagePostGenerator() {
   // Set token in API client
   useEffect(() => {
     if (token) {
-      apiClient.setToken(token)
+      setAuthToken(token)
     }
   }, [token])
   

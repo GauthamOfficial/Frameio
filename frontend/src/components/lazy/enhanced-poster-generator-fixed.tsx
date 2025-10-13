@@ -23,7 +23,7 @@ import {
 import React, { useState, useRef, useEffect } from "react"
 import { useToastHelpers } from "@/components/common"
 import { useAppContext } from "@/contexts/app-context"
-import { apiClient } from "@/lib/api-client"
+import { apiClient, setAuthToken } from "@/lib/api-client"
 import { nanoBananaService } from "@/lib/ai/nanobanana"
 import { generateTextilePrompt, extractKeywordsFromInput, suggestPromptImprovements } from "@/lib/ai/promptUtils"
 import ColorPaletteExtractor, { ColorInfo } from "@/components/ColorPaletteExtractor"
@@ -54,7 +54,7 @@ export default function EnhancedPosterGenerator() {
   // Set token in API client
   React.useEffect(() => {
     if (token) {
-      apiClient.setToken(token)
+      setAuthToken(token)
     }
   }, [token])
   
