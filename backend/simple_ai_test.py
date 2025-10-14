@@ -6,8 +6,12 @@ Test AI poster and caption generation with direct API calls
 import os
 import sys
 
-# Set the API key
-os.environ['GEMINI_API_KEY'] = 'AIzaSyCZiGdU4pk_-uVNWCquY5C15vaxnPszA-s'
+# Set the API key from environment or use placeholder
+api_key = os.getenv('GEMINI_API_KEY')
+if not api_key:
+    print("WARNING: GEMINI_API_KEY not set. Using placeholder for testing.")
+    api_key = 'your_gemini_api_key_here'
+os.environ['GEMINI_API_KEY'] = api_key
 
 def test_gemini_import():
     """Test if Google GenAI can be imported"""
@@ -90,7 +94,7 @@ def main():
     """Main test function"""
     print("🚀 Simple AI Services Test")
     print("=" * 50)
-    print("🔑 Using API key: AIzaSyCZiGdU4pk_-uVNWCquY5C15vaxnPszA-s")
+    print("🔑 Using API key from environment variables")
     print("=" * 50)
     
     tests = [

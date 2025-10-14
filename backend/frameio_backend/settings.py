@@ -26,7 +26,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-4kqqe8^1$qcl2$u4@f%c_@x(aw62(qm-r9@0bmqd8lj_lvk#z2')
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is required")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
@@ -244,20 +246,27 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # Clerk configuration
-CLERK_PUBLISHABLE_KEY = os.getenv('CLERK_PUBLISHABLE_KEY', 'pk_test_c291bmQtbXVsZS0yNC5jbGVyay5hY2NvdW50cy5kZXYk')
-CLERK_SECRET_KEY = os.getenv('CLERK_SECRET_KEY', 'sk_test_Wm0T8Fgwo91YCUKguAG6huVnrzop146mNpqS4bE5eN')
-NEXT_PUBLIC_CLERK_FRONTEND_API = os.getenv('NEXT_PUBLIC_CLERK_FRONTEND_API', 'https://sound-mule-24.clerk.accounts.dev')
+CLERK_PUBLISHABLE_KEY = os.getenv('CLERK_PUBLISHABLE_KEY')
+CLERK_SECRET_KEY = os.getenv('CLERK_SECRET_KEY')
+NEXT_PUBLIC_CLERK_FRONTEND_API = os.getenv('NEXT_PUBLIC_CLERK_FRONTEND_API')
 
 # Validate Clerk configuration
 CLERK_CONFIGURED = bool(CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_FRONTEND_API)
 
-if not CLERK_CONFIGURED and not DEBUG:
-    raise ValueError(
-        "Clerk configuration is incomplete. Please set the following environment variables:\n"
-        "- CLERK_PUBLISHABLE_KEY\n"
-        "- CLERK_SECRET_KEY\n"
-        "- NEXT_PUBLIC_CLERK_FRONTEND_API"
-    )
+if not CLERK_CONFIGURED:
+    if DEBUG:
+        print("WARNING: Clerk configuration is incomplete. Authentication will not work properly.")
+        print("Please set the following environment variables:")
+        print("- CLERK_PUBLISHABLE_KEY")
+        print("- CLERK_SECRET_KEY") 
+        print("- NEXT_PUBLIC_CLERK_FRONTEND_API")
+    else:
+        raise ValueError(
+            "Clerk configuration is incomplete. Please set the following environment variables:\n"
+            "- CLERK_PUBLISHABLE_KEY\n"
+            "- CLERK_SECRET_KEY\n"
+            "- NEXT_PUBLIC_CLERK_FRONTEND_API"
+        )
 
 # Arcjet configuration
 ARCJET_KEY = os.getenv('ARCJET_KEY', '')
@@ -266,14 +275,14 @@ ARCJET_KEY = os.getenv('ARCJET_KEY', '')
 # NanoBanana has been removed
 
 # Google Gemini configuration
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyCZiGdU4pk_-uVNWCquY5C15vaxnPszA-s')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 GEMINI_MODEL_NAME = os.getenv('GEMINI_MODEL_NAME', 'gemini-2.5-flash-image')
 
 # Validate Gemini configuration
 if not GEMINI_API_KEY:
     print("WARNING: GEMINI_API_KEY not configured. AI services will not be available.")
 else:
-    print(f"INFO: GEMINI_API_KEY configured (length: {len(GEMINI_API_KEY)})")
+    print("INFO: GEMINI_API_KEY configured")
 
 # Redis configuration
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
@@ -361,3 +370,43 @@ LOGGING = {
         },
     },
 }
+
+# =============================================================================
+# ENVIRONMENT VALIDATION
+# =============================================================================
+def validate_environment():
+    """Validate that all required environment variables are set."""
+    required_vars = {
+        'SECRET_KEY': SECRET_KEY,
+    }
+    
+    missing_vars = []
+    for var_name, var_value in required_vars.items():
+        if not var_value:
+            missing_vars.append(var_name)
+    
+    if missing_vars:
+        error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+        if DEBUG:
+            print(f"WARNING: {error_msg}")
+        else:
+            raise ValueError(error_msg)
+    
+    # Optional but recommended variables
+    recommended_vars = {
+        'GEMINI_API_KEY': GEMINI_API_KEY,
+        'CLERK_PUBLISHABLE_KEY': CLERK_PUBLISHABLE_KEY,
+        'CLERK_SECRET_KEY': CLERK_SECRET_KEY,
+    }
+    
+    missing_recommended = []
+    for var_name, var_value in recommended_vars.items():
+        if not var_value:
+            missing_recommended.append(var_name)
+    
+    if missing_recommended and DEBUG:
+        print(f"INFO: Optional environment variables not set: {', '.join(missing_recommended)}")
+        print("These are recommended for full functionality.")
+
+# Run validation
+validate_environment()

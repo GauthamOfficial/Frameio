@@ -12,8 +12,12 @@ from pathlib import Path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
-# Set the API key before Django setup
-os.environ['GEMINI_API_KEY'] = 'AIzaSyCZiGdU4pk_-uVNWCquY5C15vaxnPszA-s'
+# Set the API key from environment or use placeholder
+api_key = os.getenv('GEMINI_API_KEY')
+if not api_key:
+    print("WARNING: GEMINI_API_KEY not set. Using placeholder for testing.")
+    api_key = 'your_gemini_api_key_here'
+os.environ['GEMINI_API_KEY'] = api_key
 
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'frameio_backend.settings')

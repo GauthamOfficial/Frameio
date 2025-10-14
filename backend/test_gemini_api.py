@@ -104,3 +104,6 @@ if __name__ == "__main__":
         print("\n✅ All tests passed! Your Gemini API is ready to use.")
 
 
+
+
+
