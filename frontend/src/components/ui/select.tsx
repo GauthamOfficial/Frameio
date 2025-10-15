@@ -58,7 +58,7 @@ const Select = ({ value, onValueChange, children }: SelectProps) => {
 
 const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
   ({ className, children, ...props }, ref) => {
-    const { isOpen, setIsOpen, selectedValue } = (props as any) || {}
+    const { isOpen, setIsOpen, selectedValue, onValueChange, ...domProps } = (props as any) || {}
     
     return (
       <button
@@ -69,7 +69,7 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
           className
         )}
         onClick={() => setIsOpen?.(!isOpen)}
-        {...props}
+        {...domProps}
       >
         <span>{selectedValue || children}</span>
         <ChevronDown className="h-4 w-4 opacity-50" />
@@ -81,7 +81,7 @@ SelectTrigger.displayName = "SelectTrigger"
 
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children, ...props }, ref) => {
-    const { isOpen, setIsOpen } = (props as any) || {}
+    const { isOpen, setIsOpen, onValueChange, ...domProps } = (props as any) || {}
     
     if (!isOpen) return null
 
@@ -92,14 +92,13 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
           "absolute z-50 w-full mt-1 max-h-60 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md",
           className
         )}
-        {...props}
+        {...domProps}
       >
         <div className="p-1">
           {React.Children.map(children, (child) => {
             if (React.isValidElement(child)) {
               return React.cloneElement(child, {
                 onSelect: (value: string) => {
-                  const { onValueChange } = (props as any) || {}
                   onValueChange?.(value)
                 },
               } as any)
@@ -115,7 +114,7 @@ SelectContent.displayName = "SelectContent"
 
 const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
   ({ className, children, value, ...props }, ref) => {
-    const { onSelect } = (props as any) || {}
+    const { onSelect, ...domProps } = (props as any) || {}
     
     return (
       <div
@@ -125,7 +124,7 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
           className
         )}
         onClick={() => onSelect?.(value)}
-        {...props}
+        {...domProps}
       >
         {children}
       </div>

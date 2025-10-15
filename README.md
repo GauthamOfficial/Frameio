@@ -1,5 +1,7 @@
 # Frameio Project
 # startup_env\Scripts\activate
+# cd backend; python manage.py runserver
+# cd frontend; npm run dev
 
 A full-stack application built with Django backend and Next.js frontend, featuring AI-powered poster/catalog/logo generation.
 

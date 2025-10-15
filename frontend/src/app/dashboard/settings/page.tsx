@@ -16,6 +16,7 @@ import {
   Save,
   Check
 } from "lucide-react"
+import CompanyProfileSettings from "@/components/settings/CompanyProfileSettings"
 
 export default function SettingsPage() {
   const { user } = useUser()
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
+  const [clerkConfigured, setClerkConfigured] = useState(false)
 
   // Profile settings
   const [profileData, setProfileData] = useState({
@@ -56,6 +58,11 @@ export default function SettingsPage() {
   })
 
   useEffect(() => {
+    // Check if Clerk is configured
+    const isClerkConfigured = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && 
+                             process.env.NEXT_PUBLIC_CLERK_FRONTEND_API
+    setClerkConfigured(!!isClerkConfigured)
+    
     if (user && !orgLoading) {
       // Load user data
       setProfileData({
@@ -64,6 +71,10 @@ export default function SettingsPage() {
         email: user.primaryEmailAddress?.emailAddress || '',
         phone: user.phoneNumbers?.[0]?.phoneNumber || ''
       })
+      setLoading(false)
+    } else if (!isClerkConfigured) {
+      // In development mode without Clerk, just set loading to false
+      console.log('⚠️ Clerk not configured, running in development mode')
       setLoading(false)
     }
   }, [user, orgLoading])
@@ -114,6 +125,24 @@ export default function SettingsPage() {
         )}
       </div>
 
+      {/* Clerk Configuration Warning */}
+      {!clerkConfigured && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardHeader>
+            <CardTitle className="flex items-center text-yellow-800">
+              <Lock className="h-5 w-5 mr-2" />
+              Development Mode
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-yellow-700">
+              Clerk authentication is not configured. You're running in development mode. 
+              To enable full authentication features, run: <code className="bg-yellow-100 px-2 py-1 rounded">node setup-clerk-env.js</code>
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6">
         {/* Profile Settings */}
         <Card>
@@ -123,52 +152,8 @@ export default function SettingsPage() {
               Profile Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  value={profileData.firstName}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  value={profileData.lastName}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profileData.email}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={profileData.phone}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                />
-              </div>
-            </div>
-            <Button 
-              onClick={() => handleSave('Profile')}
-              disabled={saving}
-              className="w-full sm:w-auto"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Profile'}
-            </Button>
+          <CardContent>
+            <CompanyProfileSettings />
           </CardContent>
         </Card>
 
@@ -307,6 +292,7 @@ export default function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
+
 
         {/* Security Settings */}
         <Card>

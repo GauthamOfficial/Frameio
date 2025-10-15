@@ -1,51 +1,40 @@
 import { chromium, FullConfig } from '@playwright/test';
 
 async function globalSetup(config: FullConfig) {
-  console.log('🚀 Starting AI Services Global Setup...');
+  console.log('🚀 Starting global setup for profile saving tests...');
   
-  // Start browser for setup tasks
+  // Start browser for setup
   const browser = await chromium.launch();
   const page = await browser.newPage();
   
   try {
-    // Test backend connectivity with retry logic
-    console.log('🔍 Testing backend connectivity...');
-    let backendResponse;
-    let retries = 3;
+    // Check if frontend is accessible
+    console.log('📱 Checking frontend accessibility...');
+    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
+    console.log('✅ Frontend is accessible');
     
-    while (retries > 0) {
-      try {
-        backendResponse = await page.request.get('http://localhost:8000/api/ai/ai-poster/status/');
-        if (backendResponse.status() === 200) {
-          break;
-        }
-      } catch (error) {
-        console.log(`⏳ Backend not ready, retrying... (${retries} attempts left)`);
-        retries--;
-        if (retries > 0) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-        }
+    // Check if backend is accessible
+    console.log('🔧 Checking backend accessibility...');
+    const backendResponse = await page.request.get('http://localhost:8000/');
+    if (backendResponse.ok()) {
+      console.log('✅ Backend is accessible');
+    } else {
+      throw new Error('Backend is not accessible');
+    }
+    
+    // Test API endpoints
+    console.log('🔌 Testing API endpoints...');
+    const apiResponse = await page.request.get('http://localhost:8000/api/company-profiles/', {
+      headers: {
+        'Authorization': 'Bearer test_clerk_token'
       }
-    }
+    });
     
-    if (backendResponse && backendResponse.status() === 200) {
-      const data = await backendResponse.json();
-      console.log(`✅ Backend API is available: ${data.service_available ? 'Service Ready' : 'Service Not Ready'}`);
+    if (apiResponse.ok()) {
+      console.log('✅ API endpoints are working');
     } else {
-      console.log(`❌ Backend API not responding: ${backendResponse?.status() || 'Connection failed'}`);
+      console.log('⚠️ API endpoints may have authentication issues');
     }
-    
-    // Test frontend connectivity
-    console.log('🔍 Testing frontend connectivity...');
-    const frontendResponse = await page.goto('http://localhost:3000');
-    
-    if (frontendResponse?.status() === 200) {
-      console.log('✅ Frontend is available');
-    } else {
-      console.log(`❌ Frontend not responding: ${frontendResponse?.status()}`);
-    }
-    
-    console.log('✅ Global setup completed');
     
   } catch (error) {
     console.error('❌ Global setup failed:', error);
@@ -53,6 +42,8 @@ async function globalSetup(config: FullConfig) {
   } finally {
     await browser.close();
   }
+  
+  console.log('✅ Global setup completed successfully');
 }
 
 export default globalSetup;

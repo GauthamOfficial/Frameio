@@ -13,6 +13,7 @@ from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from .ai_caption_service import AICaptionService
+from .brand_overlay_service import BrandOverlayService
 
 # Import Google GenAI
 try:
@@ -36,6 +37,7 @@ class AIPosterService:
         self.api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, 'GEMINI_API_KEY', None)
         self.client = None
         self.caption_service = AICaptionService()
+        self.brand_overlay_service = BrandOverlayService()
         
         if not GENAI_AVAILABLE:
             logger.error("Google GenAI library not available")
@@ -52,7 +54,7 @@ class AIPosterService:
             logger.error(f"Failed to initialize Gemini client: {str(e)}")
             self.client = None
     
-    def generate_from_prompt(self, prompt: str, aspect_ratio: str = "1:1") -> Dict[str, Any]:
+    def generate_from_prompt(self, prompt: str, aspect_ratio: str = "1:1", user=None) -> Dict[str, Any]:
         """
         Generate poster image from text prompt only
         
@@ -145,7 +147,8 @@ class AIPosterService:
                             # Generate caption and hashtags for the poster
                             caption_result = self.generate_caption_and_hashtags(prompt, image_url)
                             
-                            return {
+                            # Add brand overlay if user has company profile
+                            final_result = {
                                 "status": "success", 
                                 "image_path": saved_path,
                                 "image_url": image_url,
@@ -154,8 +157,34 @@ class AIPosterService:
                                 "full_caption": caption_result.get("full_caption", ""),
                                 "hashtags": caption_result.get("hashtags", []),
                                 "emoji": caption_result.get("emoji", ""),
-                                "call_to_action": caption_result.get("call_to_action", "")
+                                "call_to_action": caption_result.get("call_to_action", ""),
+                                "branding_applied": False
                             }
+                            
+                            # Apply brand overlay if user is provided and has company profile
+                            if user:
+                                try:
+                                    from users.models import CompanyProfile
+                                    company_profile = getattr(user, 'company_profile', None)
+                                    if company_profile and company_profile.has_complete_profile:
+                                        brand_result = self.brand_overlay_service.create_branded_poster(
+                                            saved_path, company_profile
+                                        )
+                                        if brand_result.get('status') == 'success':
+                                            final_result.update({
+                                                "image_path": brand_result.get("image_path", saved_path),
+                                                "image_url": brand_result.get("image_url", image_url),
+                                                "filename": brand_result.get("filename", filename),
+                                                "branding_applied": True,
+                                                "logo_added": brand_result.get("logo_added", False),
+                                                "contact_info_added": brand_result.get("contact_info_added", False)
+                                            })
+                                        else:
+                                            logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
+                                except Exception as brand_error:
+                                    logger.warning(f"Brand overlay error: {str(brand_error)}")
+                            
+                            return final_result
                         except Exception as img_error:
                             logger.error(f"Error processing image: {str(img_error)}")
                             continue

@@ -106,14 +106,16 @@ class ClerkAuthentication(BaseAuthentication):
         
         # For development/testing, create a mock validation
         if settings.DEBUG:
-            # Check if this is a development token
-            if token.startswith('dev_'):
-                # Extract user ID from development token
-                user_id = token.replace('dev_', '')
-                try:
-                    return User.objects.get(id=user_id)
-                except User.DoesNotExist:
-                    return None
+            # For development, accept any token and return the first user
+            # This is a temporary solution for development
+            try:
+                user = User.objects.first()
+                if user:
+                    logger.info(f"Development Clerk auth: Using user {user.email}")
+                    return user
+            except Exception as e:
+                logger.error(f"Development Clerk auth error: {e}")
+                return None
         
         # TODO: Implement proper Clerk JWT validation using clerk-backend-python
         # For now, return None to fall back to other authentication methods

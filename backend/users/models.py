@@ -229,3 +229,75 @@ class UserProfile(models.Model):
             return membership.role
         except:
             return None
+
+
+class CompanyProfile(models.Model):
+    """
+    Company profile model for textile companies to store branding and contact information.
+    This model is linked to users and used for brand personalization in AI-generated posters.
+    """
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='company_profile',
+        primary_key=True
+    )
+    
+    # Company branding
+    company_name = models.CharField(max_length=255, blank=True, null=True)
+    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
+    
+    # Contact information
+    whatsapp_number = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    facebook_link = models.URLField(blank=True, null=True)
+    
+    # Additional company details
+    website = models.URLField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    
+    # Brand preferences for poster generation
+    brand_colors = models.JSONField(default=list, blank=True)  # Store brand color palette
+    preferred_logo_position = models.CharField(
+        max_length=20,
+        choices=[
+            ('top_right', 'Top Right'),
+            ('bottom_right', 'Bottom Right'),
+            ('top_left', 'Top Left'),
+            ('bottom_left', 'Bottom Left'),
+        ],
+        default='top_right'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'company_profiles'
+        verbose_name = 'Company Profile'
+        verbose_name_plural = 'Company Profiles'
+    
+    def __str__(self):
+        return f"Company Profile for {self.user.email}"
+    
+    @property
+    def has_complete_profile(self):
+        """Check if the company profile has all essential information."""
+        return bool(
+            self.company_name and 
+            self.logo and 
+            (self.whatsapp_number or self.email or self.facebook_link)
+        )
+    
+    def get_contact_info(self):
+        """Get formatted contact information."""
+        contact_info = {}
+        if self.whatsapp_number:
+            contact_info['whatsapp'] = self.whatsapp_number
+        if self.email:
+            contact_info['email'] = self.email
+        if self.facebook_link:
+            contact_info['facebook'] = self.facebook_link
+        return contact_info

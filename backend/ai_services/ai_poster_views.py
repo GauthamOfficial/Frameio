@@ -60,7 +60,8 @@ def generate_poster(request):
             }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         
         # Generate poster using AI service
-        result = ai_poster_service.generate_from_prompt(prompt, aspect_ratio)
+        user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+        result = ai_poster_service.generate_from_prompt(prompt, aspect_ratio, user)
         
         if result.get('status') == 'success':
             return Response({
@@ -75,7 +76,10 @@ def generate_poster(request):
                 "full_caption": result.get('full_caption', ''),
                 "hashtags": result.get('hashtags', []),
                 "emoji": result.get('emoji', ''),
-                "call_to_action": result.get('call_to_action', '')
+                "call_to_action": result.get('call_to_action', ''),
+                "branding_applied": result.get('branding_applied', False),
+                "logo_added": result.get('logo_added', False),
+                "contact_info_added": result.get('contact_info_added', False)
             }, status=status.HTTP_200_OK)
         else:
             error_message = result.get('message', 'Failed to generate poster')

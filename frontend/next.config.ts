@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
         source: '/api/ai/:path*',
         destination: 'http://localhost:8000/api/ai/:path*',
       },
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:8000/api/:path*',
+      },
+      {
+        source: '/health',
+        destination: 'http://localhost:8000/health/',
+      },
     ]
   },
   async headers() {

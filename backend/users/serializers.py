@@ -3,7 +3,7 @@ Serializers for user management and profiles.
 """
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import UserProfile, UserActivity
+from .models import UserProfile, UserActivity, CompanyProfile
 from organizations.models import OrganizationMember, Organization
 
 User = get_user_model()
@@ -268,4 +268,70 @@ class UserListSerializer(serializers.ModelSerializer):
             except OrganizationMember.DoesNotExist:
                 return False
         return False
+
+
+class CompanyProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for company profile.
+    """
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    user_name = serializers.SerializerMethodField()
+    logo_url = serializers.SerializerMethodField()
+    has_complete_profile = serializers.ReadOnlyField()
+    contact_info = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CompanyProfile
+        fields = [
+            'user', 'user_email', 'user_name', 'company_name', 'logo', 'logo_url',
+            'whatsapp_number', 'email', 'facebook_link', 'website', 'address', 'description',
+            'brand_colors', 'preferred_logo_position', 'has_complete_profile', 'contact_info',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['user', 'created_at', 'updated_at']
+    
+    def get_user_name(self, obj):
+        """Get user's full name."""
+        return obj.user.full_name or obj.user.username
+    
+    def get_logo_url(self, obj):
+        """Get logo URL."""
+        if obj.logo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.logo.url)
+            return obj.logo.url
+        return None
+    
+    def get_contact_info(self, obj):
+        """Get formatted contact information."""
+        return obj.get_contact_info()
+
+
+class CompanyProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating company profile.
+    """
+    class Meta:
+        model = CompanyProfile
+        fields = [
+            'company_name', 'logo', 'whatsapp_number', 'email', 'facebook_link',
+            'website', 'address', 'description', 'brand_colors', 'preferred_logo_position'
+        ]
+    
+    def validate_whatsapp_number(self, value):
+        """Validate WhatsApp number format."""
+        if value:
+            # Remove any non-digit characters for validation
+            import re
+            cleaned = re.sub(r'\D', '', value)
+            if len(cleaned) < 10:
+                raise serializers.ValidationError("WhatsApp number must be at least 10 digits.")
+        return value
+    
+    def validate_facebook_link(self, value):
+        """Validate Facebook link format."""
+        if value and not value.startswith(('http://', 'https://')):
+            value = 'https://' + value
+        return value
 

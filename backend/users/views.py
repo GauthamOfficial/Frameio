@@ -11,12 +11,12 @@ from datetime import timedelta
 import uuid
 import logging
 
-from .models import User, UserProfile, UserActivity
+from .models import User, UserProfile, UserActivity, CompanyProfile
 from .serializers import (
     UserSerializer, UserUpdateSerializer, UserProfileSerializer,
     UserProfileUpdateSerializer, OrganizationMemberSerializer,
     UserInviteSerializer, UserRoleUpdateSerializer, UserActivitySerializer,
-    UserListSerializer
+    UserListSerializer, CompanyProfileSerializer, CompanyProfileUpdateSerializer
 )
 from .permissions import (
     IsOrganizationMember, IsOrganizationAdmin, IsOrganizationManager,
@@ -387,3 +387,122 @@ class UserActivityViewSet(viewsets.ReadOnlyModelViewSet):
                 user__organization_memberships__is_active=True
             ).distinct()
         return UserActivity.objects.none()
+
+
+class CompanyProfileViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing company profiles.
+    """
+    queryset = CompanyProfile.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action."""
+        if self.action in ['update', 'partial_update']:
+            return CompanyProfileUpdateSerializer
+        return CompanyProfileSerializer
+    
+    def get_queryset(self):
+        """Filter company profiles based on current user."""
+        return CompanyProfile.objects.filter(user=self.request.user)
+    
+    def get_object(self):
+        """Get or create company profile for current user."""
+        # For list view, return the user's profile
+        if self.action == 'list':
+            profile, created = CompanyProfile.objects.get_or_create(
+                user=self.request.user
+            )
+            return profile
+        
+        # For detail view, get the profile by pk or create if it doesn't exist
+        try:
+            profile = CompanyProfile.objects.get(
+                user=self.request.user,
+                pk=self.kwargs.get('pk')
+            )
+        except CompanyProfile.DoesNotExist:
+            profile, created = CompanyProfile.objects.get_or_create(
+                user=self.request.user
+            )
+        return profile
+    
+    def get_serializer_context(self):
+        """Add request to serializer context."""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+    
+    def list(self, request, *args, **kwargs):
+        """Get current user's company profile."""
+        profile = self.get_object()
+        serializer = self.get_serializer(profile)
+        return Response(serializer.data)
+    
+    def create(self, request, *args, **kwargs):
+        """Create or update company profile for current user.
+        Accepts JSON, form-encoded, and multipart (for logo uploads).
+        """
+        try:
+            profile, created = CompanyProfile.objects.get_or_create(
+                user=request.user
+            )
+            serializer = self.get_serializer(profile, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Get current user's company profile."""
+        profile = self.get_object()
+        serializer = self.get_serializer(profile)
+        return Response(serializer.data)
+    
+    
+    def update(self, request, *args, **kwargs):
+        """Update current user's company profile. Supports multipart uploads."""
+        profile = self.get_object()
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+    
+    def partial_update(self, request, *args, **kwargs):
+        """Partially update current user's company profile."""
+        profile = self.get_object()
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Delete current user's company profile."""
+        profile = self.get_object()
+        profile.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=False, methods=['get'])
+    def status(self, request):
+        """Get company profile completion status."""
+        profile = self.get_object()
+        return Response({
+            'has_profile': bool(profile.company_name),
+            'has_logo': bool(profile.logo),
+            'has_contact_info': bool(
+                profile.whatsapp_number or profile.email or profile.facebook_link
+            ),
+            'is_complete': profile.has_complete_profile,
+            'completion_percentage': self._calculate_completion_percentage(profile)
+        })
+    
+    def _calculate_completion_percentage(self, profile):
+        """Calculate profile completion percentage."""
+        fields = [
+            'company_name', 'logo', 'whatsapp_number', 'email', 
+            'facebook_link', 'website', 'address', 'description'
+        ]
+        completed = sum(1 for field in fields if getattr(profile, field))
+        return int((completed / len(fields)) * 100)

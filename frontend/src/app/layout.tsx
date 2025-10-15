@@ -8,9 +8,11 @@ import { AppProvider } from "@/contexts/app-context";
 import { OrganizationProvider } from "@/contexts/organization-context";
 import { ToastProvider } from "@/components/common";
 import { AppLayoutWrapper } from "@/components/layout/app-layout-wrapper";
+import MetaMaskSuppressor from "@/components/MetaMaskSuppressor";
 import "./globals.css";
 import "@/lib/test-data"; // Import test data utilities
 import "@/lib/wallet-error-handler"; // Handle wallet connection errors
+import "@/lib/meta-mask-suppressor"; // Comprehensive MetaMask suppression
 import "@/lib/chunk-error-handler"; // Handle chunk loading errors
 
 const geistSans = Geist({
@@ -53,12 +55,33 @@ export default function RootLayout({
           <head>
             <meta name="ethereum-dapp-url-bar" content="false" />
             <meta name="ethereum-dapp-metamask" content="false" />
+            <meta name="ethereum-dapp-connect" content="false" />
+            <meta name="ethereum-dapp-wallet" content="false" />
             <meta httpEquiv="Content-Security-Policy" content={`script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com ${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API}; object-src 'none';`} />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  // Prevent MetaMask from auto-connecting
+                  if (typeof window !== 'undefined') {
+                    window.ethereum = undefined;
+                    window.web3 = undefined;
+                    
+                    // Override any wallet detection
+                    Object.defineProperty(window, 'ethereum', {
+                      value: undefined,
+                      writable: false,
+                      configurable: false
+                    });
+                  }
+                `,
+              }}
+            />
           </head>
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           >
             <SimpleErrorBoundary>
+              <MetaMaskSuppressor />
               <ToastProvider>
                 <AppProvider>
                   <OrganizationProvider>
