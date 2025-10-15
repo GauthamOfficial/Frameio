@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { useUser, useAuth } from '@clerk/nextjs';
+import BrandingPreview from '@/components/BrandingPreview';
 
 interface GenerationResult {
   success: boolean;
@@ -101,13 +102,16 @@ export default function AIPosterGeneratorPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-center mb-2">AI Poster Generator</h1>
         <p className="text-center text-gray-600">Generate beautiful textile posters using Gemini 2.5 Flash</p>
+        <div className="text-center text-sm text-blue-600 mt-2">
+          🔧 Layout: 3 columns (Input | Generated Poster | Branding Preview)
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ minHeight: '400px' }}>
         {/* Input Section */}
         <Card>
           <CardHeader>
@@ -231,6 +235,49 @@ export default function AIPosterGeneratorPage() {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Branding Preview Section - TEST COLUMN */}
+        <Card className="bg-blue-50 border-2 border-blue-300">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-700">
+              <span>🎨 BRANDING PREVIEW</span>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-green-100 border-2 border-green-300 rounded-lg">
+                <div className="flex items-center gap-2 text-green-800 font-bold">
+                  <CheckCircle className="h-5 w-5" />
+                  <span>BRANDING ACTIVE</span>
+                </div>
+                <p className="text-sm text-green-700 mt-2">
+                  Your company logo and contact details will be automatically added to generated posters.
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-gray-800">What will be added to your poster:</h4>
+                <div className="text-sm space-y-2">
+                  <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="font-medium">🏢 Company Logo (top-right corner)</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="font-medium">📞 Contact Info (bottom with background)</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+                <p className="text-xs text-yellow-800">
+                  <strong>Note:</strong> This is a temporary preview. The actual branding will be applied automatically to your generated posters.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
