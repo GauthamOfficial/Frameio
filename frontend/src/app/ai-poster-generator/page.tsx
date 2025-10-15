@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { useUser, useAuth } from '@clerk/nextjs';
 
 interface GenerationResult {
   success: boolean;
@@ -17,6 +18,10 @@ interface GenerationResult {
 }
 
 export default function AIPosterGeneratorPage() {
+  // Authentication
+  const { user } = useUser();
+  const { getToken } = useAuth();
+  
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('4:5');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -37,11 +42,17 @@ export default function AIPosterGeneratorPage() {
       console.log('🚀 Starting poster generation...');
       console.log('Prompt:', prompt);
       console.log('Aspect Ratio:', aspectRatio);
+      console.log('User authenticated:', !!user);
+
+      // Get authentication token
+      const token = await getToken();
+      const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
 
       const response = await fetch('http://localhost:8000/api/ai/ai-poster/generate_poster/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders
         },
         body: JSON.stringify({
           prompt: prompt,

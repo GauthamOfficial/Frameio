@@ -15,6 +15,7 @@ import uuid
 from .models import AIGenerationRequest, AIProvider
 from .ai_poster_service import AIPosterService
 from .ai_caption_service import AICaptionService
+from .brand_overlay_service import BrandOverlayService
 from .post_generation_serializers import AIPostGenerationSerializer
 from organizations.middleware import get_current_organization
 
@@ -29,6 +30,63 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
         super().__init__(*args, **kwargs)
         self.poster_service = AIPosterService()
         self.caption_service = AICaptionService()
+        self.brand_overlay_service = BrandOverlayService()
+    
+    def _get_company_branding(self, user):
+        """Get company branding information for the user."""
+        try:
+            from users.models import CompanyProfile
+            company_profile = getattr(user, 'company_profile', None)
+            if company_profile and company_profile.has_complete_profile:
+                return {
+                    'company_name': company_profile.company_name,
+                    'logo_url': company_profile.logo.url if company_profile.logo else None,
+                    'contact_info': company_profile.get_contact_info(),
+                    'has_branding': True
+                }
+        except Exception as e:
+            logger.warning(f"Failed to get company branding: {str(e)}")
+        return {'has_branding': False}
+    
+    def _enrich_content_with_branding(self, content, company_branding):
+        """Enrich post content with company branding information."""
+        if not company_branding.get('has_branding'):
+            return content
+        
+        # Add company branding to the content
+        branding_text = ""
+        
+        # Add company name if available
+        if company_branding.get('company_name'):
+            branding_text += f"\n\n🏢 {company_branding['company_name']}"
+        
+        # Add contact information with icons
+        contact_info = company_branding.get('contact_info', {})
+        if contact_info:
+            branding_text += "\n\n📞 Contact Us:"
+            
+            if contact_info.get('whatsapp'):
+                branding_text += f"\n📱 WhatsApp: {contact_info['whatsapp']}"
+            
+            if contact_info.get('email'):
+                branding_text += f"\n✉️ Email: {contact_info['email']}"
+            
+            if contact_info.get('facebook'):
+                branding_text += f"\n📘 Facebook: {contact_info['facebook']}"
+        
+        # Append branding to the main content
+        if 'main_text' in content:
+            content['main_text'] += branding_text
+        elif 'full_caption' in content:
+            content['full_caption'] += branding_text
+        else:
+            # If no main content field, add to the first available text field
+            for key, value in content.items():
+                if isinstance(value, str) and len(value) > 10:
+                    content[key] = value + branding_text
+                    break
+        
+        return content
     
     @action(detail=False, methods=['post'])
     def generate_text_post(self, request):
@@ -107,6 +165,9 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
             )
             
             if result.get('success'):
+                # Get company branding information
+                company_branding = self._get_company_branding(request.user)
+                
                 # Update the request with results
                 ai_request.mark_completed(
                     result_data=result.get('content', {}),
@@ -116,11 +177,17 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
                 ai_request.save(update_fields=['cost'])
                 
                 content = result.get('content', {})
+                
+                # Enrich content with company branding
+                content = self._enrich_content_with_branding(content, company_branding)
+                
                 return Response({
                     "success": True,
                     "content": content,
                     "generated_images": content.get('generated_images', []),
                     "image_urls": content.get('image_urls', []),
+                    "company_branding": company_branding,
+                    "branding_applied": company_branding.get('has_branding', False),
                     "request_id": str(ai_request.id),
                     "metadata": {
                         "generated_at": ai_request.completed_at.isoformat() if ai_request.completed_at else None,
@@ -221,6 +288,9 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
                     logger.warning(f"Failed to clean up temporary file {image_path}: {str(e)}")
             
             if result.get('success'):
+                # Get company branding information
+                company_branding = self._get_company_branding(request.user)
+                
                 # Update the request with results
                 ai_request.mark_completed(
                     result_data=result.get('content', {}),
@@ -230,11 +300,17 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
                 ai_request.save(update_fields=['cost'])
                 
                 content = result.get('content', {})
+                
+                # Enrich content with company branding
+                content = self._enrich_content_with_branding(content, company_branding)
+                
                 return Response({
                     "success": True,
                     "content": content,
                     "generated_images": content.get('generated_images', []),
                     "image_urls": content.get('image_urls', []),
+                    "company_branding": company_branding,
+                    "branding_applied": company_branding.get('has_branding', False),
                     "request_id": str(ai_request.id),
                     "metadata": {
                         "generated_at": ai_request.completed_at.isoformat() if ai_request.completed_at else None,
@@ -367,6 +443,9 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
             )
             
             if result.get('success'):
+                # Get company branding information
+                company_branding = self._get_company_branding(request.user)
+                
                 # Update the request with results
                 ai_request.mark_completed(
                     result_data=result.get('content', {}),
@@ -375,11 +454,18 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
                 ai_request.cost = result.get('cost', 0)
                 ai_request.save(update_fields=['cost'])
                 
+                content = result.get('content', {})
+                
+                # Enrich content with company branding
+                content = self._enrich_content_with_branding(content, company_branding)
+                
                 return Response({
                     "success": True,
-                    "content": result.get('content', {}),
-                    "generated_images": result.get('content', {}).get('generated_images', []),
-                    "image_urls": result.get('content', {}).get('image_urls', []),
+                    "content": content,
+                    "generated_images": content.get('generated_images', []),
+                    "image_urls": content.get('image_urls', []),
+                    "company_branding": company_branding,
+                    "branding_applied": company_branding.get('has_branding', False),
                     "platform": platform,
                     "request_id": str(ai_request.id),
                     "metadata": {
@@ -387,7 +473,7 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
                         "processing_time": ai_request.processing_time,
                         "cost": float(ai_request.cost) if ai_request.cost else 0,
                         "platform": platform,
-                        "engagement_score": result.get('content', {}).get('engagement_score', 0)
+                        "engagement_score": content.get('engagement_score', 0)
                     }
                 }, status=status.HTTP_200_OK)
             else:

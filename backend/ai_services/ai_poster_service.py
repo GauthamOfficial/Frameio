@@ -162,27 +162,56 @@ class AIPosterService:
                             }
                             
                             # Apply brand overlay if user is provided and has company profile
+                            logger.info(f"=== BRANDING DEBUG ===")
+                            logger.info(f"User provided: {user}")
                             if user:
+                                logger.info(f"User details: {user.username} ({user.email})")
                                 try:
                                     from users.models import CompanyProfile
                                     company_profile = getattr(user, 'company_profile', None)
-                                    if company_profile and company_profile.has_complete_profile:
-                                        brand_result = self.brand_overlay_service.create_branded_poster(
-                                            saved_path, company_profile
-                                        )
-                                        if brand_result.get('status') == 'success':
-                                            final_result.update({
-                                                "image_path": brand_result.get("image_path", saved_path),
-                                                "image_url": brand_result.get("image_url", image_url),
-                                                "filename": brand_result.get("filename", filename),
-                                                "branding_applied": True,
-                                                "logo_added": brand_result.get("logo_added", False),
-                                                "contact_info_added": brand_result.get("contact_info_added", False)
-                                            })
+                                    logger.info(f"Company profile: {company_profile}")
+                                    
+                                    if company_profile:
+                                        logger.info(f"Company name: {company_profile.company_name}")
+                                        logger.info(f"Has logo: {bool(company_profile.logo)}")
+                                        if company_profile.logo:
+                                            logger.info(f"Logo path: {company_profile.logo.path}")
+                                            logger.info(f"Logo file exists: {os.path.exists(company_profile.logo.path)}")
                                         else:
-                                            logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
+                                            logger.info("No logo uploaded")
+                                        logger.info(f"Contact info: {company_profile.get_contact_info()}")
+                                        logger.info(f"Profile complete: {company_profile.has_complete_profile}")
+                                        
+                                        if company_profile.has_complete_profile:
+                                            logger.info("Applying brand overlay...")
+                                            brand_result = self.brand_overlay_service.create_branded_poster(
+                                                saved_path, company_profile
+                                            )
+                                            logger.info(f"Brand overlay result: {brand_result}")
+                                            
+                                            if brand_result.get('status') == 'success':
+                                                logger.info("Brand overlay applied successfully!")
+                                                final_result.update({
+                                                    "image_path": brand_result.get("image_path", saved_path),
+                                                    "image_url": brand_result.get("image_url", image_url),
+                                                    "filename": brand_result.get("filename", filename),
+                                                    "branding_applied": True,
+                                                    "logo_added": brand_result.get("logo_added", False),
+                                                    "contact_info_added": brand_result.get("contact_info_added", False)
+                                                })
+                                            else:
+                                                logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
+                                        else:
+                                            logger.warning("Company profile is not complete - skipping branding")
+                                            logger.warning(f"Missing: logo={not company_profile.logo}, contact={not company_profile.get_contact_info()}")
+                                    else:
+                                        logger.warning("No company profile found for user")
                                 except Exception as brand_error:
-                                    logger.warning(f"Brand overlay error: {str(brand_error)}")
+                                    logger.error(f"Brand overlay error: {str(brand_error)}")
+                                    import traceback
+                                    traceback.print_exc()
+                            else:
+                                logger.warning("No user provided - skipping branding")
                             
                             return final_result
                         except Exception as img_error:
@@ -533,11 +562,11 @@ class AIPosterService:
             if not self.caption_service.client:
                 return {"status": "error", "message": "Caption service not available"}
             
-            logger.info(f"Generating caption and hashtags for prompt: {prompt[:50]}...")
+            logger.info(f"Generating caption and hashtags for generated poster...")
             
-            # Create enhanced content for better social media captions
-            enhanced_content = f"""
-            Create an engaging social media caption for a textile/fashion poster with the following description: {prompt}
+            # Create enhanced content for better social media captions without using the exact prompt
+            enhanced_content = """
+            Create an engaging social media caption for a beautiful textile/fashion poster that showcases elegant design and style.
             
             The caption should be:
             - Engaging and attention-grabbing
@@ -547,6 +576,9 @@ class AIPosterService:
             - Create desire and interest in the product
             - Be conversational and relatable
             - Include relevant fashion/beauty keywords
+            - Focus on the visual appeal and craftsmanship
+            - Highlight the elegance and style of the design
+            - Create a sense of aspiration and desire
             """
             
             # Generate social media caption with enhanced content
@@ -596,10 +628,12 @@ class AIPosterService:
                 logger.warning(f"Caption generation failed: {caption_result.get('message', 'Unknown error')}")
                 # Create more meaningful fallback captions
                 fallback_captions = [
-                    f"✨ Discover the elegance of {prompt[:40]}... Perfect for making a statement! ✨",
-                    f"🌟 Elevate your style with this stunning {prompt[:40]}... A must-have for your wardrobe! 🌟",
-                    f"💫 Fall in love with this gorgeous {prompt[:40]}... Timeless beauty meets modern elegance! 💫",
-                    f"🌸 Embrace the beauty of {prompt[:40]}... Where tradition meets contemporary fashion! 🌸"
+                    "✨ Discover the elegance of this stunning textile design... Perfect for making a statement! ✨",
+                    "🌟 Elevate your style with this beautiful creation... A must-have for your wardrobe! 🌟",
+                    "💫 Fall in love with this gorgeous design... Timeless beauty meets modern elegance! 💫",
+                    "🌸 Embrace the beauty of this elegant piece... Where tradition meets contemporary fashion! 🌸",
+                    "✨ Step into elegance with this breathtaking design... Perfect for any special occasion! ✨",
+                    "🌟 Make a statement with this gorgeous textile... Timeless style that never goes out of fashion! 🌟"
                 ]
                 
                 import random
@@ -618,9 +652,11 @@ class AIPosterService:
             logger.error(f"Error generating caption and hashtags: {str(e)}")
             # Create meaningful fallback even for exceptions
             fallback_captions = [
-                f"✨ Discover the elegance of {prompt[:40]}... Perfect for making a statement! ✨",
-                f"🌟 Elevate your style with this stunning {prompt[:40]}... A must-have for your wardrobe! 🌟",
-                f"💫 Fall in love with this gorgeous {prompt[:40]}... Timeless beauty meets modern elegance! 💫"
+                "✨ Discover the elegance of this stunning textile design... Perfect for making a statement! ✨",
+                "🌟 Elevate your style with this beautiful creation... A must-have for your wardrobe! 🌟",
+                "💫 Fall in love with this gorgeous design... Timeless beauty meets modern elegance! 💫",
+                "🌸 Embrace the beauty of this elegant piece... Where tradition meets contemporary fashion! 🌸",
+                "✨ Step into elegance with this breathtaking design... Perfect for any special occasion! ✨"
             ]
             
             import random

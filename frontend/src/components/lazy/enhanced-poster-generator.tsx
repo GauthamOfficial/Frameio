@@ -18,6 +18,7 @@ import {
   Sparkles
 } from "lucide-react"
 import React, { useState, useRef } from "react"
+import { useUser, useAuth } from '@clerk/nextjs'
 
 interface GenerationResult {
   success: boolean
@@ -36,6 +37,10 @@ interface GenerationResult {
 }
 
 export default function EnhancedPosterGenerator() {
+  // Authentication
+  const { user } = useUser()
+  const { getToken } = useAuth()
+  
   // State management
   const [isGenerating, setIsGenerating] = useState(false)
   const [prompt, setPrompt] = useState("")
@@ -67,6 +72,11 @@ export default function EnhancedPosterGenerator() {
       console.log('Prompt:', prompt)
       console.log('Aspect Ratio:', aspectRatio)
       console.log('Has uploaded image:', !!uploadedImage)
+      console.log('User authenticated:', !!user)
+
+      // Get authentication token
+      const token = await getToken()
+      const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {}
 
       let response;
 
@@ -79,6 +89,7 @@ export default function EnhancedPosterGenerator() {
 
         response = await fetch('http://localhost:8000/api/ai/ai-poster/edit_poster/', {
           method: 'POST',
+          headers: authHeaders,
           body: formData
         })
       } else {
@@ -87,6 +98,7 @@ export default function EnhancedPosterGenerator() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...authHeaders
           },
           body: JSON.stringify({
             prompt: prompt,

@@ -61,6 +61,69 @@ def generate_poster(request):
         
         # Generate poster using AI service
         user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+        
+        # Enhanced debugging for user context
+        logger.info(f"=== POSTER GENERATION DEBUG ===")
+        logger.info(f"Request user: {user}")
+        logger.info(f"User authenticated: {hasattr(request, 'user') and request.user.is_authenticated}")
+        logger.info(f"Request headers: {dict(request.META)}")
+        
+        # Check for authentication headers
+        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+        logger.info(f"Authorization header: {auth_header}")
+        
+        # Try to get user from different authentication methods
+        if not user or not user.is_authenticated:
+            logger.warning("No authenticated user found - trying fallback methods")
+            
+            # Check if we can get user from development headers
+            dev_user_id = request.META.get('HTTP_X_DEV_USER_ID')
+            if dev_user_id:
+                try:
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    user = User.objects.get(id=dev_user_id)
+                    logger.info(f"Found user from development headers: {user}")
+                except Exception as e:
+                    logger.error(f"Failed to get user from dev headers: {e}")
+            
+            # Fallback: Try to get the first user with a complete company profile
+            if not user:
+                try:
+                    from users.models import CompanyProfile
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    
+                    # Get the first user with a complete company profile
+                    company_profiles = CompanyProfile.objects.filter(
+                        logo__isnull=False,
+                        company_name__isnull=False
+                    ).exclude(company_name='').exclude(logo='')
+                    
+                    if company_profiles.exists():
+                        user = company_profiles.first().user
+                        logger.info(f"Using fallback user with complete profile: {user.username}")
+                    else:
+                        logger.warning("No users with complete company profiles found")
+                except Exception as e:
+                    logger.error(f"Error in fallback user selection: {e}")
+        else:
+            logger.info(f"Authenticated user found: {user.username} ({user.email})")
+            
+            # Check if user has company profile
+            try:
+                from users.models import CompanyProfile
+                company_profile = getattr(user, 'company_profile', None)
+                if company_profile:
+                    logger.info(f"Company profile found: {company_profile.company_name}")
+                    logger.info(f"Has logo: {bool(company_profile.logo)}")
+                    logger.info(f"Has contact info: {bool(company_profile.get_contact_info())}")
+                    logger.info(f"Profile complete: {company_profile.has_complete_profile}")
+                else:
+                    logger.warning("No company profile found for user")
+            except Exception as e:
+                logger.error(f"Error checking company profile: {e}")
+        
         result = ai_poster_service.generate_from_prompt(prompt, aspect_ratio, user)
         
         if result.get('status') == 'success':

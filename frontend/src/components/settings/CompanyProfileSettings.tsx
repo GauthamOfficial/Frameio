@@ -163,8 +163,23 @@ const CompanyProfileSettings: React.FC = () => {
         try {
           const errorData = await response.json()
           errorMessage = errorData.error || errorData.message || errorMessage
+          // Check if errorData has meaningful content
+          if (errorData && typeof errorData === 'object' && Object.keys(errorData).length > 0) {
+            // Check if the object has any non-empty values
+            const hasContent = Object.values(errorData).some(value => 
+              value !== null && value !== undefined && value !== ''
+            )
+            if (hasContent) {
+              console.error('❌ Load error response:', errorData)
+            } else {
+              console.error('❌ Load error response: Empty object with no meaningful data')
+            }
+          } else {
+            console.error('❌ Load error response: Empty or invalid JSON')
+          }
         } catch (parseError) {
           errorMessage = response.statusText || `HTTP ${response.status}`
+          console.error('❌ Load error (non-JSON):', errorMessage)
         }
         
         if (response.status === 401) {
@@ -244,6 +259,27 @@ const CompanyProfileSettings: React.FC = () => {
     }))
   }
 
+  const formatUrl = (url: string): string => {
+    if (!url) return url
+    
+    // If URL doesn't start with http:// or https://, add https://
+    if (!url.match(/^https?:\/\//)) {
+      return `https://${url}`
+    }
+    return url
+  }
+
+  const validateUrl = (url: string): boolean => {
+    if (!url) return true // Empty URL is valid (optional field)
+    
+    try {
+      const urlObj = new URL(url)
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }
+
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -266,27 +302,12 @@ const CompanyProfileSettings: React.FC = () => {
     try {
       setSaving(true)
       
-      const formDataToSend = new FormData()
-      
-      // Add text fields
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value) {
-          formDataToSend.append(key, value)
-        }
-      })
-      
-      // Add logo file if selected
-      if (logoFile) {
-        formDataToSend.append('logo', logoFile)
-      }
-
       const token = await getToken()
       const authToken = token || 'test_clerk_token'
       
       console.log('💾 Saving profile...')
       console.log('Using token:', authToken ? 'Present' : 'Missing')
       console.log('API Endpoint:', API_ENDPOINTS.COMPANY_PROFILES)
-      console.log('Form data keys:', Array.from(formDataToSend.keys()))
       
       // Test connectivity first
       try {
@@ -304,15 +325,71 @@ const CompanyProfileSettings: React.FC = () => {
         return
       }
       
-      const response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: formDataToSend,
-        // Add timeout to prevent hanging requests
-        signal: AbortSignal.timeout(15000) // 15 second timeout for file uploads
-      })
+      let response
+      
+      // Format URLs before sending
+      const formattedData = {
+        ...formData,
+        website: formData.website ? formatUrl(formData.website) : formData.website,
+        facebook_link: formData.facebook_link ? formatUrl(formData.facebook_link) : formData.facebook_link
+      }
+
+      // Validate URLs before sending
+      if (formattedData.website && !validateUrl(formattedData.website)) {
+        showError('Please enter a valid website URL (e.g., https://example.com)')
+        return
+      }
+      if (formattedData.facebook_link && !validateUrl(formattedData.facebook_link)) {
+        showError('Please enter a valid Facebook URL (e.g., https://facebook.com/yourpage)')
+        return
+      }
+
+      // If there's a logo file, use FormData (multipart)
+      if (logoFile) {
+        const formDataToSend = new FormData()
+        
+        // Add text fields
+        Object.entries(formattedData).forEach(([key, value]) => {
+          if (value) {
+            formDataToSend.append(key, value)
+          }
+        })
+        
+        // Add logo file
+        formDataToSend.append('logo', logoFile)
+        
+        console.log('📁 Using FormData for file upload')
+        console.log('Form data keys:', Array.from(formDataToSend.keys()))
+        
+        response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: formDataToSend,
+          // Add timeout to prevent hanging requests
+          signal: AbortSignal.timeout(15000) // 15 second timeout for file uploads
+        })
+      } else {
+        // No file upload, use JSON
+        const jsonData = {
+          ...formattedData
+        }
+        
+        console.log('📄 Using JSON for data-only request')
+        console.log('JSON data:', jsonData)
+        
+        response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(jsonData),
+          // Add timeout to prevent hanging requests
+          signal: AbortSignal.timeout(10000) // 10 second timeout for JSON requests
+        })
+      }
 
       console.log('Save response status:', response.status)
       console.log('Save response headers:', Object.fromEntries(response.headers.entries()))
@@ -328,12 +405,31 @@ const CompanyProfileSettings: React.FC = () => {
         let errorMessage = 'Failed to update profile'
         try {
           const errorData = await response.json()
-          errorMessage = errorData.error || errorData.message || errorMessage
-          console.error('❌ Save error response:', errorData)
+          console.log('Raw error response:', errorData)
+          console.log('Error data type:', typeof errorData)
+          console.log('Error data keys:', Object.keys(errorData))
+          console.log('Error data values:', Object.values(errorData))
+          
+          errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
+          
+          // Log the error with better formatting
+          if (errorData && typeof errorData === 'object') {
+            if (Object.keys(errorData).length > 0) {
+              console.error('❌ Save error response (400 Bad Request):')
+              console.error('  Status:', response.status)
+              console.error('  Error object:', JSON.stringify(errorData, null, 2))
+              console.error('  Error message:', errorMessage)
+            } else {
+              console.error('❌ Save error response: Empty object')
+            }
+          } else {
+            console.error('❌ Save error response: Not an object')
+          }
         } catch (parseError) {
           // If response is not JSON (like "Unauthorized"), use status text
           errorMessage = response.statusText || `HTTP ${response.status}`
           console.error('❌ Save error (non-JSON):', errorMessage)
+          console.error('Parse error:', parseError)
         }
         
         if (response.status === 401) {
@@ -341,7 +437,20 @@ const CompanyProfileSettings: React.FC = () => {
         } else if (response.status === 413) {
           showError('File too large. Please choose a smaller logo image.')
         } else if (response.status === 400) {
-          showError('Invalid data. Please check your inputs and try again.')
+          // For 400 errors, show more specific error message
+          if (errorMessage.includes('company_name') || errorMessage.includes('name')) {
+            showError('Please enter a valid company name.')
+          } else if (errorMessage.includes('email')) {
+            showError('Please enter a valid email address.')
+          } else if (errorMessage.includes('website') && errorMessage.includes('URL')) {
+            showError('Please enter a valid website URL (e.g., https://example.com)')
+          } else if (errorMessage.includes('facebook') && errorMessage.includes('URL')) {
+            showError('Please enter a valid Facebook URL (e.g., https://facebook.com/yourpage)')
+          } else if (errorMessage.includes('logo') || errorMessage.includes('image')) {
+            showError('Please select a valid logo image.')
+          } else {
+            showError(`Invalid data: ${errorMessage}`)
+          }
         } else {
           showError(errorMessage)
         }
@@ -446,6 +555,7 @@ const CompanyProfileSettings: React.FC = () => {
               <Label htmlFor="website">Website</Label>
               <Input
                 id="website"
+                type="url"
                 value={formData.website}
                 onChange={(e) => handleInputChange('website', e.target.value)}
                 placeholder="https://yourcompany.com"
@@ -580,10 +690,14 @@ const CompanyProfileSettings: React.FC = () => {
             <Label htmlFor="facebook_link">Facebook Page</Label>
             <Input
               id="facebook_link"
+              type="url"
               value={formData.facebook_link}
               onChange={(e) => handleInputChange('facebook_link', e.target.value)}
               placeholder="https://facebook.com/yourcompany"
             />
+            <p className="text-xs text-gray-500">
+              Enter your Facebook page URL (e.g., https://facebook.com/yourpage or facebook.com/yourpage)
+            </p>
           </div>
           
           <div className="space-y-2">

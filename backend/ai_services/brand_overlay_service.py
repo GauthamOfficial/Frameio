@@ -89,7 +89,10 @@ class BrandOverlayService:
         try:
             # Try to get the file from Django storage
             with default_storage.open(image_path, 'rb') as f:
-                return Image.open(f)
+                # Read the file content into memory to avoid file handle issues
+                image_data = f.read()
+                from io import BytesIO
+                return Image.open(BytesIO(image_data))
         except Exception as e:
             logger.error(f"Failed to load image from storage: {str(e)}")
             # Fallback: try direct file system access
@@ -103,9 +106,20 @@ class BrandOverlayService:
     def _add_logo_overlay(self, poster_image: Image.Image, company_profile) -> Image.Image:
         """Add company logo overlay to poster."""
         try:
+            # Check if logo exists and is valid
+            if not company_profile.logo or not company_profile.logo.name:
+                logger.warning("No logo found for company profile")
+                return poster_image
+            
+            # Check if logo file exists
+            if not os.path.exists(company_profile.logo.path):
+                logger.warning(f"Logo file not found at path: {company_profile.logo.path}")
+                return poster_image
+            
             # Load company logo
             logo_image = self._load_image(company_profile.logo.path)
             if not logo_image:
+                logger.warning("Failed to load logo image")
                 return poster_image
             
             # Resize logo to appropriate size
@@ -152,39 +166,51 @@ class BrandOverlayService:
                 try:
                     font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", self.contact_font_size)
                 except:
-                    font = ImageFont.load_default()
+                    try:
+                        # Try Windows font path
+                        font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", self.contact_font_size)
+                    except:
+                        font = ImageFont.load_default()
             
-            # Calculate contact info position (bottom-left corner)
+            # Calculate contact info position and dimensions
             contact_position = self._calculate_contact_position(poster_image.size)
             
-            # Add contact information with icons
-            y_offset = contact_position[1]
-            line_height = self.contact_font_size + 10
-            
-            # WhatsApp
+            # Count the number of contact lines to determine overlay height
+            contact_lines = []
             if 'whatsapp' in contact_info:
-                whatsapp_text = f"📱 {contact_info['whatsapp']}"
-                draw.text((contact_position[0], y_offset), whatsapp_text, font=font, fill="white")
-                y_offset += line_height
-            
-            # Email
+                contact_lines.append(f"📱 {contact_info['whatsapp']}")
             if 'email' in contact_info:
-                email_text = f"✉️ {contact_info['email']}"
-                draw.text((contact_position[0], y_offset), email_text, font=font, fill="white")
-                y_offset += line_height
-            
-            # Facebook
+                contact_lines.append(f"✉️ {contact_info['email']}")
             if 'facebook' in contact_info:
-                facebook_text = f"📘 {contact_info['facebook']}"
-                draw.text((contact_position[0], y_offset), facebook_text, font=font, fill="white")
+                contact_lines.append(f"📘 {contact_info['facebook']}")
+            if company_profile.company_name:
+                contact_lines.append(f"🏢 {company_profile.company_name}")
+            
+            if not contact_lines:
+                logger.warning("No contact information to display")
+                return poster_image
+            
+            # Calculate overlay dimensions
+            line_height = self.contact_font_size + 10
+            overlay_height = len(contact_lines) * line_height + 40  # Add padding
+            overlay_width = poster_image.width
+            
+            # Create a semi-transparent background overlay
+            overlay = Image.new("RGBA", (overlay_width, overlay_height), (0, 0, 0, 150))
+            
+            # Paste the overlay at the bottom of the poster
+            overlay_y = poster_image.height - overlay_height
+            poster_image.paste(overlay, (0, overlay_y), overlay)
+            
+            # Add contact information with icons
+            y_offset = overlay_y + 20  # Start 20px from top of overlay
+            text_color = (255, 255, 255, 255)  # White text
+            
+            for line in contact_lines:
+                draw.text((contact_position[0], y_offset), line, font=font, fill=text_color)
                 y_offset += line_height
             
-            # Add company name if available
-            if company_profile.company_name:
-                company_text = f"🏢 {company_profile.company_name}"
-                draw.text((contact_position[0], y_offset), company_text, font=font, fill="white")
-            
-            logger.info(f"Contact overlay added at position {contact_position}")
+            logger.info(f"Contact overlay added with {len(contact_lines)} lines at position {contact_position}")
             return poster_image
             
         except Exception as e:

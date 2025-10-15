@@ -81,7 +81,7 @@ SelectTrigger.displayName = "SelectTrigger"
 
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children, ...props }, ref) => {
-    const { isOpen, setIsOpen, onValueChange, ...domProps } = (props as any) || {}
+    const { isOpen, setIsOpen, onValueChange, selectedValue, ...domProps } = (props as any) || {}
     
     if (!isOpen) return null
 
