@@ -288,7 +288,7 @@ class CompanyProfile(models.Model):
         return bool(
             self.company_name and 
             self.logo and 
-            (self.whatsapp_number or self.email or self.facebook_link)
+            (self.whatsapp_number or self.email)
         )
     
     def get_contact_info(self):
@@ -298,6 +298,4 @@ class CompanyProfile(models.Model):
             contact_info['whatsapp'] = self.whatsapp_number
         if self.email:
             contact_info['email'] = self.email
-        if self.facebook_link:
-            contact_info['facebook'] = self.facebook_link
         return contact_info

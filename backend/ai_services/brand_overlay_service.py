@@ -178,13 +178,9 @@ class BrandOverlayService:
             # Count the number of contact lines to determine overlay height
             contact_lines = []
             if 'whatsapp' in contact_info:
-                contact_lines.append(f"📱 {contact_info['whatsapp']}")
+                contact_lines.append(f"📱 WhatsApp: {contact_info['whatsapp']}")
             if 'email' in contact_info:
-                contact_lines.append(f"✉️ {contact_info['email']}")
-            if 'facebook' in contact_info:
-                contact_lines.append(f"📘 {contact_info['facebook']}")
-            if company_profile.company_name:
-                contact_lines.append(f"🏢 {company_profile.company_name}")
+                contact_lines.append(f"✉️ Email: {contact_info['email']}")
             
             if not contact_lines:
                 logger.warning("No contact information to display")

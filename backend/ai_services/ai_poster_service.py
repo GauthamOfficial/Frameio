@@ -230,14 +230,15 @@ class AIPosterService:
             logger.error(f"Error generating poster from prompt: {str(e)}")
             return {"status": "error", "message": str(e)}
     
-    def generate_with_image(self, prompt: str, image_path: str, aspect_ratio: str = "1:1") -> Dict[str, Any]:
+    def generate_with_image(self, prompt: str, image_path: str, aspect_ratio: str = "1:1", user=None) -> Dict[str, Any]:
         """
-        Generate edited poster using prompt + uploaded image
+        Generate edited poster using prompt + uploaded image with branding
         
         Args:
             prompt: Text description for the edit
             image_path: Path to uploaded image (Django storage path)
             aspect_ratio: Image aspect ratio (1:1, 16:9, 4:5)
+            user: User object for automatic branding
             
         Returns:
             Dict containing status and image path
@@ -310,7 +311,8 @@ class AIPosterService:
                     # Generate caption and hashtags for the poster
                     caption_result = self.generate_caption_and_hashtags(prompt, image_url)
                     
-                    return {
+                    # Add brand overlay if user has company profile
+                    final_result = {
                         "status": "success", 
                         "image_path": saved_path,
                         "image_url": image_url,
@@ -319,8 +321,63 @@ class AIPosterService:
                         "full_caption": caption_result.get("full_caption", ""),
                         "hashtags": caption_result.get("hashtags", []),
                         "emoji": caption_result.get("emoji", ""),
-                        "call_to_action": caption_result.get("call_to_action", "")
+                        "call_to_action": caption_result.get("call_to_action", ""),
+                        "branding_applied": False
                     }
+                    
+                    # Apply brand overlay if user is provided and has company profile
+                    logger.info(f"=== BRANDING DEBUG (EDIT POSTER) ===")
+                    logger.info(f"User provided: {user}")
+                    if user:
+                        logger.info(f"User details: {user.username} ({user.email})")
+                        try:
+                            from users.models import CompanyProfile
+                            company_profile = getattr(user, 'company_profile', None)
+                            logger.info(f"Company profile: {company_profile}")
+                            
+                            if company_profile:
+                                logger.info(f"Company name: {company_profile.company_name}")
+                                logger.info(f"Has logo: {bool(company_profile.logo)}")
+                                if company_profile.logo:
+                                    logger.info(f"Logo path: {company_profile.logo.path}")
+                                    logger.info(f"Logo file exists: {os.path.exists(company_profile.logo.path)}")
+                                else:
+                                    logger.info("No logo uploaded")
+                                logger.info(f"Contact info: {company_profile.get_contact_info()}")
+                                logger.info(f"Profile complete: {company_profile.has_complete_profile}")
+                                
+                                if company_profile.has_complete_profile:
+                                    logger.info("Applying brand overlay to edited poster...")
+                                    brand_result = self.brand_overlay_service.create_branded_poster(
+                                        saved_path, company_profile
+                                    )
+                                    logger.info(f"Brand overlay result: {brand_result}")
+                                    
+                                    if brand_result.get('status') == 'success':
+                                        logger.info("Brand overlay applied successfully to edited poster!")
+                                        final_result.update({
+                                            "image_path": brand_result.get("image_path", saved_path),
+                                            "image_url": brand_result.get("image_url", image_url),
+                                            "filename": brand_result.get("filename", filename),
+                                            "branding_applied": True,
+                                            "logo_added": brand_result.get("logo_added", False),
+                                            "contact_info_added": brand_result.get("contact_info_added", False)
+                                        })
+                                    else:
+                                        logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
+                                else:
+                                    logger.warning("Company profile is not complete - skipping branding")
+                                    logger.warning(f"Missing: logo={not company_profile.logo}, contact={not company_profile.get_contact_info()}")
+                            else:
+                                logger.warning("No company profile found for user")
+                        except Exception as brand_error:
+                            logger.error(f"Brand overlay error: {str(brand_error)}")
+                            import traceback
+                            traceback.print_exc()
+                    else:
+                        logger.warning("No user provided - skipping branding")
+                    
+                    return final_result
             
             return {"status": "error", "message": "No edited image returned from model"}
             

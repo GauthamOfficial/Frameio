@@ -1,40 +1,45 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Test script for automatic company branding in post generation
+Test Automatic Branding Integration
+Tests that company logos and contact details are automatically added to generated posters.
 """
+
 import os
 import sys
 import django
-from django.conf import settings
+import logging
+from pathlib import Path
 
 # Add the backend directory to Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+backend_dir = Path(__file__).parent
+sys.path.insert(0, str(backend_dir))
 
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'frameio_backend.settings')
 django.setup()
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from users.models import CompanyProfile
-from ai_services.post_generation_views import AIPostGenerationViewSet
+from ai_services.ai_poster_service import AIPosterService
 from ai_services.brand_overlay_service import BrandOverlayService
-import logging
+import tempfile
+from PIL import Image
+import io
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def test_company_branding_integration():
-    """Test the automatic company branding integration"""
-    print("🧪 Testing Automatic Company Branding Integration")
-    print("=" * 60)
-    
+User = get_user_model()
+
+def create_test_user_and_profile():
+    """Create a test user with complete company profile."""
     try:
-        # Create a test user if it doesn't exist
-        test_user, created = User.objects.get_or_create(
-            username='test_branding_user',
+        # Create or get test user
+        user, created = User.objects.get_or_create(
+            email='branding_test@textilecompany.com',
             defaults={
-                'email': 'test@company.com',
+                'username': 'branding_test_user',
                 'first_name': 'Test',
                 'last_name': 'User'
             }
@@ -43,148 +48,218 @@ def test_company_branding_integration():
         if created:
             print("✅ Created test user")
         else:
-            print("✅ Found existing test user")
+            print("✅ Using existing test user")
         
         # Create or get company profile
-        company_profile, created = CompanyProfile.objects.get_or_create(
-            user=test_user,
+        profile, created = CompanyProfile.objects.get_or_create(
+            user=user,
             defaults={
                 'company_name': 'Test Textile Company',
                 'whatsapp_number': '+1234567890',
-                'email': 'contact@testcompany.com',
-                'facebook_link': 'https://facebook.com/testcompany',
-                'description': 'A test textile company for branding verification'
+                'email': 'contact@testtextile.com',
+                'preferred_logo_position': 'top_right'
             }
         )
         
         if created:
             print("✅ Created company profile")
         else:
-            print("✅ Found existing company profile")
+            print("✅ Using existing company profile")
         
-        # Test the branding service
-        viewset = AIPostGenerationViewSet()
+        # Create a simple test logo
+        if not profile.logo:
+            print("📝 Creating test logo...")
+            logo_img = Image.new('RGB', (200, 200), color='blue')
+            from PIL import ImageDraw, ImageFont
+            
+            # Add text to logo
+            draw = ImageDraw.Draw(logo_img)
+            try:
+                font = ImageFont.truetype("arial.ttf", 30)
+            except:
+                font = ImageFont.load_default()
+            
+            draw.text((50, 80), "TEST", fill='white', font=font)
+            draw.text((50, 120), "LOGO", fill='white', font=font)
+            
+            # Save logo to profile
+            logo_bytes = io.BytesIO()
+            logo_img.save(logo_bytes, format='PNG')
+            logo_bytes.seek(0)
+            
+            from django.core.files.base import ContentFile
+            profile.logo.save('test_logo.png', ContentFile(logo_bytes.getvalue()), save=True)
+            print("✅ Test logo created and saved")
         
-        # Test company branding retrieval
-        print("\n🔍 Testing Company Branding Retrieval:")
-        company_branding = viewset._get_company_branding(test_user)
-        print(f"   Company Branding: {company_branding}")
+        print(f"✅ Company Profile Status:")
+        print(f"   Company Name: {profile.company_name}")
+        print(f"   Logo: {profile.logo.name if profile.logo else 'None'}")
+        print(f"   WhatsApp: {profile.whatsapp_number}")
+        print(f"   Email: {profile.email}")
+        print(f"   Complete Profile: {profile.has_complete_profile}")
         
-        if company_branding.get('has_branding'):
-            print("✅ Company branding found and configured")
-        else:
-            print("❌ Company branding not found or incomplete")
-            return False
+        return user, profile
         
-        # Test content enrichment
-        print("\n🔍 Testing Content Enrichment:")
-        test_content = {
-            'main_text': 'This is a test post about our amazing textile products!',
-            'hashtags': ['#textile', '#fashion', '#quality']
-        }
+    except Exception as e:
+        print(f"❌ Error creating test user and profile: {str(e)}")
+        return None, None
+
+def test_brand_overlay_service():
+    """Test the brand overlay service directly."""
+    print("\n🧪 Testing Brand Overlay Service...")
+    
+    try:
+        # Create a test poster image
+        poster_img = Image.new('RGB', (800, 600), color='lightblue')
+        from PIL import ImageDraw, ImageFont
+        draw = ImageDraw.Draw(poster_img)
         
-        enriched_content = viewset._enrich_content_with_branding(test_content, company_branding)
+        try:
+            font = ImageFont.truetype("arial.ttf", 40)
+        except:
+            font = ImageFont.load_default()
         
-        print("📝 Original Content:")
-        print(f"   {test_content['main_text']}")
+        draw.text((200, 250), "AI Generated Textile Poster", fill='darkblue', font=font)
         
-        print("\n📝 Enriched Content:")
-        print(f"   {enriched_content['main_text']}")
+        # Save test poster to temporary file
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+            poster_img.save(temp_file.name, format='PNG')
+            temp_poster_path = temp_file.name
         
-        # Verify branding was added
-        if '🏢' in enriched_content['main_text'] and '📞' in enriched_content['main_text']:
-            print("✅ Company branding successfully added to content")
-        else:
-            print("❌ Company branding not properly added")
+        print(f"✅ Test poster created: {temp_poster_path}")
+        
+        # Get test user and profile
+        user, profile = create_test_user_and_profile()
+        if not user or not profile:
             return False
         
         # Test brand overlay service
-        print("\n🔍 Testing Brand Overlay Service:")
-        brand_service = BrandOverlayService()
+        overlay_service = BrandOverlayService()
         
-        # Test contact info formatting
-        contact_info = company_profile.get_contact_info()
-        print(f"   Contact Info: {contact_info}")
+        # Test brand overlay
+        result = overlay_service.add_brand_overlay(
+            temp_poster_path,
+            profile,
+            "test_branded_poster.png"
+        )
         
-        if contact_info:
-            print("✅ Contact information properly formatted")
+        print(f"\n📊 Brand Overlay Result:")
+        print(f"   Status: {result.get('status')}")
+        print(f"   Image Path: {result.get('image_path')}")
+        print(f"   Image URL: {result.get('image_url')}")
+        print(f"   Branding Applied: {result.get('branding_applied')}")
+        print(f"   Logo Added: {result.get('logo_added')}")
+        print(f"   Contact Info Added: {result.get('contact_info_added')}")
+        
+        if result.get('status') == 'success':
+            print("✅ Brand overlay applied successfully!")
+            print("✅ Logo and contact information should be visible in the final image")
+            return True
         else:
-            print("❌ Contact information not available")
+            print(f"❌ Brand overlay failed: {result.get('message')}")
             return False
         
-        print("\n🎉 All Tests Passed! Automatic Branding Integration is Working!")
-        print("\n📋 Summary:")
-        print("   ✅ Company profile detection")
-        print("   ✅ Logo and contact details retrieval")
-        print("   ✅ Content enrichment with branding")
-        print("   ✅ Contact information formatting")
-        print("   ✅ Brand overlay service integration")
-        
-        return True
-        
     except Exception as e:
-        print(f"❌ Test failed with error: {str(e)}")
-        logger.error(f"Test failed: {str(e)}", exc_info=True)
+        print(f"❌ Error testing brand overlay service: {str(e)}")
         return False
+    finally:
+        # Clean up temporary file
+        try:
+            if 'temp_poster_path' in locals():
+                os.unlink(temp_poster_path)
+        except:
+            pass
 
-def test_branding_features():
-    """Test specific branding features"""
-    print("\n🔍 Testing Specific Branding Features:")
-    print("-" * 40)
+def test_ai_poster_generation_with_branding():
+    """Test AI poster generation with automatic branding."""
+    print("\n🧪 Testing AI Poster Generation with Branding...")
     
     try:
-        # Test company profile completeness
-        test_user = User.objects.get(username='test_branding_user')
-        company_profile = test_user.company_profile
+        # Get test user and profile
+        user, profile = create_test_user_and_profile()
+        if not user or not profile:
+            return False
         
-        print(f"   Company Name: {company_profile.company_name}")
-        print(f"   WhatsApp: {company_profile.whatsapp_number}")
-        print(f"   Email: {company_profile.email}")
-        print(f"   Facebook: {company_profile.facebook_link}")
-        print(f"   Has Complete Profile: {company_profile.has_complete_profile}")
+        # Initialize AI poster service
+        ai_service = AIPosterService()
         
-        # Test contact info formatting
-        contact_info = company_profile.get_contact_info()
-        print(f"   Formatted Contact Info: {contact_info}")
+        if not ai_service.is_available():
+            print("❌ AI service is not available")
+            print("   Make sure GEMINI_API_KEY is set in environment variables")
+            return False
         
-        # Test branding text generation
-        branding_text = ""
-        if company_profile.company_name:
-            branding_text += f"\n\n🏢 {company_profile.company_name}"
+        print("✅ AI service is available")
         
-        if contact_info:
-            branding_text += "\n\n📞 Contact Us:"
-            if contact_info.get('whatsapp'):
-                branding_text += f"\n📱 WhatsApp: {contact_info['whatsapp']}"
-            if contact_info.get('email'):
-                branding_text += f"\n✉️ Email: {contact_info['email']}"
-            if contact_info.get('facebook'):
-                branding_text += f"\n📘 Facebook: {contact_info['facebook']}"
+        # Test prompt
+        test_prompt = "Create a beautiful textile poster for a silk saree collection with elegant patterns"
+        print(f"📝 Test prompt: {test_prompt}")
         
-        print(f"\n   Generated Branding Text:")
-        print(f"   {branding_text}")
+        # Generate poster with branding
+        print("🚀 Generating poster with automatic branding...")
+        result = ai_service.generate_from_prompt(test_prompt, "4:5", user)
         
-        return True
+        print(f"\n📊 Generation Result:")
+        print(f"   Status: {result.get('status')}")
+        print(f"   Success: {result.get('status') == 'success'}")
+        
+        if result.get('status') == 'success':
+            print(f"   Image Path: {result.get('image_path')}")
+            print(f"   Image URL: {result.get('image_url')}")
+            print(f"   Branding Applied: {result.get('branding_applied', False)}")
+            print(f"   Logo Added: {result.get('logo_added', False)}")
+            print(f"   Contact Info Added: {result.get('contact_info_added', False)}")
+            
+            if result.get('branding_applied'):
+                print("✅ SUCCESS: Branding was automatically applied!")
+                print("✅ The generated poster should contain:")
+                print("   - Company logo in the preferred position")
+                print("   - Contact information (WhatsApp, Email, Facebook)")
+                print("   - Company name")
+                return True
+            else:
+                print("❌ Branding was not applied")
+                print("   This might be because:")
+                print("   - Company profile is incomplete")
+                print("   - Logo file is missing or corrupted")
+                print("   - Brand overlay service error")
+                return False
+        else:
+            print(f"❌ Poster generation failed: {result.get('message')}")
+            return False
         
     except Exception as e:
-        print(f"❌ Branding features test failed: {str(e)}")
+        print(f"❌ Error testing AI poster generation: {str(e)}")
+        return False
+
+def main():
+    """Run all branding tests."""
+    print("🎯 Testing Automatic Branding Integration")
+    print("=" * 50)
+    
+    # Test 1: Brand Overlay Service
+    print("\n1️⃣ Testing Brand Overlay Service...")
+    overlay_success = test_brand_overlay_service()
+    
+    # Test 2: AI Poster Generation with Branding
+    print("\n2️⃣ Testing AI Poster Generation with Branding...")
+    generation_success = test_ai_poster_generation_with_branding()
+    
+    # Summary
+    print("\n" + "=" * 50)
+    print("📊 TEST SUMMARY:")
+    print(f"   Brand Overlay Service: {'✅ PASS' if overlay_success else '❌ FAIL'}")
+    print(f"   AI Poster Generation: {'✅ PASS' if generation_success else '❌ FAIL'}")
+    
+    if overlay_success and generation_success:
+        print("\n🎉 ALL TESTS PASSED!")
+        print("✅ Automatic branding is working correctly")
+        print("✅ Company logos and contact details are automatically added to generated posters")
+        return True
+    else:
+        print("\n❌ SOME TESTS FAILED")
+        print("❌ Automatic branding may not be working correctly")
         return False
 
 if __name__ == "__main__":
-    print("🚀 Starting Automatic Branding Integration Test")
-    print("=" * 60)
-    
-    # Run tests
-    test1_passed = test_company_branding_integration()
-    test2_passed = test_branding_features()
-    
-    if test1_passed and test2_passed:
-        print("\n🎉 ALL TESTS PASSED!")
-        print("✅ Automatic company branding is working correctly")
-        print("✅ Company logos and contact details will be included in all generated posts")
-        print("✅ Users with complete company profiles will get branded posts automatically")
-    else:
-        print("\n❌ SOME TESTS FAILED!")
-        print("Please check the implementation and try again")
-    
-    print("\n" + "=" * 60)
+    success = main()
+    sys.exit(0 if success else 1)

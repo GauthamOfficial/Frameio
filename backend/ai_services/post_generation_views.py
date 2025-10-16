@@ -56,23 +56,14 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
         # Add company branding to the content
         branding_text = ""
         
-        # Add company name if available
-        if company_branding.get('company_name'):
-            branding_text += f"\n\n🏢 {company_branding['company_name']}"
-        
         # Add contact information with icons
         contact_info = company_branding.get('contact_info', {})
         if contact_info:
-            branding_text += "\n\n📞 Contact Us:"
-            
             if contact_info.get('whatsapp'):
                 branding_text += f"\n📱 WhatsApp: {contact_info['whatsapp']}"
             
             if contact_info.get('email'):
                 branding_text += f"\n✉️ Email: {contact_info['email']}"
-            
-            if contact_info.get('facebook'):
-                branding_text += f"\n📘 Facebook: {contact_info['facebook']}"
         
         # Append branding to the main content
         if 'main_text' in content:

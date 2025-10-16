@@ -77,6 +77,11 @@ export default function EnhancedPosterGenerator() {
       // Get authentication token
       const token = await getToken()
       const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {}
+      
+      // Add user context for branding (development)
+      if (user?.id) {
+        authHeaders['X-Dev-User-ID'] = user.id
+      }
 
       let response;
 

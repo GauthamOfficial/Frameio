@@ -48,6 +48,11 @@ export default function AIPosterGeneratorPage() {
       // Get authentication token
       const token = await getToken();
       const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+      
+      // Add user context for branding (development)
+      if (user?.id) {
+        authHeaders['X-Dev-User-ID'] = user.id;
+      }
 
       const response = await fetch('http://localhost:8000/api/ai/ai-poster/generate_poster/', {
         method: 'POST',

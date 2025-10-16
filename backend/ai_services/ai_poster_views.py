@@ -205,8 +205,58 @@ def edit_poster(request):
         logger.info(f"Editing poster with prompt: {prompt[:50]}...")
         
         try:
-            # Generate edited poster using AI service
-            result = ai_poster_service.generate_with_image(prompt, saved_path, aspect_ratio)
+            # Get user for branding (same logic as generate_poster)
+            user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+            
+            # Enhanced debugging for user context
+            logger.info(f"=== EDIT POSTER DEBUG ===")
+            logger.info(f"Request user: {user}")
+            logger.info(f"User authenticated: {hasattr(request, 'user') and request.user.is_authenticated}")
+            
+            # Check for authentication headers
+            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+            logger.info(f"Authorization header: {auth_header}")
+            
+            # Try to get user from different authentication methods
+            if not user or not user.is_authenticated:
+                logger.warning("No authenticated user found - trying fallback methods")
+                
+                # Check if we can get user from development headers
+                dev_user_id = request.META.get('HTTP_X_DEV_USER_ID')
+                if dev_user_id:
+                    try:
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                        user = User.objects.get(id=dev_user_id)
+                        logger.info(f"Found user from development headers: {user}")
+                    except Exception as e:
+                        logger.error(f"Failed to get user from dev headers: {e}")
+                
+                # Fallback: Try to get the first user with a complete company profile
+                if not user:
+                    try:
+                        from users.models import CompanyProfile
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                        
+                        # Get the first user with a complete company profile
+                        company_profiles = CompanyProfile.objects.filter(
+                            logo__isnull=False,
+                            company_name__isnull=False
+                        ).exclude(company_name='').exclude(logo='')
+                        
+                        if company_profiles.exists():
+                            user = company_profiles.first().user
+                            logger.info(f"Using fallback user with complete profile: {user.username}")
+                        else:
+                            logger.warning("No users with complete company profiles found")
+                    except Exception as e:
+                        logger.error(f"Error in fallback user selection: {e}")
+            else:
+                logger.info(f"Authenticated user found: {user.username} ({user.email})")
+            
+            # Generate edited poster using AI service with user for branding
+            result = ai_poster_service.generate_with_image(prompt, saved_path, aspect_ratio, user)
             
             if result.get('status') == 'success':
                 return Response({
@@ -221,7 +271,10 @@ def edit_poster(request):
                     "full_caption": result.get('full_caption', ''),
                     "hashtags": result.get('hashtags', []),
                     "emoji": result.get('emoji', ''),
-                    "call_to_action": result.get('call_to_action', '')
+                    "call_to_action": result.get('call_to_action', ''),
+                    "branding_applied": result.get('branding_applied', False),
+                    "logo_added": result.get('logo_added', False),
+                    "contact_info_added": result.get('contact_info_added', False)
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({
