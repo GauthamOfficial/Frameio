@@ -327,6 +327,7 @@ class AIPosterService:
                 - Do not add bars or artificial padding; keep the natural background continuous
                 - Maintain all textual content within the middle 65% of the canvas
                 - Ensure text is readable and doesn't overlap with the top-right or bottom areas
+                - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{ar_directive}\n{prompt}{branding_layout_instructions}"
             else:
@@ -338,7 +339,9 @@ class AIPosterService:
                 - Do NOT add any random or placeholder brand names
                 - Focus purely on the visual design and aesthetic elements with full-bleed composition
                 - Do not include any text that suggests a specific company or brand
+                - Maintain all textual content within the middle 65% of the canvas
                 - Avoid adding any blank margins or white bands; fill the full canvas
+                - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{ar_directive}\n{prompt}{no_branding_instructions}"
             
@@ -594,6 +597,7 @@ class AIPosterService:
                 - Do not add bars or artificial padding; keep the natural background continuous
                 - Maintain all textual content within the middle 65% of the canvas
                 - Ensure text is readable and doesn't overlap with the top-right or bottom areas
+                - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{ar_directive}\n{prompt}{branding_layout_instructions}"
             else:
@@ -605,7 +609,9 @@ class AIPosterService:
                 - Do NOT add any random or placeholder brand names
                 - Focus purely on the visual design and aesthetic elements with full-bleed composition
                 - Do not include any text that suggests a specific company or brand
+                - Maintain all textual content within the middle 65% of the canvas
                 - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
+                - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{ar_directive}\n{prompt}{no_branding_instructions}"
             
@@ -817,8 +823,10 @@ class AIPosterService:
             - Place all main text and visual elements in the CENTER and LEFT areas of the image
             - Ensure text is readable and doesn't overlap with reserved areas
             - Use the center-left 55% of the image for main content
+            - Maintain all textual content within the middle 65% of the canvas
             - Fill the reserved areas with background elements, patterns, or colors - do not leave them blank
             - Make the design cohesive while keeping logo and contact areas text-free but visually rich
+            - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
             """
             
             # Create enhanced prompt with smart branding area guidance and AR directive
@@ -1054,6 +1062,7 @@ class AIPosterService:
             - Do not add bars or artificial padding; keep the natural background continuous
             - Maintain all textual content within the middle 65% of the canvas
             - Ensure text is readable and doesn't overlap with the top-right or bottom areas
+            - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
             """
             
             # Configure image generation (version-safe). Text overlay remains square.
