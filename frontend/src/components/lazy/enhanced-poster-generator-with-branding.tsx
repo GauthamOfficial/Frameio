@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -24,7 +25,6 @@ import React, { useState, useRef } from "react"
 import { useUser, useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useCompanyProfile } from '@/hooks/use-company-profile'
-import { BusinessBrandingPreview } from '@/components/business-branding-preview'
 
 interface GenerationResult {
   success: boolean
@@ -92,6 +92,8 @@ export default function EnhancedPosterGeneratorWithBranding() {
     setError(null)
     setResult(null)
 
+    // Prepare abort/timeout handles in outer scope so finally can always clear them
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
     try {
       console.log('🚀 Starting poster generation with branding...')
       console.log('Prompt:', prompt)
@@ -112,6 +114,31 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
       let response;
 
+      // Resolve API base robustly and add fallbacks
+      const primaryBase = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
+      const fallbackBases = [primaryBase, 'http://127.0.0.1:8000', 'http://localhost:8000']
+        .map(b => b.replace(/\/$/, ''))
+        // de-duplicate while preserving order
+        .filter((v, i, a) => a.indexOf(v) === i)
+
+      // Helper to try multiple bases until one succeeds (per-attempt timeout)
+      const fetchWithFallback = async (path: string, init: RequestInit) => {
+        let lastErr: unknown = null
+        for (const base of fallbackBases) {
+          try {
+            const controller = new AbortController()
+            const localTimeout = setTimeout(() => controller.abort('timeout'), 60000)
+            const res = await fetch(`${base}${path}`, { ...init, signal: controller.signal })
+            clearTimeout(localTimeout)
+            if (res.ok || res.status) return res
+          } catch (e) {
+            lastErr = e
+          }
+        }
+        if (lastErr) throw lastErr
+        throw new Error('Network request failed')
+      }
+
       if (uploadedImage) {
         // Generate poster with uploaded image
         const formData = new FormData()
@@ -119,31 +146,46 @@ export default function EnhancedPosterGeneratorWithBranding() {
         formData.append('prompt', prompt)
         formData.append('aspect_ratio', aspectRatio)
 
-        response = await fetch('http://localhost:8000/api/ai/ai-poster/edit_poster/', {
+        response = await fetchWithFallback(`/api/ai/ai-poster/edit_poster/`, {
           method: 'POST',
-          headers: authHeaders,
-          body: formData
+          // Do NOT set Content-Type with FormData; browser sets correct boundary
+          headers: {
+            Accept: 'application/json',
+            ...authHeaders,
+          },
+          body: formData,
+          mode: 'cors',
         })
       } else {
         // Generate poster from text only
-        response = await fetch('http://localhost:8000/api/ai/ai-poster/generate_poster/', {
+        response = await fetchWithFallback(`/api/ai/ai-poster/generate_poster/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...authHeaders
+            Accept: 'application/json',
+            ...authHeaders,
           },
           body: JSON.stringify({
             prompt: prompt,
-            aspect_ratio: aspectRatio
-          })
+            aspect_ratio: aspectRatio,
+          }),
+          mode: 'cors',
         })
       }
 
       console.log('Response status:', response.status)
       
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `HTTP ${response.status}`)
+        let message = `HTTP ${response.status}`
+        try {
+          const errorData = await response.json()
+          message = errorData?.error || message
+        } catch (e) {
+          // fallback: response may not be JSON
+          const text = await response.text().catch(() => '')
+          if (text) message = text
+        }
+        throw new Error(message)
       }
 
       const data = await response.json()
@@ -163,9 +205,19 @@ export default function EnhancedPosterGeneratorWithBranding() {
       }
     } catch (err) {
       console.error('❌ Generation failed:', err)
-      setError(err instanceof Error ? err.message : 'Generation failed')
+      // Map common network errors to helpful messages
+      const networkMsg =
+        err instanceof DOMException && err.name === 'AbortError'
+          ? 'Request timed out. Please try again.'
+          : err instanceof TypeError && /Failed to fetch/i.test(String(err.message))
+          ? 'Cannot reach the backend. Ensure it is running on 127.0.0.1:8000 and CORS allows this origin.'
+          : err instanceof Error
+          ? err.message
+          : 'Generation failed'
+      setError(networkMsg)
       setResult(null)
     } finally {
+      if (timeoutId) clearTimeout(timeoutId)
       setIsGenerating(false)
     }
   }
@@ -259,16 +311,13 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
   try {
     return (
-      <div className="container mx-auto p-6 max-w-7xl">
+      <div className="container mx-auto p-6 max-w-8xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-center mb-2">AI Poster Generator</h1>
-          <p className="text-center text-gray-600">Generate beautiful textile posters with automatic business branding</p>
-          <div className="text-center text-sm text-blue-600 mt-2">
-            🔧 Layout: 3 columns (Input | Generated Poster | Business Branding)
-          </div>
         </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ minHeight: '400px' }}>
+      <div className="flex justify-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl" style={{ minHeight: '500px' }}>
         {/* Input Section */}
         <Card>
           <CardHeader>
@@ -280,12 +329,14 @@ export default function EnhancedPosterGeneratorWithBranding() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="prompt">Describe your poster</Label>
-              <Input
+              <Textarea
                 id="prompt"
-                placeholder="e.g., Modern silk saree collection with elegant patterns"
+                placeholder="e.g., Modern silk saree collection with elegant patterns and vibrant colors, perfect for showcasing premium textile designs"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 disabled={isGenerating}
+                rows={4}
+                className="min-h-[100px] resize-y"
               />
             </div>
 
@@ -398,7 +449,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                   <img 
                     src={result.image_url.startsWith('http') 
                       ? result.image_url 
-                      : `http://localhost:8000${result.image_url}`} 
+                      : `${(process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${result.image_url}`} 
                     alt="Generated Poster" 
                     className="w-full h-auto"
                   />
@@ -440,38 +491,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
           </CardContent>
         </Card>
 
-        {/* Business Branding Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Business Branding Preview
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={goToSettings}
-                className="ml-auto"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {profileLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : (
-              <BusinessBrandingPreview
-                profile={profile}
-                hasBrandingData={hasBrandingData}
-                contactInfoText={contactInfoText}
-                brandingData={brandingData}
-                onEditProfile={goToSettings}
-              />
-            )}
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
     )

@@ -131,3 +131,4 @@ The poster should be a complete, professional marketing material that includes a
                 "company_name": None,
                 "contact_info": None
             }
+

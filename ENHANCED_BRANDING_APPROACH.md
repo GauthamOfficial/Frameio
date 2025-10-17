@@ -172,3 +172,4 @@ The enhanced branding approach provides:
 - ✅ **Simplified workflow** - Single generation step with automatic branding
 
 Users now get posters with seamlessly integrated company branding that looks natural and professional! 🎉
+

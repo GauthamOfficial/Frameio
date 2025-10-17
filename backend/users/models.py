@@ -250,6 +250,7 @@ class CompanyProfile(models.Model):
     # Contact information
     whatsapp_number = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
+    facebook_username = models.CharField(max_length=100, blank=True, null=True, help_text="Facebook username (without @)")
     facebook_link = models.URLField(blank=True, null=True)
     
     # Additional company details
@@ -287,9 +288,13 @@ class CompanyProfile(models.Model):
         """Check if the company profile has all essential information."""
         return bool(
             self.company_name and 
-            self.logo and 
             (self.whatsapp_number or self.email)
         )
+    
+    @property
+    def has_logo(self):
+        """Check if the company profile has a logo."""
+        return bool(self.logo)
     
     def get_contact_info(self):
         """Get formatted contact information."""
@@ -298,4 +303,6 @@ class CompanyProfile(models.Model):
             contact_info['whatsapp'] = self.whatsapp_number
         if self.email:
             contact_info['email'] = self.email
+        if self.facebook_username:
+            contact_info['facebook'] = self.facebook_username
         return contact_info

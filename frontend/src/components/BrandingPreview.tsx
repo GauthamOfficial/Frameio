@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, AlertCircle, Building2, Phone, Mail, Facebook } from 'lucide-react';
+import { CheckCircle, AlertCircle, Building2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface CompanyProfile {
   company_name: string;
@@ -174,15 +175,39 @@ export default function BrandingPreview({ className }: BrandingPreviewProps) {
 
         {/* Contact Information */}
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Contact Information:</h4>
+          <h4 className="text-sm font-medium text-white">Contact Information:</h4>
           <div className="space-y-1">
             {contactInfo.length > 0 ? (
               contactInfo.map((contact, index) => (
                 <div key={index} className="flex items-center gap-2 text-sm">
-                  {contact.type === 'whatsapp' && <Phone className="h-3 w-3 text-green-500" />}
-                  {contact.type === 'email' && <Mail className="h-3 w-3 text-blue-500" />}
-                  {contact.type === 'facebook' && <Facebook className="h-3 w-3 text-blue-600" />}
-                  <span className="text-gray-600">{contact.value}</span>
+                  {contact.type === 'whatsapp' && (
+                    <Image 
+                      src="/WhatsApp.svg" 
+                      alt="WhatsApp" 
+                      width={16} 
+                      height={16} 
+                      className="text-green-500"
+                    />
+                  )}
+                  {contact.type === 'email' && (
+                    <Image 
+                      src="/Email.svg" 
+                      alt="Email" 
+                      width={16} 
+                      height={16} 
+                      className="text-blue-500"
+                    />
+                  )}
+                  {contact.type === 'facebook' && (
+                    <Image 
+                      src="/Facebook.svg" 
+                      alt="Facebook" 
+                      width={16} 
+                      height={16} 
+                      className="text-blue-600"
+                    />
+                  )}
+                  <span className="text-white">{contact.value}</span>
                 </div>
               ))
             ) : (

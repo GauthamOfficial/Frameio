@@ -36,3 +36,4 @@ if __name__ == "__main__":
         print("❌ Please check the error messages above and fix the issues")
     
     sys.exit(0 if success else 1)
+

@@ -127,7 +127,7 @@ def generate_poster(request):
         result = ai_poster_service.generate_from_prompt(prompt, aspect_ratio, user)
         
         if result.get('status') == 'success':
-            return Response({
+                return Response({
                 "success": True,
                 "message": "Poster generated successfully",
                 "image_path": result.get('image_path'),
@@ -142,7 +142,8 @@ def generate_poster(request):
                 "call_to_action": result.get('call_to_action', ''),
                 "branding_applied": result.get('branding_applied', False),
                 "logo_added": result.get('logo_added', False),
-                "contact_info_added": result.get('contact_info_added', False)
+                    "contact_info_added": result.get('contact_info_added', False),
+                    "branding_metadata": result.get('branding_metadata', {})
             }, status=status.HTTP_200_OK)
         else:
             error_message = result.get('message', 'Failed to generate poster')
@@ -274,7 +275,8 @@ def edit_poster(request):
                     "call_to_action": result.get('call_to_action', ''),
                     "branding_applied": result.get('branding_applied', False),
                     "logo_added": result.get('logo_added', False),
-                    "contact_info_added": result.get('contact_info_added', False)
+                    "contact_info_added": result.get('contact_info_added', False),
+                    "branding_metadata": result.get('branding_metadata', {})
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({

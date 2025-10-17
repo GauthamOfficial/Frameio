@@ -19,6 +19,7 @@ interface CompanyProfile {
   logo_url?: string
   whatsapp_number?: string
   email?: string
+  facebook_username?: string
   facebook_link?: string
   website?: string
   address?: string
@@ -59,6 +60,7 @@ const CompanyProfileSettings: React.FC = () => {
     company_name: '',
     whatsapp_number: '',
     email: '',
+    facebook_username: '',
     facebook_link: '',
     website: '',
     address: '',
@@ -146,6 +148,7 @@ const CompanyProfileSettings: React.FC = () => {
           company_name: data.company_name || '',
           whatsapp_number: data.whatsapp_number || '',
           email: data.email || '',
+          facebook_username: data.facebook_username || '',
           facebook_link: data.facebook_link || '',
           website: data.website || '',
           address: data.address || '',
@@ -646,9 +649,7 @@ const CompanyProfileSettings: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="top_right">Top Right</SelectItem>
-                <SelectItem value="bottom_right">Bottom Right</SelectItem>
                 <SelectItem value="top_left">Top Left</SelectItem>
-                <SelectItem value="bottom_left">Bottom Left</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -686,18 +687,32 @@ const CompanyProfileSettings: React.FC = () => {
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="facebook_link">Facebook Page</Label>
-            <Input
-              id="facebook_link"
-              type="url"
-              value={formData.facebook_link}
-              onChange={(e) => handleInputChange('facebook_link', e.target.value)}
-              placeholder="https://facebook.com/yourcompany"
-            />
-            <p className="text-xs text-gray-500">
-              Enter your Facebook page URL (e.g., https://facebook.com/yourpage or facebook.com/yourpage)
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="facebook_username">Facebook Username</Label>
+              <Input
+                id="facebook_username"
+                value={formData.facebook_username}
+                onChange={(e) => handleInputChange('facebook_username', e.target.value)}
+                placeholder="yourcompany"
+              />
+              <p className="text-xs text-gray-500">
+                Enter your Facebook username (without @)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="facebook_link">Facebook Page URL</Label>
+              <Input
+                id="facebook_link"
+                type="url"
+                value={formData.facebook_link}
+                onChange={(e) => handleInputChange('facebook_link', e.target.value)}
+                placeholder="https://facebook.com/yourcompany"
+              />
+              <p className="text-xs text-gray-500">
+                Enter your Facebook page URL (optional)
+              </p>
+            </div>
           </div>
           
           <div className="space-y-2">

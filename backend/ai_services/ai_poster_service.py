@@ -71,12 +71,51 @@ class AIPosterService:
             
             logger.info(f"Generating poster from prompt: {prompt[:50]}...")
             
+            # Check if user has company profile for branding
+            has_branding = False
+            if user:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and company_profile.has_complete_profile:
+                        has_branding = True
+                        logger.info("User has complete company profile - will apply branding")
+                except Exception as e:
+                    logger.warning(f"Error checking company profile: {e}")
+            
+            # Create base prompt with smart layout guidance for branding areas
+            base_prompt = prompt
+            if has_branding:
+                # Add instructions to avoid text in logo and contact areas while keeping them visually filled
+                branding_layout_instructions = """
+                
+                IMPORTANT LAYOUT REQUIREMENTS:
+                - Keep the TOP-RIGHT corner (≈25% of image width/height) completely free of ANY elements (no text, no graphics)
+                - Keep the BOTTOM area (bottom 18% of image height) completely free of ANY elements (no text, no graphics)
+                - Do not add bars or artificial padding; keep the natural background continuous
+                - Maintain all textual content within the middle 65% of the canvas
+                - Ensure text is readable and doesn't overlap with the top-right or bottom areas
+                """
+                base_prompt = f"{prompt}{branding_layout_instructions}"
+            else:
+                # Add instructions to avoid random brand names when no branding is provided
+                no_branding_instructions = """
+                
+                IMPORTANT DESIGN REQUIREMENTS:
+                - Do NOT include any company names, brand names, or business names in the design
+                - Do NOT add any random or placeholder brand names
+                - Focus purely on the visual design and aesthetic elements with full-bleed composition
+                - Do not include any text that suggests a specific company or brand
+                - Avoid adding any blank margins or white bands; fill the full canvas
+                """
+                base_prompt = f"{prompt}{no_branding_instructions}"
+            
             # Try multiple prompt variations if the first one fails
             prompts_to_try = [
-                prompt,
-                f"Create a high-quality image: {prompt}",
-                f"Generate a professional image: {prompt}",
-                f"Design an image: {prompt}"
+                base_prompt,
+                f"Create a high-quality image: {base_prompt}",
+                f"Generate a professional image: {base_prompt}",
+                f"Design an image: {base_prompt}"
             ]
             
             for attempt, current_prompt in enumerate(prompts_to_try):
@@ -197,7 +236,8 @@ class AIPosterService:
                                                     "filename": brand_result.get("filename", filename),
                                                     "branding_applied": True,
                                                     "logo_added": brand_result.get("logo_added", False),
-                                                    "contact_info_added": brand_result.get("contact_info_added", False)
+                                                    "contact_info_added": brand_result.get("contact_info_added", False),
+                                                    "branding_metadata": brand_result.get("branding_metadata", {})
                                                 })
                                             else:
                                                 logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
@@ -249,6 +289,45 @@ class AIPosterService:
             
             logger.info(f"Generating edited poster with prompt: {prompt[:50]}...")
             
+            # Check if user has company profile for branding
+            has_branding = False
+            if user:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and company_profile.has_complete_profile:
+                        has_branding = True
+                        logger.info("User has complete company profile - will apply branding")
+                except Exception as e:
+                    logger.warning(f"Error checking company profile: {e}")
+            
+            # Create base prompt with smart layout guidance for branding areas
+            base_prompt = prompt
+            if has_branding:
+                # Add instructions to avoid text in logo and contact areas while keeping them visually filled
+                branding_layout_instructions = """
+                
+                IMPORTANT LAYOUT REQUIREMENTS:
+                - Keep the TOP-RIGHT corner (≈25% of image width/height) completely free of ANY elements (no text, no graphics)
+                - Keep the BOTTOM area (bottom 18% of image height) completely free of ANY elements (no text, no graphics)
+                - Do not add bars or artificial padding; keep the natural background continuous
+                - Maintain all textual content within the middle 65% of the canvas
+                - Ensure text is readable and doesn't overlap with the top-right or bottom areas
+                """
+                base_prompt = f"{prompt}{branding_layout_instructions}"
+            else:
+                # Add instructions to avoid random brand names and blank margins when no branding is provided
+                no_branding_instructions = """
+                
+                IMPORTANT DESIGN REQUIREMENTS:
+                - Do NOT include any company names, brand names, or business names in the design
+                - Do NOT add any random or placeholder brand names
+                - Focus purely on the visual design and aesthetic elements with full-bleed composition
+                - Do not include any text that suggests a specific company or brand
+                - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
+                """
+                base_prompt = f"{prompt}{no_branding_instructions}"
+            
             # Load and prepare image from Django storage
             try:
                 # Try to get the file from Django storage
@@ -278,7 +357,7 @@ class AIPosterService:
             
             response = self.client.models.generate_content(
                 model="gemini-2.5-flash-image",
-                contents=[image_part, prompt],
+                contents=[image_part, base_prompt],
                 config=types.GenerateContentConfig(
                     response_modalities=['Image'],
                     image_config=image_config,
@@ -361,7 +440,8 @@ class AIPosterService:
                                             "filename": brand_result.get("filename", filename),
                                             "branding_applied": True,
                                             "logo_added": brand_result.get("logo_added", False),
-                                            "contact_info_added": brand_result.get("contact_info_added", False)
+                                            "contact_info_added": brand_result.get("contact_info_added", False),
+                                            "branding_metadata": brand_result.get("branding_metadata", {})
                                         })
                                     else:
                                         logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
@@ -403,6 +483,22 @@ class AIPosterService:
             
             logger.info(f"Generating composite poster with {len(image_paths)} images and prompt: {prompt[:50]}...")
             
+            # Create enhanced prompt with smart layout guidance for branding areas
+            spacing_instructions = """
+            
+            IMPORTANT LAYOUT REQUIREMENTS:
+            - Keep the TOP-RIGHT corner (approximately 25% of image width and height) free of text but NOT empty - use background patterns, colors, or visual elements
+            - Keep the BOTTOM area (bottom 18% of image height) free of text but NOT empty - use background patterns, colors, or visual elements  
+            - Place all main text and visual elements in the CENTER and LEFT areas of the image
+            - Ensure text is readable and doesn't overlap with reserved areas
+            - Use the center-left 55% of the image for main content
+            - Fill the reserved areas with background elements, patterns, or colors - do not leave them blank
+            - Make the design cohesive while keeping logo and contact areas text-free but visually rich
+            """
+            
+            # Create enhanced prompt with smart branding area guidance
+            enhanced_prompt = f"{prompt}{spacing_instructions}"
+            
             # Load all images
             image_parts = []
             for image_path in image_paths:
@@ -433,7 +529,7 @@ class AIPosterService:
                 return {"status": "error", "message": "No valid images provided"}
             
             # Add text prompt
-            contents = image_parts + [prompt]
+            contents = image_parts + [enhanced_prompt]
             
             # Configure image generation
             image_config = types.ImageConfig(aspect_ratio=aspect_ratio)
@@ -533,7 +629,7 @@ class AIPosterService:
                 )
             )
             
-            # Create enhanced prompt for text overlay
+            # Create enhanced prompt for text overlay with spacing considerations
             enhanced_prompt = f"""
             Add the following text to this textile image: "{text_prompt}"
             
@@ -544,6 +640,20 @@ class AIPosterService:
             - Use colors that complement the textile design
             - Ensure the text enhances the overall design
             - Maintain the textile's aesthetic appeal
+            
+            IMPORTANT DESIGN REQUIREMENTS:
+            - Do NOT include any company names, brand names, or business names in the design
+            - Do NOT add any random or placeholder brand names
+            - Focus purely on the visual design and aesthetic elements
+            - Do not include any text that suggests a specific company or brand
+            - Keep the design clean and focused on the main content only
+            
+            IMPORTANT LAYOUT REQUIREMENTS:
+            - Keep the TOP-RIGHT corner (≈25% of image width/height) completely free of ANY elements (no text, no graphics)
+            - Keep the BOTTOM area (bottom 18% of image height) completely free of ANY elements (no text, no graphics)
+            - Do not add bars or artificial padding; keep the natural background continuous
+            - Maintain all textual content within the middle 65% of the canvas
+            - Ensure text is readable and doesn't overlap with the top-right or bottom areas
             """
             
             # Configure image generation

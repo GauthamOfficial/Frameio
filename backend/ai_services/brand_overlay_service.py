@@ -5,9 +5,10 @@ Handles adding company branding (logo and contact info) to AI-generated poster i
 import os
 import time
 import logging
-from typing import Dict, Any, Optional, Tuple
+import math
+from typing import Dict, Any, Optional, Tuple, List
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
@@ -24,8 +25,8 @@ class BrandOverlayService:
     def __init__(self):
         """Initialize the brand overlay service."""
         self.default_font_size = 24
-        self.logo_size = (150, 150)
-        self.contact_font_size = 20
+        self.logo_size = (150, 150)  # Decreased from (200, 200)
+        self.contact_font_size = 22  # Decreased for better fit with icons
         self.margin = 30
         
     def add_brand_overlay(self, 
@@ -56,14 +57,22 @@ class BrandOverlayService:
             poster_image = poster_image.convert("RGBA")
             
             # Add logo overlay
+            logo_metadata = None
             if company_profile.logo:
-                poster_image = self._add_logo_overlay(poster_image, company_profile)
+                poster_image, logo_metadata = self._add_logo_overlay(poster_image, company_profile)
             
             # Add contact information overlay
             contact_info = company_profile.get_contact_info()
+            contact_metadata = None
             if contact_info:
-                poster_image = self._add_contact_overlay(poster_image, contact_info, company_profile)
+                poster_image, contact_metadata = self._add_contact_overlay(poster_image, contact_info, company_profile)
             
+            # Auto-trim any uniform white borders introduced by generation
+            try:
+                poster_image = self._trim_uniform_borders(poster_image)
+            except Exception as e:
+                logger.debug(f"Border trim skipped: {e}")
+
             # Save the final image
             final_path = self._save_final_image(poster_image, output_filename)
             
@@ -75,7 +84,11 @@ class BrandOverlayService:
                     "image_url": default_storage.url(final_path),
                     "branding_applied": True,
                     "logo_added": bool(company_profile.logo),
-                    "contact_info_added": bool(contact_info)
+                    "contact_info_added": bool(contact_info),
+                    "branding_metadata": {
+                        "logo": logo_metadata,
+                        "contact": contact_metadata
+                    }
                 }
             else:
                 return {"status": "error", "message": "Failed to save final image"}
@@ -83,6 +96,58 @@ class BrandOverlayService:
         except Exception as e:
             logger.error(f"Error adding brand overlay: {str(e)}")
             return {"status": "error", "message": str(e)}
+
+    def _trim_uniform_borders(self, image: Image.Image, threshold: int = 245, max_border_ratio: float = 0.2) -> Image.Image:
+        """
+        Remove uniform near-white borders around the image without adding padding.
+        - threshold: pixel is considered background if all RGB >= threshold
+        - max_border_ratio: don't crop if detected border would remove more than this fraction from any side
+        """
+        if image.mode != 'RGBA':
+            img = image.convert('RGBA')
+        else:
+            img = image
+
+        width, height = img.size
+        pixels = img.load()
+
+        def is_bg(px):
+            r, g, b, a = px
+            # treat fully transparent as background too
+            if a < 5:
+                return True
+            return r >= threshold and g >= threshold and b >= threshold
+
+        # scan borders inwards to find first non-background pixel rows/cols
+        top = 0
+        while top < height and all(is_bg(pixels[x, top]) for x in range(width)):
+            top += 1
+        bottom = height - 1
+        while bottom >= 0 and all(is_bg(pixels[x, bottom]) for x in range(width)):
+            bottom -= 1
+        left = 0
+        while left < width and all(is_bg(pixels[left, y]) for y in range(height)):
+            left += 1
+        right = width - 1
+        while right >= 0 and all(is_bg(pixels[right, y]) for y in range(height)):
+            right -= 1
+
+        # If no crop detected, return original
+        if left == 0 and top == 0 and right == width - 1 and bottom == height - 1:
+            return image
+
+        # Validate crop is not excessive
+        if (
+            left / width > max_border_ratio or
+            top / height > max_border_ratio or
+            (width - 1 - right) / width > max_border_ratio or
+            (height - 1 - bottom) / height > max_border_ratio or
+            right <= left or bottom <= top
+        ):
+            return image
+
+        cropped = img.crop((left, top, right + 1, bottom + 1))
+        return cropped
     
     def _load_image(self, image_path: str) -> Optional[Image.Image]:
         """Load image from Django storage."""
@@ -103,115 +168,208 @@ class BrandOverlayService:
                 logger.error(f"Failed to load image from file system: {str(fs_error)}")
                 return None
     
-    def _add_logo_overlay(self, poster_image: Image.Image, company_profile) -> Image.Image:
-        """Add company logo overlay to poster."""
+    def _add_logo_overlay(self, poster_image: Image.Image, company_profile) -> Tuple[Image.Image, Optional[Dict[str, int]]]:
+        """Add company logo overlay to poster and return metadata."""
         try:
             # Check if logo exists and is valid
             if not company_profile.logo or not company_profile.logo.name:
                 logger.warning("No logo found for company profile")
-                return poster_image
+                return poster_image, None
             
             # Check if logo file exists
             if not os.path.exists(company_profile.logo.path):
                 logger.warning(f"Logo file not found at path: {company_profile.logo.path}")
-                return poster_image
+                return poster_image, None
             
             # Load company logo
             logo_image = self._load_image(company_profile.logo.path)
             if not logo_image:
                 logger.warning("Failed to load logo image")
-                return poster_image
+                return poster_image, None
             
-            # Resize logo to appropriate size
-            logo_image = logo_image.resize(self.logo_size, Image.Resampling.LANCZOS)
+            # Resize logo by width only, preserving aspect ratio
+            target_width = self.logo_size[0]
+            try:
+                original_width, original_height = logo_image.size
+                if original_width <= 0 or original_height <= 0:
+                    logger.warning("Invalid logo dimensions; skipping resize")
+                else:
+                    scale = target_width / float(original_width)
+                    target_height = max(1, int(original_height * scale))
+                    logo_image = logo_image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            except Exception as e:
+                logger.warning(f"Logo resize failed, using original size: {str(e)}")
             
             # Convert logo to RGBA if not already
             if logo_image.mode != 'RGBA':
                 logo_image = logo_image.convert('RGBA')
+
+            # Prepare a subtle 2px stroke around the logo using a color derived from the logo
+            try:
+                from PIL import ImageFilter, ImageChops
+
+                # Derive a high-contrast stroke color from the logo
+                def _average_visible_color(img: Image.Image) -> Tuple[int, int, int]:
+                    rgba = img.convert('RGBA')
+                    pixels = rgba.getdata()
+                    r_total = g_total = b_total = count = 0
+                    for (r, g, b, a) in pixels:
+                        if a > 10:
+                            r_total += r; g_total += g; b_total += b; count += 1
+                    if count == 0:
+                        return (255, 255, 255)
+                    return (r_total // count, g_total // count, b_total // count)
+
+                def _get_high_contrast_color(base_color: Tuple[int, int, int]) -> Tuple[int, int, int]:
+                    r, g, b = base_color
+                    # Calculate luminance to determine if we need light or dark stroke
+                    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                    if luminance > 0.5:
+                        # Logo is light, use dark stroke
+                        return (0, 0, 0)
+                    else:
+                        # Logo is dark, use light stroke
+                        return (255, 255, 255)
+
+                base_color = _average_visible_color(logo_image)
+                stroke_color = _get_high_contrast_color(base_color)
+
+                # Build stroke mask: dilate alpha then subtract original alpha
+                alpha = logo_image.split()[-1]
+                # 3px stroke → use MaxFilter multiple times for better approximation
+                dilated = alpha.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.MaxFilter(3))
+                border_mask = ImageChops.subtract(dilated, alpha)
+
+                # Create stroke layer
+                stroke_layer = Image.new('RGBA', logo_image.size, stroke_color + (255,))
+                # Apply border mask
+                stroke_layer.putalpha(border_mask)
+            except Exception:
+                stroke_layer = None
             
             # Calculate logo position based on preference
             position = self._calculate_logo_position(
                 poster_image.size, 
-                self.logo_size, 
+                logo_image.size, 
                 company_profile.preferred_logo_position
             )
             
             # Create a transparent overlay for the logo
             logo_overlay = Image.new('RGBA', poster_image.size, (0, 0, 0, 0))
+            # First paste stroke if available
+            if stroke_layer is not None:
+                logo_overlay.paste(stroke_layer, position, stroke_layer)
+            # Then paste the logo itself
             logo_overlay.paste(logo_image, position, logo_image)
             
             # Composite the logo onto the poster
             poster_image = Image.alpha_composite(poster_image, logo_overlay)
             
             logger.info(f"Logo overlay added at position {position}")
-            return poster_image
+            meta = {
+                "x": int(position[0]),
+                "y": int(position[1]),
+                "width": int(logo_image.size[0]),
+                "height": int(logo_image.size[1])
+            }
+            return poster_image, meta
             
         except Exception as e:
             logger.error(f"Error adding logo overlay: {str(e)}")
-            return poster_image
+            return poster_image, None
     
     def _add_contact_overlay(self, 
                            poster_image: Image.Image, 
                            contact_info: Dict[str, str],
-                           company_profile) -> Image.Image:
-        """Add contact information overlay to poster."""
+                           company_profile) -> Tuple[Image.Image, Optional[Dict[str, Any]]]:
+        """Add contact information with icons and proper spacing."""
         try:
-            # Create a drawing context
-            draw = ImageDraw.Draw(poster_image)
+            # Build contact items (plain text, no icons)
+            contact_items = []
+            whatsapp = contact_info.get('whatsapp')
+            facebook = contact_info.get('facebook')
+            email = contact_info.get('email')
             
-            # Try to load a font, fallback to default if not available
-            try:
-                font = ImageFont.truetype("arial.ttf", self.contact_font_size)
-            except:
-                try:
-                    font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", self.contact_font_size)
-                except:
-                    try:
-                        # Try Windows font path
-                        font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", self.contact_font_size)
-                    except:
-                        font = ImageFont.load_default()
-            
-            # Calculate contact info position and dimensions
-            contact_position = self._calculate_contact_position(poster_image.size)
-            
-            # Count the number of contact lines to determine overlay height
-            contact_lines = []
-            if 'whatsapp' in contact_info:
-                contact_lines.append(f"📱 WhatsApp: {contact_info['whatsapp']}")
-            if 'email' in contact_info:
-                contact_lines.append(f"✉️ Email: {contact_info['email']}")
-            
-            if not contact_lines:
+            if whatsapp:
+                contact_items.append(f"{whatsapp}")
+            if facebook:
+                contact_items.append(f"{facebook}")
+            if email:
+                contact_items.append(f"{email}")
+                
+            if not contact_items:
                 logger.warning("No contact information to display")
-                return poster_image
-            
-            # Calculate overlay dimensions
-            line_height = self.contact_font_size + 10
-            overlay_height = len(contact_lines) * line_height + 40  # Add padding
-            overlay_width = poster_image.width
-            
-            # Create a semi-transparent background overlay
-            overlay = Image.new("RGBA", (overlay_width, overlay_height), (0, 0, 0, 150))
-            
-            # Paste the overlay at the bottom of the poster
-            overlay_y = poster_image.height - overlay_height
-            poster_image.paste(overlay, (0, overlay_y), overlay)
-            
-            # Add contact information with icons
-            y_offset = overlay_y + 20  # Start 20px from top of overlay
-            text_color = (255, 255, 255, 255)  # White text
-            
-            for line in contact_lines:
-                draw.text((contact_position[0], y_offset), line, font=font, fill=text_color)
-                y_offset += line_height
-            
-            logger.info(f"Contact overlay added with {len(contact_lines)} lines at position {contact_position}")
-            return poster_image
-            
+                return poster_image, None
+
+            # Use simple spacing between contact items (no center dot)
+            contact_line = "   ".join(contact_items)
+
+            # Create drawing context
+            draw = ImageDraw.Draw(poster_image)
+
+            # Choose bold font for better emphasis
+            desired_size = max(28, int(min(poster_image.size) * 0.035))
+            font = None
+            font_paths = [
+                # Prefer bold fonts
+                "C:/Windows/Fonts/segoeuib.ttf",  # Segoe UI Bold
+                "C:/Windows/Fonts/arialbd.ttf",   # Arial Bold
+                "C:/Windows/Fonts/calibrib.ttf",  # Calibri Bold
+                "C:/Windows/Fonts/Poppins-Bold.ttf",
+                # Regular fallbacks
+                "C:/Windows/Fonts/segui.ttf",     # Segoe UI Regular
+                # macOS fonts
+                "/System/Library/Fonts/Apple Color Emoji.ttc",
+                "/System/Library/Fonts/Helvetica.ttf",
+                "/System/Library/Fonts/Arial.ttf",
+                # Linux fonts
+                "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                # Fallback fonts
+                "C:/Windows/Fonts/arial.ttf",     # Arial Regular
+                "C:/Windows/Fonts/calibri.ttf",   # Calibri Regular
+            ]
+            for fp in font_paths:
+                try:
+                    if os.path.exists(fp):
+                        font = ImageFont.truetype(fp, desired_size)
+                        logger.info(f"Using font: {fp}")
+                        break
+                except Exception as e:
+                    logger.debug(f"Failed to load font {fp}: {e}")
+                    continue
+            if not font:
+                font = ImageFont.load_default()
+                logger.warning("Using default font - emoji support may be limited")
+
+            # Measure text size to center it
+            bbox = draw.textbbox((0, 0), contact_line, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+
+            # Center horizontally and place near bottom without background or shadow
+            x = max(10, (poster_image.width - text_width) // 2)
+            y_margin = max(25, int(poster_image.height * 0.05))
+            y = poster_image.height - y_margin - text_height
+
+            text_color = (255, 255, 255, 255)
+            draw.text((x, y), contact_line, font=font, fill=text_color)
+
+            logger.info("Contact information with icons rendered successfully")
+            meta = {
+                "x": int(x),
+                "y": int(y),
+                "width": int(text_width),
+                "height": int(text_height),
+                "font_size": int(getattr(font, "size", desired_size)),
+                "text": contact_line
+            }
+            return poster_image, meta
+
         except Exception as e:
-            logger.error(f"Error adding contact overlay: {str(e)}")
-            return poster_image
+            logger.error(f"Error adding simplified contact overlay: {str(e)}")
+            return poster_image, None
     
     def _calculate_logo_position(self, 
                                poster_size: Tuple[int, int], 
@@ -233,6 +391,328 @@ class BrandOverlayService:
     def _calculate_contact_position(self, poster_size: Tuple[int, int]) -> Tuple[int, int]:
         """Calculate contact information position (bottom-left)."""
         return (self.margin, poster_size[1] - 120)  # 120px from bottom
+    
+    def _analyze_poster_colors(self, poster_image: Image.Image) -> Dict[str, Any]:
+        """Analyze poster colors to determine context-aware styling."""
+        try:
+            # Resize image for faster analysis
+            small_image = poster_image.resize((100, 100), Image.Resampling.LANCZOS)
+            
+            # Convert to RGB if needed
+            if small_image.mode != 'RGB':
+                small_image = small_image.convert('RGB')
+            
+            # Get color palette
+            colors = small_image.getcolors(maxcolors=256*256*256)
+            if not colors:
+                return {'dominant': (0, 0, 0), 'brightness': 0.5, 'theme': 'neutral'}
+            
+            # Sort by frequency and get dominant color
+            colors.sort(key=lambda x: x[0], reverse=True)
+            dominant_color = colors[0][1]
+            
+            # Calculate brightness
+            brightness = sum(dominant_color) / (3 * 255)
+            
+            # Determine theme based on colors
+            theme = self._determine_color_theme(dominant_color, brightness)
+            
+            return {
+                'dominant': dominant_color,
+                'brightness': brightness,
+                'theme': theme,
+                'is_dark': brightness < 0.4,
+                'is_warm': self._is_warm_color(dominant_color)
+            }
+            
+        except Exception as e:
+            logger.warning(f"Color analysis failed: {str(e)}")
+            return {'dominant': (0, 0, 0), 'brightness': 0.5, 'theme': 'neutral'}
+    
+    def _determine_color_theme(self, color: Tuple[int, int, int], brightness: float) -> str:
+        """Determine color theme based on dominant color."""
+        r, g, b = color
+        
+        # Check for specific color themes
+        if r > g + 50 and r > b + 50:  # Red dominant
+            return 'warm' if brightness > 0.6 else 'dramatic'
+        elif g > r + 50 and g > b + 50:  # Green dominant
+            return 'natural' if brightness > 0.6 else 'earthy'
+        elif b > r + 50 and b > g + 50:  # Blue dominant
+            return 'cool' if brightness > 0.6 else 'professional'
+        elif abs(r - g) < 30 and abs(g - b) < 30:  # Neutral colors
+            return 'neutral'
+        else:
+            return 'vibrant' if brightness > 0.6 else 'muted'
+    
+    def _is_warm_color(self, color: Tuple[int, int, int]) -> bool:
+        """Check if color is warm (reds, oranges, yellows)."""
+        r, g, b = color
+        return r > g and r > b
+    
+    def _get_context_aware_styling(self, color_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Get styling configuration based on poster color analysis."""
+        theme = color_analysis.get('theme', 'neutral')
+        is_dark = color_analysis.get('is_dark', False)
+        is_warm = color_analysis.get('is_warm', False)
+        
+        # Define styling presets based on theme
+        styling_presets = {
+            'warm': {
+                'background': (139, 69, 19, 200) if is_dark else (255, 248, 220, 200),
+                'text_color': (255, 255, 255) if is_dark else (139, 69, 19),
+                'accent_color': (255, 140, 0),
+                'border_color': (255, 165, 0),
+                'icon_style': 'warm'
+            },
+            'cool': {
+                'background': (25, 25, 112, 200) if is_dark else (240, 248, 255, 200),
+                'text_color': (255, 255, 255) if is_dark else (25, 25, 112),
+                'accent_color': (0, 191, 255),
+                'border_color': (30, 144, 255),
+                'icon_style': 'cool'
+            },
+            'natural': {
+                'background': (34, 139, 34, 200) if is_dark else (240, 255, 240, 200),
+                'text_color': (255, 255, 255) if is_dark else (34, 139, 34),
+                'accent_color': (50, 205, 50),
+                'border_color': (0, 128, 0),
+                'icon_style': 'natural'
+            },
+            'professional': {
+                'background': (47, 79, 79, 200) if is_dark else (248, 249, 250, 200),
+                'text_color': (255, 255, 255) if is_dark else (47, 79, 79),
+                'accent_color': (70, 130, 180),
+                'border_color': (100, 149, 237),
+                'icon_style': 'professional'
+            },
+            'vibrant': {
+                'background': (75, 0, 130, 200) if is_dark else (255, 240, 245, 200),
+                'text_color': (255, 255, 255) if is_dark else (75, 0, 130),
+                'accent_color': (255, 20, 147),
+                'border_color': (186, 85, 211),
+                'icon_style': 'vibrant'
+            }
+        }
+        
+        # Default to neutral if theme not found
+        return styling_presets.get(theme, styling_presets['professional'])
+    
+    def _load_enhanced_fonts(self) -> Tuple[ImageFont.ImageFont, ImageFont.ImageFont]:
+        """Load enhanced fonts for better typography."""
+        title_size = 24
+        body_size = 18
+        
+        # Try to load better fonts
+        font_paths = [
+            # Windows fonts
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/calibri.ttf",
+            "C:/Windows/Fonts/segoeui.ttf",
+            # macOS fonts
+            "/System/Library/Fonts/Arial.ttf",
+            "/System/Library/Fonts/Helvetica.ttf",
+            "/System/Library/Fonts/San Francisco.ttf",
+            # Linux fonts
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+        ]
+        
+        title_font = None
+        body_font = None
+        
+        for font_path in font_paths:
+            try:
+                if os.path.exists(font_path):
+                    title_font = ImageFont.truetype(font_path, title_size)
+                    body_font = ImageFont.truetype(font_path, body_size)
+                    break
+            except:
+                continue
+        
+        # Fallback to default fonts
+        if not title_font:
+            title_font = ImageFont.load_default()
+        if not body_font:
+            body_font = ImageFont.load_default()
+        
+        return title_font, body_font
+    
+    def _prepare_contact_items(self, contact_info: Dict[str, str]) -> List[Dict[str, Any]]:
+        """Prepare contact items with proper icons and formatting."""
+        items = []
+        
+        # WhatsApp contact
+        if 'whatsapp' in contact_info and contact_info['whatsapp']:
+            items.append({
+                'type': 'whatsapp',
+                'label': 'WhatsApp',
+                'value': contact_info['whatsapp'],
+                'icon': '📱',
+                'color': (37, 211, 102)  # WhatsApp green
+            })
+        
+        # Email contact
+        if 'email' in contact_info and contact_info['email']:
+            items.append({
+                'type': 'email',
+                'label': 'Email',
+                'value': contact_info['email'],
+                'icon': '✉️',
+                'color': (66, 133, 244)  # Gmail blue
+            })
+        
+        # Phone contact
+        if 'phone' in contact_info and contact_info['phone']:
+            items.append({
+                'type': 'phone',
+                'label': 'Phone',
+                'value': contact_info['phone'],
+                'icon': '📞',
+                'color': (52, 152, 219)  # Phone blue
+            })
+        
+        # Website contact
+        if 'website' in contact_info and contact_info['website']:
+            items.append({
+                'type': 'website',
+                'label': 'Website',
+                'value': contact_info['website'],
+                'icon': '🌐',
+                'color': (155, 89, 182)  # Purple
+            })
+        
+        return items
+    
+    def _calculate_enhanced_overlay_dimensions(self, 
+                                             poster_size: Tuple[int, int], 
+                                             contact_items: List[Dict[str, Any]],
+                                             title_font: ImageFont.ImageFont,
+                                             body_font: ImageFont.ImageFont) -> Dict[str, Any]:
+        """Calculate enhanced overlay dimensions."""
+        poster_width, poster_height = poster_size
+        
+        # Calculate text dimensions
+        title_height = title_font.getbbox("Contact Us")[3] - title_font.getbbox("Contact Us")[1]
+        item_height = body_font.getbbox("Sample Text")[3] - body_font.getbbox("Sample Text")[1]
+        
+        # Calculate total height
+        padding = 40
+        title_spacing = 20
+        item_spacing = 15
+        total_height = padding + title_height + title_spacing + (len(contact_items) * (item_height + item_spacing)) + padding
+        
+        return {
+            'width': poster_width,
+            'height': total_height,
+            'padding': padding,
+            'title_height': title_height,
+            'item_height': item_height,
+            'title_spacing': title_spacing,
+            'item_spacing': item_spacing
+        }
+    
+    def _create_enhanced_overlay(self, 
+                                overlay_config: Dict[str, Any], 
+                                styling_config: Dict[str, Any]) -> Image.Image:
+        """Create enhanced overlay with gradient background."""
+        width = overlay_config['width']
+        height = overlay_config['height']
+        
+        # Create base overlay
+        overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        
+        # Create gradient background
+        bg_color = styling_config['background']
+        
+        # Create rounded rectangle background
+        corner_radius = 20
+        self._draw_rounded_rectangle(
+            draw, (0, 0, width, height), 
+            bg_color, corner_radius
+        )
+        
+        # Add subtle border
+        border_color = styling_config['border_color']
+        border_width = 2
+        self._draw_rounded_rectangle(
+            draw, (border_width, border_width, width - border_width, height - border_width),
+            border_color + (255,), corner_radius - border_width, outline=True
+        )
+        
+        return overlay
+    
+    def _draw_rounded_rectangle(self, 
+                               draw: ImageDraw.Draw, 
+                               bounds: Tuple[int, int, int, int], 
+                               color: Tuple[int, int, int, int], 
+                               radius: int, 
+                               outline: bool = False):
+        """Draw a rounded rectangle."""
+        x1, y1, x2, y2 = bounds
+        
+        if outline:
+            # Draw outline
+            draw.rectangle([x1, y1, x2, y2], fill=None, outline=color[:3], width=2)
+        else:
+            # Draw filled rounded rectangle
+            draw.rectangle([x1, y1, x2, y2], fill=color)
+    
+    def _draw_enhanced_contact_info(self, 
+                                  draw: ImageDraw.Draw,
+                                  poster_image: Image.Image,
+                                  contact_items: List[Dict[str, Any]],
+                                  overlay_y: int,
+                                  overlay_config: Dict[str, Any],
+                                  title_font: ImageFont.ImageFont,
+                                  body_font: ImageFont.ImageFont,
+                                  styling_config: Dict[str, Any]):
+        """Draw enhanced contact information with proper styling."""
+        x_offset = 30
+        y_offset = overlay_y + overlay_config['padding']
+        
+        # Draw title
+        title_text = "Contact Us"
+        title_color = styling_config['text_color']
+        draw.text((x_offset, y_offset), title_text, font=title_font, fill=title_color)
+        y_offset += overlay_config['title_height'] + overlay_config['title_spacing']
+        
+        # Draw contact items
+        for item in contact_items:
+            # Draw icon
+            icon_x = x_offset
+            icon_y = y_offset + 5
+            
+            # Create icon background circle
+            icon_radius = 15
+            icon_bg_color = item['color'] + (200,)
+            draw.ellipse([
+                icon_x - icon_radius, icon_y - icon_radius,
+                icon_x + icon_radius, icon_y + icon_radius
+            ], fill=icon_bg_color)
+            
+            # Draw icon text (emoji)
+            icon_text = item['icon']
+            icon_bbox = body_font.getbbox(icon_text)
+            icon_text_x = icon_x - (icon_bbox[2] - icon_bbox[0]) // 2
+            icon_text_y = icon_y - (icon_bbox[3] - icon_bbox[1]) // 2
+            draw.text((icon_text_x, icon_text_y), icon_text, font=body_font, fill=(255, 255, 255, 255))
+            
+            # Draw label and value
+            text_x = icon_x + icon_radius + 15
+            text_y = y_offset
+            
+            # Label
+            label_text = f"{item['label']}:"
+            draw.text((text_x, text_y), label_text, font=body_font, fill=styling_config['text_color'])
+            
+            # Value
+            value_text = item['value']
+            value_x = text_x + body_font.getbbox(label_text)[2] + 10
+            draw.text((value_x, text_y), value_text, font=body_font, fill=styling_config['accent_color'])
+            
+            y_offset += overlay_config['item_height'] + overlay_config['item_spacing']
     
     def _save_final_image(self, image: Image.Image, output_filename: Optional[str] = None) -> Optional[str]:
         """Save the final image with brand overlay."""

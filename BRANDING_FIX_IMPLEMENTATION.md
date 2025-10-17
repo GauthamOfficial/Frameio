@@ -132,3 +132,4 @@ The automatic branding system is now working correctly! Users can:
 - ✅ See their branding applied to every generated poster without manual work
 
 The fix ensures that company logos and contact details are properly added to generated posters when users have a complete profile with logo, WhatsApp, and Email information! 🎉
+

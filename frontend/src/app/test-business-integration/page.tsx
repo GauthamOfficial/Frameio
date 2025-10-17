@@ -14,7 +14,6 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { useCompanyProfile } from '@/hooks/use-company-profile'
-import { BusinessBrandingPreview } from '@/components/business-branding-preview'
 
 export default function TestBusinessIntegrationPage() {
   const { getToken } = useAuth()
@@ -134,30 +133,6 @@ export default function TestBusinessIntegrationPage() {
           </CardContent>
         </Card>
 
-        {/* Business Branding Preview */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Business Branding Preview
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {profileLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : (
-              <BusinessBrandingPreview
-                profile={profile}
-                hasBrandingData={hasBrandingData}
-                contactInfoText={contactInfoText}
-                brandingData={brandingData}
-                onEditProfile={goToSettings}
-              />
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Test Results */}
@@ -247,3 +222,4 @@ export default function TestBusinessIntegrationPage() {
     </div>
   )
 }
+

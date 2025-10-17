@@ -168,3 +168,4 @@ The integration is now complete! Users can:
 - Test the integration to ensure everything works correctly
 
 The system automatically fetches business logo and contact details from the settings page and applies them to generated posters, providing a seamless branding experience for textile businesses.
+
