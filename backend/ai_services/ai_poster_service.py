@@ -237,6 +237,30 @@ class AIPosterService:
         except Exception:
             return image
     
+    @staticmethod
+    def _ensure_min_short_side(image: Image.Image, min_short_side: int = 1080) -> Image.Image:
+        """Upscale the image so that the shorter side is at least min_short_side.
+        Never downsizes; preserves aspect ratio.
+        """
+        try:
+            width, height = image.size
+            if width == 0 or height == 0:
+                return image
+            current_short = min(width, height)
+            if current_short >= min_short_side:
+                return image
+            scale = float(min_short_side) / float(current_short)
+            new_width = max(1, int(round(width * scale)))
+            new_height = max(1, int(round(height * scale)))
+            # Pillow 10 uses Image.Resampling
+            resample = getattr(Image, "Resampling", None)
+            if resample is not None:
+                return image.resize((new_width, new_height), resample.LANCZOS)
+            # Fallback for older Pillow
+            return image.resize((new_width, new_height), Image.LANCZOS)
+        except Exception:
+            return image
+    
     def __init__(self):
         """Initialize the AI poster service"""
         self.api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, 'GEMINI_API_KEY', None)
@@ -417,6 +441,9 @@ class AIPosterService:
                             filename = f"generated_poster_{timestamp}.png"
                             output_path = f"generated_posters/{filename}"
                             
+                            # Ensure minimum short side before saving
+                            image = self._ensure_min_short_side(image, min_short_side=1080)
+
                             # Save to media storage
                             image_bytes = BytesIO()
                             image.save(image_bytes, format='PNG')
@@ -665,6 +692,9 @@ class AIPosterService:
                     filename = f"edited_poster_{timestamp}.png"
                     output_path = f"generated_posters/{filename}"
                     
+                    # Ensure minimum short side before saving
+                    edited_image = self._ensure_min_short_side(edited_image, min_short_side=1080)
+
                     # Save to media storage
                     image_bytes = BytesIO()
                     edited_image.save(image_bytes, format='PNG')
@@ -886,6 +916,9 @@ class AIPosterService:
                     filename = f"composite_poster_{timestamp}.png"
                     output_path = f"generated_posters/{filename}"
                     
+                    # Ensure minimum short side before saving
+                    composite_image = self._ensure_min_short_side(composite_image, min_short_side=1080)
+
                     # Save to media storage
                     image_bytes = BytesIO()
                     composite_image.save(image_bytes, format='PNG')
@@ -917,6 +950,9 @@ class AIPosterService:
                                 retry_img = Image.open(BytesIO(retry_part.inline_data.data))
                                 if self._is_aspect_ratio_match(retry_img, normalized_ar):
                                     composite_image = retry_img
+                                    # Ensure minimum short side before saving
+                                    composite_image = self._ensure_min_short_side(composite_image, min_short_side=1080)
+
                                     image_bytes = BytesIO()
                                     composite_image.save(image_bytes, format='PNG')
                                     image_bytes.seek(0)
@@ -1043,6 +1079,9 @@ class AIPosterService:
                     filename = f"text_overlay_{timestamp}.png"
                     output_path = f"generated_posters/{filename}"
                     
+                    # Ensure minimum short side before saving
+                    edited_image = self._ensure_min_short_side(edited_image, min_short_side=1080)
+
                     # Save to media storage
                     image_bytes = BytesIO()
                     edited_image.save(image_bytes, format='PNG')
