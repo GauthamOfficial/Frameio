@@ -57,13 +57,18 @@ export default function AdminPage() {
     sort,
     currentPage,
     totalPages,
-    handleSort,
+    handleSort: handleSortInternal,
     handlePageChange,
   } = useDataTable({
     data: users,
     initialSort: { key: 'created_at', direction: 'desc' },
     initialPageSize: 10,
   })
+
+  // Wrapper function to convert string to keyof User
+  const handleSort = (key: string) => {
+    handleSortInternal(key as keyof User)
+  }
 
   // Check if user has admin permissions
   const isAdmin = userRole === 'Admin' || permissions.includes('admin_access')

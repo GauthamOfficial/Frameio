@@ -5,7 +5,7 @@ import { useUser, useAuth } from '@clerk/nextjs'
 import { userApi, testApi } from '@/lib/api'
 import { useApp } from './app-context'
 
-export type UserRole = 'Designer'
+export type UserRole = 'Designer' | 'Admin'
 
 export interface OrganizationContextType {
   organizationId: string | null
@@ -153,6 +153,15 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     switch (role) {
       case 'Designer':
         return [
+          'manage_designs',
+          'view_templates',
+          'view_analytics'
+        ]
+      case 'Admin':
+        return [
+          'admin_access',
+          'manage_users',
+          'manage_organizations',
           'manage_designs',
           'view_templates',
           'view_analytics'
