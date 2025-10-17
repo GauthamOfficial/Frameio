@@ -31,6 +31,211 @@ logger = logging.getLogger(__name__)
 
 class AIPosterService:
     """Service class for AI poster generation using Gemini 2.5 Flash"""
+
+    @staticmethod
+    def _build_image_config(types_module, aspect_ratio: str):
+        """Builds an image generation config compatible across google-genai versions.
+        Tries ImageConfig first; falls back to ImageGenerationConfig if available; otherwise None.
+        """
+        if not types_module:
+            return None
+        # Newer SDKs may rename ImageConfig to ImageGenerationConfig
+        if hasattr(types_module, "ImageConfig"):
+            try:
+                return types_module.ImageConfig(aspect_ratio=aspect_ratio)
+            except Exception:
+                pass
+        if hasattr(types_module, "ImageGenerationConfig"):
+            try:
+                return types_module.ImageGenerationConfig(aspect_ratio=aspect_ratio)
+            except Exception:
+                pass
+        # If neither exists, do not pass image_config at all
+        return None
+
+    @staticmethod
+    def _choose_dimensions_for_ratio(aspect_ratio: str, max_width: int = 1536) -> Optional[tuple]:
+        """Return (width, height) tuple for a reasonable max edge size while matching ratio.
+        Uses max dimension ≈ 1536 to balance quality and latency.
+        """
+        # Normalize common ratios
+        ar = str(aspect_ratio or "1:1").strip()
+        choices = {
+            "1:1": (1024, 1024),
+            "16:9": (1536, 864),
+            "9:16": (864, 1536),
+            "4:5": (1024, 1280),
+            "5:4": (1280, 1024),
+            "3:2": (1536, 1024),
+            "2:3": (1024, 1536),
+        }
+        if ar in choices:
+            return choices[ar]
+        # Fallback: parse float and compute based on provided max_width
+        try:
+            if ":" in ar:
+                w, h = ar.split(":", 1)
+                ratio = float(w) / float(h)
+            else:
+                ratio = float(ar)
+            width = max_width
+            height = int(round(width / ratio))
+            return (width, height)
+        except Exception:
+            return None
+
+    @classmethod
+    def _build_image_config_with_dimensions(cls, types_module, aspect_ratio: str, max_width: int = 1536):
+        """Attempt to build an image config using explicit dimensions supported by SDK.
+        Tries size, width/height variations across ImageConfig and ImageGenerationConfig.
+        Returns None if not constructible.
+        """
+        if not types_module:
+            return None
+        dims = cls._choose_dimensions_for_ratio(aspect_ratio, max_width=max_width)
+        if not dims:
+            return None
+        width, height = dims
+        candidates = []
+        if hasattr(types_module, "ImageConfig"):
+            candidates.append(types_module.ImageConfig)
+        if hasattr(types_module, "ImageGenerationConfig"):
+            candidates.append(types_module.ImageGenerationConfig)
+        for ctor in candidates:
+            # Try common field names
+            for kwargs in (
+                {"size": f"{width}x{height}"},
+                {"width": width, "height": height},
+                {"image_size": f"{width}x{height}"},
+            ):
+                try:
+                    return ctor(**kwargs)
+                except Exception:
+                    continue
+        return None
+
+    @classmethod
+    def _build_best_dimension_configs(cls, types_module, aspect_ratio: str) -> List[Any]:
+        """Return a list of image_config objects trying multiple explicit sizes for better compliance."""
+        if not types_module:
+            return []
+        configs: List[Any] = []
+        for max_w in (1024, 1280, 1536, 1792, 2048):
+            try:
+                cfg = cls._build_image_config_with_dimensions(types_module, aspect_ratio, max_width=max_w)
+                if cfg is not None:
+                    configs.append(cfg)
+            except Exception:
+                continue
+        # De-duplicate by repr
+        seen = set()
+        unique = []
+        for c in configs:
+            r = repr(c)
+            if r in seen:
+                continue
+            seen.add(r)
+            unique.append(c)
+        return unique
+
+    @staticmethod
+    def _parse_aspect_ratio(aspect_ratio: str) -> Optional[float]:
+        """Parse aspect ratio like '16:9' or '1:1' or '4:5' into a float width/height.
+        Returns None if parsing fails.
+        """
+        try:
+            if not aspect_ratio:
+                return None
+            if isinstance(aspect_ratio, (int, float)):
+                return float(aspect_ratio)
+            if ":" in aspect_ratio:
+                parts = aspect_ratio.split(":", 1)
+                w = float(parts[0].strip())
+                h = float(parts[1].strip())
+                if h == 0:
+                    return None
+                return w / h
+            # If it's a single number string
+            return float(aspect_ratio)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _normalize_aspect_ratio_value(aspect_ratio: str) -> str:
+        """Normalize aspect ratio to a canonical string the SDK expects, e.g., '1:1', '16:9', '4:5'.
+        Accepts float (as string) and returns nearest common ratio when possible.
+        """
+        if not aspect_ratio:
+            return "1:1"
+        s = str(aspect_ratio).strip()
+        if ":" in s:
+            return s
+        # Convert float-like to nearest known ratios
+        try:
+            val = float(s)
+            # Map a few common floats
+            candidates = {
+                1.0: "1:1",
+                16/9: "16:9",
+                9/16: "9:16",
+                4/5: "4:5",
+                5/4: "5:4",
+                3/2: "3:2",
+                2/3: "2:3",
+            }
+            closest = min(candidates.keys(), key=lambda k: abs(k - val))
+            if abs(closest - val) < 0.02:
+                return candidates[closest]
+        except Exception:
+            pass
+        return s
+
+    @classmethod
+    def _is_aspect_ratio_match(cls, image: Image.Image, aspect_ratio: str, tolerance: float = 0.005) -> bool:
+        """Return True if image's aspect ratio matches requested ratio within tolerance."""
+        target = cls._parse_aspect_ratio(aspect_ratio)
+        if not target:
+            return True
+        w, h = image.size
+        if w == 0 or h == 0:
+            return True
+        current = w / h
+        return abs(current - target) <= tolerance
+
+    @classmethod
+    def _enforce_aspect_ratio(cls, image: Image.Image, aspect_ratio: str) -> Image.Image:
+        """Center-crop the PIL image to match the target aspect ratio.
+        If parsing fails, returns image unchanged.
+        """
+        target = cls._parse_aspect_ratio(aspect_ratio)
+        if not target:
+            return image
+        width, height = image.size
+        if width == 0 or height == 0:
+            return image
+        current = width / height
+        # Close enough: do nothing
+        if abs(current - target) < 1e-3:
+            return image
+        # Need to crop: if current > target -> too wide => crop width; else crop height
+        if current > target:
+            # New width based on target
+            new_width = int(round(height * target))
+            left = (width - new_width) // 2
+            right = left + new_width
+            top = 0
+            bottom = height
+        else:
+            # Too tall -> crop height
+            new_height = int(round(width / target))
+            top = (height - new_height) // 2
+            bottom = top + new_height
+            left = 0
+            right = width
+        try:
+            return image.crop((left, top, right, bottom))
+        except Exception:
+            return image
     
     def __init__(self):
         """Initialize the AI poster service"""
@@ -84,7 +289,10 @@ class AIPosterService:
                     logger.warning(f"Error checking company profile: {e}")
             
             # Create base prompt with smart layout guidance for branding areas
-            base_prompt = prompt
+            # and strict aspect ratio directive
+            normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
+            ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
+            base_prompt = f"{ar_directive}\n{prompt}"
             if has_branding:
                 # Add instructions to avoid text in logo and contact areas while keeping them visually filled
                 branding_layout_instructions = """
@@ -96,7 +304,7 @@ class AIPosterService:
                 - Maintain all textual content within the middle 65% of the canvas
                 - Ensure text is readable and doesn't overlap with the top-right or bottom areas
                 """
-                base_prompt = f"{prompt}{branding_layout_instructions}"
+                base_prompt = f"{ar_directive}\n{prompt}{branding_layout_instructions}"
             else:
                 # Add instructions to avoid random brand names when no branding is provided
                 no_branding_instructions = """
@@ -108,7 +316,7 @@ class AIPosterService:
                 - Do not include any text that suggests a specific company or brand
                 - Avoid adding any blank margins or white bands; fill the full canvas
                 """
-                base_prompt = f"{prompt}{no_branding_instructions}"
+                base_prompt = f"{ar_directive}\n{prompt}{no_branding_instructions}"
             
             # Try multiple prompt variations if the first one fails
             prompts_to_try = [
@@ -121,16 +329,19 @@ class AIPosterService:
             for attempt, current_prompt in enumerate(prompts_to_try):
                 logger.info(f"Attempt {attempt + 1}: Trying prompt: {current_prompt[:50]}...")
                 
-                # Configure image generation
-                image_config = types.ImageConfig(aspect_ratio=aspect_ratio)
+                # Configure image generation (prefer explicit dimensions; fallback to aspect_ratio)
+                image_config = self._build_image_config_with_dimensions(types, normalized_ar) or \
+                               self._build_image_config(types, normalized_ar)
                 
+                config_kwargs = {"response_modalities": ['Image']}
+                if image_config is not None:
+                    config_kwargs["image_config"] = image_config
+                else:
+                    logger.info("Image generation: image_config not available; relying on prompt directive for aspect ratio")
                 response = self.client.models.generate_content(
                     model="gemini-2.5-flash-image",
                     contents=[current_prompt],
-                    config=types.GenerateContentConfig(
-                        response_modalities=['Image'],
-                        image_config=image_config,
-                    ),
+                    config=types.GenerateContentConfig(**config_kwargs),
                 )
             
                 # Process response and save image
@@ -164,7 +375,43 @@ class AIPosterService:
                     if hasattr(part, 'inline_data') and part.inline_data is not None:
                         try:
                             image = Image.open(BytesIO(part.inline_data.data))
-                            
+
+                            # Strict AR enforcement with retries
+                            max_retries = 2
+                            attempt_idx = 0
+                            while not self._is_aspect_ratio_match(image, normalized_ar) and attempt_idx < max_retries:
+                                logger.warning(f"Generated image AR mismatch (attempt {attempt_idx+1}); retrying with strict dimensions")
+                                # Build a series of image_config attempts with escalating dimensions
+                                dim_configs = self._build_best_dimension_configs(types, normalized_ar) or [self._build_image_config(types, normalized_ar)]
+                                # Include exact pixel directive in prompt
+                                w_h = self._choose_dimensions_for_ratio(normalized_ar, max_width=1536)
+                                px_directive = f"Generate exactly {w_h[0]}x{w_h[1]} pixels, no padding or borders. " if w_h else ""
+                                stricter_prompt = f"ABSOLUTE REQUIREMENT: Output must be exactly {normalized_ar}. {px_directive}{current_prompt}"
+                                retry_succeeded = False
+                                for dim_config in dim_configs:
+                                    retry_kwargs = dict(config_kwargs)
+                                    if dim_config is not None:
+                                        retry_kwargs["image_config"] = dim_config
+                                    response_retry = self.client.models.generate_content(
+                                        model="gemini-2.5-flash-image",
+                                        contents=[stricter_prompt],
+                                        config=types.GenerateContentConfig(**retry_kwargs),
+                                    )
+                                    for retry_part in response_retry.candidates[0].content.parts:
+                                        if getattr(retry_part, 'inline_data', None) is not None:
+                                            retry_img = Image.open(BytesIO(retry_part.inline_data.data))
+                                            image = retry_img
+                                            if self._is_aspect_ratio_match(image, normalized_ar):
+                                                retry_succeeded = True
+                                                break
+                                    if retry_succeeded:
+                                        break
+                                attempt_idx += 1
+                            # Fallback: if still mismatched after retries, enforce by center-cropping
+                            if not self._is_aspect_ratio_match(image, normalized_ar):
+                                logger.warning("Model did not honor aspect ratio after strict retries; enforcing via cropping")
+                                image = self._enforce_aspect_ratio(image, normalized_ar)
+
                             # Generate unique filename
                             timestamp = int(time.time())
                             filename = f"generated_poster_{timestamp}.png"
@@ -181,7 +428,8 @@ class AIPosterService:
                             if not image_url.startswith('http'):
                                 image_url = f"http://localhost:8000{image_url}"
                             
-                            logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}")
+                            final_w, final_h = image.size
+                            logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}; size={final_w}x{final_h}")
                             
                             # Generate caption and hashtags for the poster
                             caption_result = self.generate_caption_and_hashtags(prompt, image_url)
@@ -192,6 +440,9 @@ class AIPosterService:
                                 "image_path": saved_path,
                                 "image_url": image_url,
                                 "filename": filename,
+                                "width": final_w,
+                                "height": final_h,
+                                "aspect_ratio_final": f"{final_w}:{final_h}",
                                 "caption": caption_result.get("caption", ""),
                                 "full_caption": caption_result.get("full_caption", ""),
                                 "hashtags": caption_result.get("hashtags", []),
@@ -302,7 +553,10 @@ class AIPosterService:
                     logger.warning(f"Error checking company profile: {e}")
             
             # Create base prompt with smart layout guidance for branding areas
-            base_prompt = prompt
+            # and strict aspect ratio directive
+            normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
+            ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
+            base_prompt = f"{ar_directive}\n{prompt}"
             if has_branding:
                 # Add instructions to avoid text in logo and contact areas while keeping them visually filled
                 branding_layout_instructions = """
@@ -314,7 +568,7 @@ class AIPosterService:
                 - Maintain all textual content within the middle 65% of the canvas
                 - Ensure text is readable and doesn't overlap with the top-right or bottom areas
                 """
-                base_prompt = f"{prompt}{branding_layout_instructions}"
+                base_prompt = f"{ar_directive}\n{prompt}{branding_layout_instructions}"
             else:
                 # Add instructions to avoid random brand names and blank margins when no branding is provided
                 no_branding_instructions = """
@@ -326,7 +580,7 @@ class AIPosterService:
                 - Do not include any text that suggests a specific company or brand
                 - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
                 """
-                base_prompt = f"{prompt}{no_branding_instructions}"
+                base_prompt = f"{ar_directive}\n{prompt}{no_branding_instructions}"
             
             # Load and prepare image from Django storage
             try:
@@ -352,22 +606,59 @@ class AIPosterService:
                 )
             )
             
-            # Configure image generation
-            image_config = types.ImageConfig(aspect_ratio=aspect_ratio)
+            # Configure image generation (prefer explicit dimensions; fallback to aspect_ratio)
+            image_config = self._build_image_config_with_dimensions(types, normalized_ar) or \
+                           self._build_image_config(types, normalized_ar)
             
+            config_kwargs = {"response_modalities": ['Image']}
+            if image_config is not None:
+                config_kwargs["image_config"] = image_config
+            else:
+                logger.info("Image generation: image_config not available; relying on prompt directive for aspect ratio")
             response = self.client.models.generate_content(
                 model="gemini-2.5-flash-image",
                 contents=[image_part, base_prompt],
-                config=types.GenerateContentConfig(
-                    response_modalities=['Image'],
-                    image_config=image_config,
-                ),
+                config=types.GenerateContentConfig(**config_kwargs),
             )
             
             # Process response and save image
             for part in response.candidates[0].content.parts:
                 if part.inline_data is not None:
                     edited_image = Image.open(BytesIO(part.inline_data.data))
+
+                    # Strict AR enforcement with retries
+                    max_retries = 2
+                    attempt_idx = 0
+                    while not self._is_aspect_ratio_match(edited_image, normalized_ar) and attempt_idx < max_retries:
+                        logger.warning(f"Edited image AR mismatch (attempt {attempt_idx+1}); retrying with strict dimensions")
+                        dim_configs = self._build_best_dimension_configs(types, normalized_ar) or [self._build_image_config(types, normalized_ar)]
+                        w_h = self._choose_dimensions_for_ratio(normalized_ar, max_width=1536)
+                        px_directive = f"Generate exactly {w_h[0]}x{w_h[1]} pixels, no padding or borders. " if w_h else ""
+                        stricter_prompt = f"ABSOLUTE REQUIREMENT: Output must be exactly {normalized_ar}. {px_directive}{base_prompt}"
+                        retry_succeeded = False
+                        for dim_config in dim_configs:
+                            retry_kwargs = dict(config_kwargs)
+                            if dim_config is not None:
+                                retry_kwargs["image_config"] = dim_config
+                            response_retry = self.client.models.generate_content(
+                                model="gemini-2.5-flash-image",
+                                contents=[image_part, stricter_prompt],
+                                config=types.GenerateContentConfig(**retry_kwargs),
+                            )
+                            for retry_part in response_retry.candidates[0].content.parts:
+                                if getattr(retry_part, 'inline_data', None) is not None:
+                                    retry_img = Image.open(BytesIO(retry_part.inline_data.data))
+                                    edited_image = retry_img
+                                    if self._is_aspect_ratio_match(edited_image, normalized_ar):
+                                        retry_succeeded = True
+                                        break
+                            if retry_succeeded:
+                                break
+                        attempt_idx += 1
+                    # Fallback: if still mismatched after retries, enforce by center-cropping
+                    if not self._is_aspect_ratio_match(edited_image, normalized_ar):
+                        logger.warning("Model did not honor aspect ratio for edit after strict retries; enforcing via cropping")
+                        edited_image = self._enforce_aspect_ratio(edited_image, normalized_ar)
                     
                     # Generate unique filename
                     timestamp = int(time.time())
@@ -385,7 +676,8 @@ class AIPosterService:
                     if not image_url.startswith('http'):
                         image_url = f"http://localhost:8000{image_url}"
                     
-                    logger.info(f"Edited poster generated successfully: {saved_path}")
+                    final_w, final_h = edited_image.size
+                    logger.info(f"Edited poster generated successfully: {saved_path}; size={final_w}x{final_h}")
                     
                     # Generate caption and hashtags for the poster
                     caption_result = self.generate_caption_and_hashtags(prompt, image_url)
@@ -396,6 +688,9 @@ class AIPosterService:
                         "image_path": saved_path,
                         "image_url": image_url,
                         "filename": filename,
+                        "width": final_w,
+                        "height": final_h,
+                        "aspect_ratio_final": f"{final_w}:{final_h}",
                         "caption": caption_result.get("caption", ""),
                         "full_caption": caption_result.get("full_caption", ""),
                         "hashtags": caption_result.get("hashtags", []),
@@ -496,8 +791,10 @@ class AIPosterService:
             - Make the design cohesive while keeping logo and contact areas text-free but visually rich
             """
             
-            # Create enhanced prompt with smart branding area guidance
-            enhanced_prompt = f"{prompt}{spacing_instructions}"
+            # Create enhanced prompt with smart branding area guidance and AR directive
+            normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
+            ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
+            enhanced_prompt = f"{ar_directive}\n{prompt}{spacing_instructions}"
             
             # Load all images
             image_parts = []
@@ -531,22 +828,58 @@ class AIPosterService:
             # Add text prompt
             contents = image_parts + [enhanced_prompt]
             
-            # Configure image generation
-            image_config = types.ImageConfig(aspect_ratio=aspect_ratio)
+            # Configure image generation (version-safe)
+            image_config = self._build_image_config(types, normalized_ar)
             
+            config_kwargs = {"response_modalities": ['Image']}
+            if image_config is not None:
+                config_kwargs["image_config"] = image_config
+            else:
+                logger.info("Image generation: image_config not available; relying on prompt directive for aspect ratio")
             response = self.client.models.generate_content(
                 model="gemini-2.5-flash-image",
                 contents=contents,
-                config=types.GenerateContentConfig(
-                    response_modalities=['Image'],
-                    image_config=image_config,
-                ),
+                config=types.GenerateContentConfig(**config_kwargs),
             )
             
             # Process response and save image
             for part in response.candidates[0].content.parts:
                 if part.inline_data is not None:
                     composite_image = Image.open(BytesIO(part.inline_data.data))
+
+                    # Strict AR enforcement with retries
+                    max_retries = 2
+                    attempt_idx = 0
+                    while not self._is_aspect_ratio_match(composite_image, normalized_ar) and attempt_idx < max_retries:
+                        logger.warning(f"Composite image AR mismatch (attempt {attempt_idx+1}); retrying with strict dimensions")
+                        dim_configs = self._build_best_dimension_configs(types, normalized_ar) or [self._build_image_config(types, normalized_ar)]
+                        w_h = self._choose_dimensions_for_ratio(normalized_ar, max_width=1536)
+                        px_directive = f"Generate exactly {w_h[0]}x{w_h[1]} pixels, no padding or borders. " if w_h else ""
+                        stricter_prompt = f"ABSOLUTE REQUIREMENT: Output must be exactly {normalized_ar}. {px_directive}{enhanced_prompt}"
+                        retry_succeeded = False
+                        for dim_config in dim_configs:
+                            retry_kwargs = dict(config_kwargs)
+                            if dim_config is not None:
+                                retry_kwargs["image_config"] = dim_config
+                            response_retry = self.client.models.generate_content(
+                                model="gemini-2.5-flash-image",
+                                contents=contents[:-1] + [stricter_prompt],
+                                config=types.GenerateContentConfig(**retry_kwargs),
+                            )
+                            for retry_part in response_retry.candidates[0].content.parts:
+                                if getattr(retry_part, 'inline_data', None) is not None:
+                                    retry_img = Image.open(BytesIO(retry_part.inline_data.data))
+                                    composite_image = retry_img
+                                    if self._is_aspect_ratio_match(composite_image, normalized_ar):
+                                        retry_succeeded = True
+                                        break
+                            if retry_succeeded:
+                                break
+                        attempt_idx += 1
+                    # Fallback: if still mismatched after retries, enforce by center-cropping
+                    if not self._is_aspect_ratio_match(composite_image, normalized_ar):
+                        logger.warning("Model did not honor aspect ratio for composite after strict retries; enforcing via cropping")
+                        composite_image = self._enforce_aspect_ratio(composite_image, normalized_ar)
                     
                     # Generate unique filename
                     timestamp = int(time.time())
@@ -564,7 +897,35 @@ class AIPosterService:
                     if not image_url.startswith('http'):
                         image_url = f"http://localhost:8000{image_url}"
                     
-                    logger.info(f"Composite poster generated successfully: {saved_path}")
+                    final_w, final_h = composite_image.size
+                    logger.info(f"Composite poster generated successfully: {saved_path}; size={final_w}x{final_h}")
+                    if not self._is_aspect_ratio_match(composite_image, normalized_ar):
+                        logger.warning("Composite image aspect ratio mismatch; retrying once with stricter directive")
+                        stricter_prompt = f"ABSOLUTE REQUIREMENT: Output must be exactly {normalized_ar}. No padding, no borders, no letterboxing. {enhanced_prompt}"
+                        dim_config = self._build_image_config_with_dimensions(types, normalized_ar)
+                        retry_kwargs = dict(config_kwargs)
+                        if dim_config is not None:
+                            retry_kwargs["image_config"] = dim_config
+                            logger.info("Retry (composite) with dimension-based image_config")
+                        response_retry = self.client.models.generate_content(
+                            model="gemini-2.5-flash-image",
+                            contents=contents[:-1] + [stricter_prompt],
+                            config=types.GenerateContentConfig(**retry_kwargs),
+                        )
+                        for retry_part in response_retry.candidates[0].content.parts:
+                            if getattr(retry_part, 'inline_data', None) is not None:
+                                retry_img = Image.open(BytesIO(retry_part.inline_data.data))
+                                if self._is_aspect_ratio_match(retry_img, normalized_ar):
+                                    composite_image = retry_img
+                                    image_bytes = BytesIO()
+                                    composite_image.save(image_bytes, format='PNG')
+                                    image_bytes.seek(0)
+                                    saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
+                                    image_url = default_storage.url(saved_path)
+                                    if not image_url.startswith('http'):
+                                        image_url = f"http://localhost:8000{image_url}"
+                                    logger.info("Retry produced correct aspect ratio image for composite; using retry output")
+                                    break
                     
                     # Generate caption and hashtags for the poster
                     caption_result = self.generate_caption_and_hashtags(prompt, image_url)
@@ -574,6 +935,9 @@ class AIPosterService:
                         "image_path": saved_path,
                         "image_url": image_url,
                         "filename": filename,
+                        "width": final_w,
+                        "height": final_h,
+                        "aspect_ratio_final": f"{final_w}:{final_h}",
                         "caption": caption_result.get("caption", ""),
                         "full_caption": caption_result.get("full_caption", ""),
                         "hashtags": caption_result.get("hashtags", []),
@@ -656,16 +1020,17 @@ class AIPosterService:
             - Ensure text is readable and doesn't overlap with the top-right or bottom areas
             """
             
-            # Configure image generation
-            image_config = types.ImageConfig(aspect_ratio="1:1")
+            # Configure image generation (version-safe). Text overlay remains square.
+            normalized_ar = self._normalize_aspect_ratio_value("1:1")
+            image_config = self._build_image_config(types, normalized_ar)
             
+            config_kwargs = {"response_modalities": ['Image']}
+            if image_config is not None:
+                config_kwargs["image_config"] = image_config
             response = self.client.models.generate_content(
                 model="gemini-2.5-flash-image",
                 contents=[image_part, enhanced_prompt],
-                config=types.GenerateContentConfig(
-                    response_modalities=['Image'],
-                    image_config=image_config,
-                ),
+                config=types.GenerateContentConfig(**config_kwargs),
             )
             
             # Process response and save image

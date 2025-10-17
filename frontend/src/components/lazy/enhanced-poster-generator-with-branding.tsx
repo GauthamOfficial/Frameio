@@ -127,7 +127,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
         for (const base of fallbackBases) {
           try {
             const controller = new AbortController()
-            const localTimeout = setTimeout(() => controller.abort('timeout'), 60000)
+            const localTimeout = setTimeout(() => controller.abort(), 180000)
             const res = await fetch(`${base}${path}`, { ...init, signal: controller.signal })
             clearTimeout(localTimeout)
             if (res.ok || res.status) return res
@@ -207,7 +207,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
       console.error('❌ Generation failed:', err)
       // Map common network errors to helpful messages
       const networkMsg =
-        err instanceof DOMException && err.name === 'AbortError'
+        (err instanceof DOMException && err.name === 'AbortError') || (typeof err === 'string' && err.toLowerCase() === 'timeout')
           ? 'Request timed out. Please try again.'
           : err instanceof TypeError && /Failed to fetch/i.test(String(err.message))
           ? 'Cannot reach the backend. Ensure it is running on 127.0.0.1:8000 and CORS allows this origin.'
@@ -351,7 +351,11 @@ export default function EnhancedPosterGeneratorWithBranding() {
               >
                 <option value="1:1">Square (1:1)</option>
                 <option value="4:5">Portrait (4:5)</option>
+                <option value="5:4">Portrait Wide (5:4)</option>
+                <option value="3:2">Classic (3:2)</option>
+                <option value="2:3">Classic Tall (2:3)</option>
                 <option value="16:9">Landscape (16:9)</option>
+                <option value="9:16">Vertical (9:16)</option>
               </select>
             </div>
 
@@ -443,15 +447,15 @@ export default function EnhancedPosterGeneratorWithBranding() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {result ? (
+              {result ? (
               <div className="space-y-4">
-                <div className="border rounded-lg overflow-hidden">
+                <div className="border rounded-lg overflow-hidden relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
                   <img 
                     src={result.image_url.startsWith('http') 
                       ? result.image_url 
                       : `${(process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${result.image_url}`} 
                     alt="Generated Poster" 
-                    className="w-full h-auto"
+                    className="absolute inset-0 w-full h-full object-contain"
                   />
                 </div>
                 

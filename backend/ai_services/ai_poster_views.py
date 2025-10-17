@@ -45,8 +45,8 @@ def generate_poster(request):
                 "error": "Prompt is required"
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Validate aspect ratio
-        valid_ratios = ['1:1', '16:9', '4:5']
+        # Validate aspect ratio (broaden supported list)
+        valid_ratios = ['1:1', '16:9', '9:16', '4:5', '5:4', '3:2', '2:3']
         if aspect_ratio not in valid_ratios:
             aspect_ratio = '1:1'
         
@@ -134,6 +134,9 @@ def generate_poster(request):
                 "image_url": result.get('image_url'),
                 "filename": result.get('filename'),
                 "aspect_ratio": aspect_ratio,
+                "width": result.get('width'),
+                "height": result.get('height'),
+                "aspect_ratio_final": result.get('aspect_ratio_final'),
                 "prompt": prompt,
                 "caption": result.get('caption', ''),
                 "full_caption": result.get('full_caption', ''),
@@ -191,8 +194,8 @@ def edit_poster(request):
                 "error": "Image file is required"
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Validate aspect ratio
-        valid_ratios = ['1:1', '16:9', '4:5']
+        # Validate aspect ratio (broaden supported list)
+        valid_ratios = ['1:1', '16:9', '9:16', '4:5', '5:4', '3:2', '2:3']
         if aspect_ratio not in valid_ratios:
             aspect_ratio = '1:1'
         
@@ -267,6 +270,9 @@ def edit_poster(request):
                     "image_url": result.get('image_url'),
                     "filename": result.get('filename'),
                     "aspect_ratio": aspect_ratio,
+                    "width": result.get('width'),
+                    "height": result.get('height'),
+                    "aspect_ratio_final": result.get('aspect_ratio_final'),
                     "prompt": prompt,
                     "caption": result.get('caption', ''),
                     "full_caption": result.get('full_caption', ''),
@@ -329,8 +335,8 @@ def composite_poster(request):
                 "error": "At least one image file is required"
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Validate aspect ratio
-        valid_ratios = ['1:1', '16:9', '4:5']
+        # Validate aspect ratio (broaden supported list)
+        valid_ratios = ['1:1', '16:9', '9:16', '4:5', '5:4', '3:2', '2:3']
         if aspect_ratio not in valid_ratios:
             aspect_ratio = '16:9'
         
@@ -358,6 +364,9 @@ def composite_poster(request):
                     "image_url": result.get('image_url'),
                     "filename": result.get('filename'),
                     "aspect_ratio": aspect_ratio,
+                    "width": result.get('width'),
+                    "height": result.get('height'),
+                    "aspect_ratio_final": result.get('aspect_ratio_final'),
                     "prompt": prompt,
                     "images_used": len(temp_paths),
                     "caption": result.get('caption', ''),

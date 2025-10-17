@@ -558,14 +558,14 @@ export default function EnhancedPosterGenerator() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="aspect-[4/5] bg-muted rounded-lg flex items-center justify-center mb-4 overflow-hidden">
+              <div className="bg-muted rounded-lg flex items-center justify-center mb-4 overflow-hidden relative w-full" style={{ aspectRatio: '4 / 5' }}>
               {generatedPoster && !imageLoadError ? (
                   <>
                     {console.log('🖼️ Rendering image with URL:', generatedPoster.url)}
                     <img
                       src={generatedPoster.url}
                       alt="AI Generated poster"
-                      className="w-full h-full object-cover rounded-lg"
+                      className="absolute inset-0 w-full h-full object-contain rounded-lg"
                       onLoad={handleImageLoad}
                       onError={handleImageError}
                     />

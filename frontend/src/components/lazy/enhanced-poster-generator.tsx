@@ -303,7 +303,11 @@ export default function EnhancedPosterGenerator() {
               >
                 <option value="1:1">Square (1:1)</option>
                 <option value="4:5">Portrait (4:5)</option>
-                <option value="16:9">Widescreen (16:9)</option>
+                <option value="5:4">Portrait Wide (5:4)</option>
+                <option value="3:2">Classic (3:2)</option>
+                <option value="2:3">Classic Tall (2:3)</option>
+                <option value="16:9">Landscape (16:9)</option>
+                <option value="9:16">Vertical (9:16)</option>
               </select>
             </div>
 
@@ -353,11 +357,11 @@ export default function EnhancedPosterGenerator() {
 
             {result?.success && result.image_url && (
               <div className="space-y-4">
-                <div className="relative">
+                <div className="relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
                   <img
                     src={result.image_url.startsWith('http') ? result.image_url : `http://localhost:8000${result.image_url}`}
                     alt="Generated poster"
-                    className="w-full h-auto rounded-md border"
+                    className="absolute inset-0 w-full h-full rounded-md border object-contain"
                     onError={(e) => {
                       console.error('Image load error:', e)
                       console.error('Image URL:', result.image_url)
@@ -487,11 +491,11 @@ export default function EnhancedPosterGenerator() {
             {/* Preview uploaded image */}
             {previewUrl && !result && !isGenerating && (
               <div className="space-y-4">
-                <div className="relative">
+                <div className="relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
                   <img
                     src={previewUrl}
                     alt="Uploaded reference image"
-                    className="w-full h-auto rounded-md border"
+                    className="absolute inset-0 w-full h-full rounded-md border object-contain"
                   />
                 </div>
                 <p className="text-sm text-gray-600 text-center">
