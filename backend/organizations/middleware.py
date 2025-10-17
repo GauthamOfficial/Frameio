@@ -60,14 +60,28 @@ class TenantMiddleware(MiddlewareMixin):
             request.tenant = organization
             set_current_organization(organization)
         else:
-            # For API requests, only return error if user is authenticated but no organization found
-            # This allows authentication middleware to run first
-            if (request.path.startswith('/api/') and 
-                hasattr(request, 'user') and 
-                request.user.is_authenticated):
-                return JsonResponse({
-                    'error': 'Organization not found or access denied'
-                }, status=403)
+            # Attempt to auto-select an organization for authenticated users
+            if hasattr(request, 'user') and request.user.is_authenticated:
+                try:
+                    membership = OrganizationMember.objects.filter(user=request.user, is_active=True).select_related('organization').first()
+                    if membership and membership.organization:
+                        request.organization = membership.organization
+                        request.tenant = membership.organization
+                        set_current_organization(membership.organization)
+                        logger.info(f"Auto-selected organization '{membership.organization.slug}' for user {request.user.id}")
+                    else:
+                        # If still no organization: for unsafe methods, block; for safe (GET/HEAD/OPTIONS), allow without org
+                        if request.method not in ['GET', 'HEAD', 'OPTIONS'] and request.path.startswith('/api/'):
+                            return JsonResponse({
+                                'error': 'Organization not found or access denied'
+                            }, status=403)
+                except Exception as e:
+                    logger.warning(f"Auto-select organization failed: {e}")
+                    if request.method not in ['GET', 'HEAD', 'OPTIONS'] and request.path.startswith('/api/'):
+                        return JsonResponse({'error': 'Organization context error'}, status=403)
+            else:
+                # Unauthenticated request: do not force organization; let auth/csrf handle
+                pass
         
         return None
     
