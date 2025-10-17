@@ -107,6 +107,22 @@ export default function EnhancedPosterGeneratorWithBranding() {
       const token = await getToken()
       const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {}
       
+      // Multitenancy: pass organization context if available
+      try {
+        // Prefer a user-selected slug in localStorage, else env var
+        const orgSlug = (typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null)
+          || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
+        if (orgSlug) {
+          authHeaders['X-Organization'] = orgSlug
+        }
+        // Dev convenience: support org id header
+        const devOrgId = (typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null)
+          || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        if (devOrgId) {
+          authHeaders['X-Dev-Org-Id'] = devOrgId
+        }
+      } catch {}
+      
       // Add user context for branding (development)
       if (user?.id) {
         authHeaders['X-Dev-User-ID'] = user.id
@@ -121,16 +137,29 @@ export default function EnhancedPosterGeneratorWithBranding() {
         // de-duplicate while preserving order
         .filter((v, i, a) => a.indexOf(v) === i)
 
-      // Helper to try multiple bases until one succeeds (per-attempt timeout)
+      // Helper to try same-origin first (so Next.js rewrites apply), then fall back
       const fetchWithFallback = async (path: string, init: RequestInit) => {
         let lastErr: unknown = null
+
+        // 1) Try same-origin relative path (leverages Next.js rewrites)
+        try {
+          const controller = new AbortController()
+          const localTimeout = setTimeout(() => controller.abort(), 180000)
+          const res = await fetch(path, { ...init, signal: controller.signal })
+          clearTimeout(localTimeout)
+          if (res.ok) return res
+        } catch (e) {
+          lastErr = e
+        }
+
+        // 2) Try absolute bases as fallbacks
         for (const base of fallbackBases) {
           try {
             const controller = new AbortController()
             const localTimeout = setTimeout(() => controller.abort(), 180000)
             const res = await fetch(`${base}${path}`, { ...init, signal: controller.signal })
             clearTimeout(localTimeout)
-            if (res.ok || res.status) return res
+            if (res.ok) return res
           } catch (e) {
             lastErr = e
           }
