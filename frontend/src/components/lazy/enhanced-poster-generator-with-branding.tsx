@@ -360,13 +360,87 @@ export default function EnhancedPosterGeneratorWithBranding() {
               <Label htmlFor="prompt">Describe your poster</Label>
               <Textarea
                 id="prompt"
-                placeholder="e.g., Modern silk saree collection with elegant patterns and vibrant colors, perfect for showcasing premium textile designs"
+                placeholder="Describe your Post"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 disabled={isGenerating}
                 rows={4}
-                className="min-h-[100px] resize-y"
+                className="min-h-[100px] resize-y placeholder:opacity-50"
               />
+            </div>
+
+            {/* Template Section */}
+            <div className="space-y-2">
+              <Label>Templates</Label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPrompt("Create a stylish product post featuring a dummy model wearing the uploaded white party frock. Set the background in a moody, misty outdoor atmosphere with soft cinematic lighting. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
+                  className="flex-1 p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                  disabled={isGenerating}
+                >
+                  <div className="w-full aspect-[4/5] rounded-md mb-2 overflow-hidden">
+                    <img 
+                      src="/Wedding Frock.jpg" 
+                      alt="Wedding Frock" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="font-medium text-gray-700">Wedding Frock</div>
+                  <div className="text-gray-500 text-xs mt-1">Moody outdoor style</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setPrompt("Create a stylish product post featuring a real man wearing the uploaded shirt. Set the background with cinematic buildings and dramatic lighting for a modern, urban look. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
+                  className="flex-1 p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                  disabled={isGenerating}
+                >
+                  <div className="w-full aspect-[4/5] rounded-md mb-2 overflow-hidden">
+                    <img 
+                      src="/Men Shirt.png" 
+                      alt="Men's Shirt" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="font-medium text-gray-700">Men's Denim Shirt</div>
+                  <div className="text-gray-500 text-xs mt-1">Urban Casual Style</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setPrompt("Create a stylish product post featuring a dummy model wearing the uploaded saree. Set the background in a premium, elegant environment with cinematic lighting for a luxurious look. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
+                  className="flex-1 p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                  disabled={isGenerating}
+                >
+                  <div className="w-full aspect-[4/5] rounded-md mb-2 overflow-hidden">
+                    <img 
+                      src="/Saaree.jpg" 
+                      alt="Elegant Silk Saree" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="font-medium text-gray-700">Elegant Silk Saree</div>
+                  <div className="text-gray-500 text-xs mt-1">Premium Luxurious Style</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setPrompt("Create a stylish product post featuring a real man wearing the uploaded men's T-shirt. Set the background at a cinematic beach location with soft natural lighting and a relaxed vibe. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
+                  className="flex-1 p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                  disabled={isGenerating}
+                >
+                  <div className="w-full aspect-[4/5] rounded-md mb-2 overflow-hidden">
+                    <img 
+                      src="/T_shirt.png" 
+                      alt="Men's Casual T-shirt" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="font-medium text-gray-700">Men's Casual T-shirt</div>
+                  <div className="text-gray-500 text-xs mt-1">Beach casual style</div>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2">
