@@ -103,17 +103,6 @@ export function WelcomePage({ className }: WelcomePageProps) {
               </ClerkSignInButton>
             </div>
             
-            {/* Test AI Features Link */}
-            <div className="mt-6">
-              <Button 
-                variant="secondary" 
-                size="lg" 
-                className="text-lg"
-                onClick={() => router.push('/ai-test-links')}
-              >
-                🧪 Test AI Features (No Login Required)
-              </Button>
-            </div>
           </div>
 
           {/* Hero Illustration Placeholder */}

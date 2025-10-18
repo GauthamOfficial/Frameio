@@ -535,16 +535,17 @@ const CompanyProfileSettings: React.FC = () => {
         </Card>
       )}
 
-      {/* Personal Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
-          <CardDescription>
-            Your personal details and contact information
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Three Column Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Personal Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Personal Information</CardTitle>
+            <CardDescription>
+              Your personal details and contact information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="company_name">Business Name *</Label>
               <Input
@@ -564,108 +565,104 @@ const CompanyProfileSettings: React.FC = () => {
                 placeholder="https://yourcompany.com"
               />
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Business Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Describe your business..."
-              rows={3}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Logo Upload */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Business Logo</CardTitle>
-          <CardDescription>
-            Upload your business logo to be included in AI-generated posters
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="logo">Logo Image</Label>
-            <div className="relative">
-              <Input
-                id="logo"
-                type="file"
-                accept="image/*"
-                onChange={handleLogoChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            <div className="space-y-2">
+              <Label htmlFor="description">Business Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="Describe your business..."
+                rows={3}
               />
-              <div className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-                <div className="flex flex-col items-center space-y-2">
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <Upload className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-gray-700">Choose Logo File</p>
-                    <p className="text-xs text-gray-500">or drag and drop</p>
-                  </div>
-                </div>
-              </div>
             </div>
-            <p className="text-sm text-gray-600">
-              Recommended size: 300x300px or larger. PNG, JPG, or SVG formats supported.
-            </p>
-          </div>
-          
-          {logoPreview ? (
-            <div className="space-y-2">
-              <Label>Preview</Label>
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <img 
-                  src={logoPreview} 
-                  alt="Logo preview" 
-                  className="max-w-32 max-h-32 object-contain"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label>Preview</Label>
-              <div className="border rounded-lg p-4 bg-gray-50 flex items-center justify-center h-32">
-                <div className="flex flex-col items-center space-y-2 text-gray-400">
-                  <ImageIcon className="h-8 w-8" />
-                  <p className="text-sm">No logo selected</p>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="logo_position">Logo Position in Posters</Label>
-            <Select 
-              value={formData.preferred_logo_position}
-              onValueChange={(value) => handleInputChange('preferred_logo_position', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select logo position" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="top_right">Top Right</SelectItem>
-                <SelectItem value="top_left">Top Left</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Contact Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact Information</CardTitle>
-          <CardDescription>
-            Add your contact details to be included in AI-generated posters
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Business Logo */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Business Logo</CardTitle>
+            <CardDescription>
+              Upload your business logo to be included in AI-generated posters
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="logo">Logo Image</Label>
+              <div className="relative">
+                <Input
+                  id="logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                <div className="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+                  <div className="flex flex-col items-center space-y-1">
+                    <div className="p-2 bg-blue-100 rounded-full">
+                      <Upload className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-medium text-gray-700">Choose Logo</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-600">
+                Recommended: 300x300px, PNG, JPG, or SVG
+              </p>
+            </div>
+            
+            {logoPreview ? (
+              <div className="space-y-2">
+                <Label>Preview</Label>
+                <div className="border rounded-lg p-2 bg-gray-50 flex justify-center">
+                  <img 
+                    src={logoPreview} 
+                    alt="Logo preview" 
+                    className="max-w-20 max-h-20 object-contain"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Preview</Label>
+                <div className="border rounded-lg p-2 bg-gray-50 flex items-center justify-center h-20">
+                  <div className="flex flex-col items-center space-y-1 text-gray-400">
+                    <ImageIcon className="h-6 w-6" />
+                    <p className="text-xs">No logo selected</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="logo_position">Logo Position in Posters</Label>
+              <Select 
+                value={formData.preferred_logo_position}
+                onValueChange={(value) => handleInputChange('preferred_logo_position', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select logo position" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="top_right">Top Right</SelectItem>
+                  <SelectItem value="top_left">Top Left</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Contact Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact Information</CardTitle>
+            <CardDescription>
+              Add your contact details to be included in AI-generated posters
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="whatsapp_number">WhatsApp Number</Label>
               <Input
@@ -685,9 +682,6 @@ const CompanyProfileSettings: React.FC = () => {
                 placeholder="contact@yourcompany.com"
               />
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="facebook_username">Facebook Username</Label>
               <Input
@@ -696,9 +690,6 @@ const CompanyProfileSettings: React.FC = () => {
                 onChange={(e) => handleInputChange('facebook_username', e.target.value)}
                 placeholder="yourcompany"
               />
-              <p className="text-xs text-gray-500">
-                Enter your Facebook username (without @)
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="facebook_link">Facebook Page URL</Label>
@@ -709,24 +700,20 @@ const CompanyProfileSettings: React.FC = () => {
                 onChange={(e) => handleInputChange('facebook_link', e.target.value)}
                 placeholder="https://facebook.com/yourcompany"
               />
-              <p className="text-xs text-gray-500">
-                Enter your Facebook page URL (optional)
-              </p>
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Textarea
-              id="address"
-              value={formData.address}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              placeholder="Your business address..."
-              rows={2}
-            />
-          </div>
-        </CardContent>
-      </Card>
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                placeholder="Your business address..."
+                rows={2}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Save Button */}
       <div className="flex justify-start">

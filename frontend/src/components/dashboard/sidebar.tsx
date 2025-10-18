@@ -31,7 +31,6 @@ const getNavigationItems = (userRole: string | null, permissions: string[]) => {
     { name: "Scheduler", href: "/dashboard/scheduler", icon: Calendar, permission: "manage_designs" },
     { name: "Templates Library", href: "/dashboard/templates", icon: Library, permission: "view_templates" },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, permission: "view_analytics" },
-    { name: "Business Integration Test", href: "/test-business-integration", icon: TestTube, permission: null },
   ]
 
   // Filter items based on permissions - only show designer-related items
