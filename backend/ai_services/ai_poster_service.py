@@ -312,38 +312,57 @@ class AIPosterService:
                 except Exception as e:
                     logger.warning(f"Error checking company profile: {e}")
             
-            # Create base prompt with smart layout guidance for branding areas
-            # and strict aspect ratio directive
+            # Create base prompt with enhanced instructions for better image generation
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
             ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
-            base_prompt = f"{ar_directive}\n{prompt}"
+            
+            # Enhanced contrast and clarity instructions for main subject
+            contrast_instructions = """
+            
+            MAIN SUBJECT ENHANCEMENT:
+            - Always enhance the contrast and clarity of the main subject so it stands out clearly from the background
+            - Ensure the main subject has strong visual presence and is the focal point of the image
+            - Use lighting, shadows, and color contrast to make the subject pop
+            - Avoid placing the main subject in areas that might be covered by overlays
+            """
+            
+            # Determine if prompt is short/simple and handle accordingly
+            is_simple_prompt = len(prompt.strip().split()) <= 5 and not any(word in prompt.lower() for word in ['design', 'create', 'generate', 'make', 'show'])
+            
+            if is_simple_prompt:
+                # For simple prompts, send as-is with minimal additions
+                base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
+            else:
+                # For complex prompts, add more detailed instructions
+                base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
+            
             if has_branding:
-                # Add instructions to avoid text in logo and contact areas while keeping them visually filled
+                # Add instructions for seamless overlay areas with dark overlay protection
                 branding_layout_instructions = """
                 
-                IMPORTANT LAYOUT REQUIREMENTS:
-                - Keep the TOP-RIGHT corner (≈25% of image width/height) completely free of ANY elements (no text, no graphics)
-                - Keep the BOTTOM area (bottom 18% of image height) completely free of ANY elements (no text, no graphics)
-                - Do not add bars or artificial padding; keep the natural background continuous
-                - Maintain all textual content within the middle 65% of the canvas
-                - Ensure text is readable and doesn't overlap with the top-right or bottom areas
-                - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
+                OVERLAY PROTECTION AREAS:
+                - Reserve the TOP-LEFT or TOP-RIGHT corner (≈25% of image width/height) for logo placement
+                - Reserve the BOTTOM section (bottom 15% of image height) for contact information
+                - Add a seamless dark overlay to these reserved areas for smooth blending
+                - Ensure the dark overlay has soft, natural edges without harsh transitions
+                - Keep these areas visually filled but avoid placing important content there
+                - Maintain all main content within the center area, avoiding the reserved overlay zones
+                - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
-                base_prompt = f"{ar_directive}\n{prompt}{branding_layout_instructions}"
+                base_prompt = f"{base_prompt}{branding_layout_instructions}"
             else:
                 # Add instructions to avoid random brand names when no branding is provided
                 no_branding_instructions = """
                 
-                IMPORTANT DESIGN REQUIREMENTS:
+                DESIGN REQUIREMENTS:
                 - Do NOT include any company names, brand names, or business names in the design
-                - Do NOT add any random or placeholder brand names
+                - Do NOT add any random or placeholder brand names, prices, or marketing phrases
                 - Focus purely on the visual design and aesthetic elements with full-bleed composition
                 - Do not include any text that suggests a specific company or brand
-                - Maintain all textual content within the middle 65% of the canvas
-                - Avoid adding any blank margins or white bands; fill the full canvas
-                - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
+                - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
+                - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
-                base_prompt = f"{ar_directive}\n{prompt}{no_branding_instructions}"
+                base_prompt = f"{base_prompt}{no_branding_instructions}"
             
             # Try multiple prompt variations if the first one fails
             prompts_to_try = [
@@ -582,38 +601,57 @@ class AIPosterService:
                 except Exception as e:
                     logger.warning(f"Error checking company profile: {e}")
             
-            # Create base prompt with smart layout guidance for branding areas
-            # and strict aspect ratio directive
+            # Create base prompt with enhanced instructions for better image generation
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
             ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
-            base_prompt = f"{ar_directive}\n{prompt}"
+            
+            # Enhanced contrast and clarity instructions for main subject
+            contrast_instructions = """
+            
+            MAIN SUBJECT ENHANCEMENT:
+            - Always enhance the contrast and clarity of the main subject so it stands out clearly from the background
+            - Ensure the main subject has strong visual presence and is the focal point of the image
+            - Use lighting, shadows, and color contrast to make the subject pop
+            - Avoid placing the main subject in areas that might be covered by overlays
+            """
+            
+            # Determine if prompt is short/simple and handle accordingly
+            is_simple_prompt = len(prompt.strip().split()) <= 5 and not any(word in prompt.lower() for word in ['design', 'create', 'generate', 'make', 'show'])
+            
+            if is_simple_prompt:
+                # For simple prompts, send as-is with minimal additions
+                base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
+            else:
+                # For complex prompts, add more detailed instructions
+                base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
+            
             if has_branding:
-                # Add instructions to avoid text in logo and contact areas while keeping them visually filled
+                # Add instructions for seamless overlay areas with dark overlay protection
                 branding_layout_instructions = """
                 
-                IMPORTANT LAYOUT REQUIREMENTS:
-                - Keep the TOP-RIGHT corner (≈25% of image width/height) completely free of ANY elements (no text, no graphics)
-                - Keep the BOTTOM area (bottom 18% of image height) completely free of ANY elements (no text, no graphics)
-                - Do not add bars or artificial padding; keep the natural background continuous
-                - Maintain all textual content within the middle 65% of the canvas
-                - Ensure text is readable and doesn't overlap with the top-right or bottom areas
-                - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
+                OVERLAY PROTECTION AREAS:
+                - Reserve the TOP-LEFT or TOP-RIGHT corner (≈25% of image width/height) for logo placement
+                - Reserve the BOTTOM section (bottom 15% of image height) for contact information
+                - Add a seamless dark overlay to these reserved areas for smooth blending
+                - Ensure the dark overlay has soft, natural edges without harsh transitions
+                - Keep these areas visually filled but avoid placing important content there
+                - Maintain all main content within the center area, avoiding the reserved overlay zones
+                - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
-                base_prompt = f"{ar_directive}\n{prompt}{branding_layout_instructions}"
+                base_prompt = f"{base_prompt}{branding_layout_instructions}"
             else:
-                # Add instructions to avoid random brand names and blank margins when no branding is provided
+                # Add instructions to avoid random brand names when no branding is provided
                 no_branding_instructions = """
                 
-                IMPORTANT DESIGN REQUIREMENTS:
+                DESIGN REQUIREMENTS:
                 - Do NOT include any company names, brand names, or business names in the design
-                - Do NOT add any random or placeholder brand names
+                - Do NOT add any random or placeholder brand names, prices, or marketing phrases
                 - Focus purely on the visual design and aesthetic elements with full-bleed composition
                 - Do not include any text that suggests a specific company or brand
-                - Maintain all textual content within the middle 65% of the canvas
                 - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
-                - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
+                - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
-                base_prompt = f"{ar_directive}\n{prompt}{no_branding_instructions}"
+                base_prompt = f"{base_prompt}{no_branding_instructions}"
             
             # Load and prepare image from Django storage
             try:
