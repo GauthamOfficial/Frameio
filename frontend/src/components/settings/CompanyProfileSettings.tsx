@@ -142,43 +142,73 @@ const CompanyProfileSettings: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ Profile loaded successfully:', data)
-        setProfile(data)
-        setFormData({
-          company_name: data.company_name || '',
-          whatsapp_number: data.whatsapp_number || '',
-          email: data.email || '',
-          facebook_username: data.facebook_username || '',
-          facebook_link: data.facebook_link || '',
-          website: data.website || '',
-          address: data.address || '',
-          description: data.description || '',
-          preferred_logo_position: data.preferred_logo_position || 'top_right'
-        })
-        if (data.logo_url) {
-          setLogoPreview(data.logo_url)
+        
+        // Check if response is empty
+        if (!data || Object.keys(data).length === 0) {
+          console.warn('⚠️ Empty response received from server (status OK)')
+          // Don't show error, just proceed with empty form
+        } else {
+          console.log('✅ Profile loaded successfully:', data)
+          setProfile(data)
+          setFormData({
+            company_name: data.company_name || '',
+            whatsapp_number: data.whatsapp_number || '',
+            email: data.email || '',
+            facebook_username: data.facebook_username || '',
+            facebook_link: data.facebook_link || '',
+            website: data.website || '',
+            address: data.address || '',
+            description: data.description || '',
+            preferred_logo_position: data.preferred_logo_position || 'top_right'
+          })
+          if (data.logo_url) {
+            setLogoPreview(data.logo_url)
+          }
+          // Load status after successful profile load
+          loadStatus()
         }
-        // Load status after successful profile load
-        loadStatus()
       } else {
         // Handle different error responses
         let errorMessage = 'Failed to load profile information'
         try {
           const errorData = await response.json()
-          errorMessage = errorData.error || errorData.message || errorMessage
-          // Check if errorData has meaningful content
-          if (errorData && typeof errorData === 'object' && Object.keys(errorData).length > 0) {
-            // Check if the object has any non-empty values
-            const hasContent = Object.values(errorData).some(value => 
-              value !== null && value !== undefined && value !== ''
-            )
-            if (hasContent) {
-              console.error('❌ Load error response:', errorData)
-            } else {
-              console.error('❌ Load error response: Empty object with no meaningful data')
-            }
+          
+          // Check if response is empty or contains no useful error information
+          if (!errorData || Object.keys(errorData).length === 0) {
+            console.warn('⚠️ Empty response received from server')
+            errorMessage = response.statusText || `HTTP ${response.status}`
           } else {
-            console.error('❌ Load error response: Empty or invalid JSON')
+            // Only log debug info if we have valid error data
+            if (errorData && typeof errorData === 'object') {
+              // Check if the object has meaningful content
+              const hasContent = Object.keys(errorData).length > 0 && 
+                                Object.values(errorData).some(value => 
+                                  value !== null && 
+                                  value !== undefined && 
+                                  value !== '' && 
+                                  value !== '{}' &&
+                                  (typeof value !== 'object' || Object.keys(value).length > 0)
+                                )
+              
+              // Additional check: if it's just an empty object or has no meaningful error fields
+              const hasErrorFields = errorData.error || errorData.message || errorData.detail || errorData.errors
+              
+              if (hasContent && hasErrorFields) {
+                console.error('❌ Load error response:', errorData)
+                errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
+              } else {
+                console.warn('⚠️ Load error response: Empty or meaningless error object')
+                console.warn('  Object keys:', Object.keys(errorData))
+                console.warn('  Object values:', Object.values(errorData))
+                console.warn('  Has content:', hasContent)
+                console.warn('  Has error fields:', hasErrorFields)
+                errorMessage = response.statusText || `HTTP ${response.status}`
+              }
+            } else {
+              console.warn('⚠️ Load error response: Invalid error data type')
+              console.warn('  Error data:', errorData)
+              errorMessage = response.statusText || `HTTP ${response.status}`
+            }
           }
         } catch (parseError) {
           errorMessage = response.statusText || `HTTP ${response.status}`
@@ -399,34 +429,72 @@ const CompanyProfileSettings: React.FC = () => {
 
       if (response.ok) {
         const updatedProfile = await response.json()
-        console.log('✅ Profile saved successfully:', updatedProfile)
-        setProfile(updatedProfile)
-        showSuccess('Company profile updated successfully!')
-        loadStatus()
+        
+        // Check if response is empty
+        if (!updatedProfile || Object.keys(updatedProfile).length === 0) {
+          console.warn('⚠️ Empty response received from server during save (status OK)')
+          showSuccess('Company profile updated successfully!')
+          // Reload profile to get updated data
+          loadProfile()
+        } else {
+          console.log('✅ Profile saved successfully:', updatedProfile)
+          setProfile(updatedProfile)
+          showSuccess('Company profile updated successfully!')
+          loadStatus()
+        }
       } else {
         // Handle different response types
         let errorMessage = 'Failed to update profile'
         try {
           const errorData = await response.json()
-          console.log('Raw error response:', errorData)
-          console.log('Error data type:', typeof errorData)
-          console.log('Error data keys:', Object.keys(errorData))
-          console.log('Error data values:', Object.values(errorData))
           
-          errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
-          
-          // Log the error with better formatting
-          if (errorData && typeof errorData === 'object') {
-            if (Object.keys(errorData).length > 0) {
-              console.error('❌ Save error response (400 Bad Request):')
-              console.error('  Status:', response.status)
-              console.error('  Error object:', JSON.stringify(errorData, null, 2))
-              console.error('  Error message:', errorMessage)
-            } else {
-              console.error('❌ Save error response: Empty object')
-            }
+          // Check if response is empty or contains no useful error information
+          if (!errorData || Object.keys(errorData).length === 0) {
+            console.warn('⚠️ Empty response received from server during save')
+            errorMessage = response.statusText || `HTTP ${response.status}`
           } else {
-            console.error('❌ Save error response: Not an object')
+            // Only log debug info if we have valid error data
+            if (errorData && typeof errorData === 'object') {
+              // Check if the object has meaningful content
+              const hasContent = Object.keys(errorData).length > 0 && 
+                                Object.values(errorData).some(value => 
+                                  value !== null && 
+                                  value !== undefined && 
+                                  value !== '' && 
+                                  value !== '{}' &&
+                                  (typeof value !== 'object' || Object.keys(value).length > 0)
+                                )
+              
+              // Additional check: if it's just an empty object or has no meaningful error fields
+              const hasErrorFields = errorData.error || errorData.message || errorData.detail || errorData.errors
+              
+              if (hasContent && hasErrorFields) {
+                console.log('Raw error response:', errorData)
+                console.log('Error data type:', typeof errorData)
+                console.log('Error data keys:', Object.keys(errorData))
+                console.log('Error data values:', Object.values(errorData))
+                
+                errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
+                
+                console.error('❌ Save error response:')
+                console.error('  Status:', response.status)
+                console.error('  Error object:', JSON.stringify(errorData, null, 2))
+                console.error('  Error message:', errorMessage)
+              } else {
+                console.warn('⚠️ Save error response: Empty or meaningless error object')
+                console.warn('  Status:', response.status)
+                console.warn('  Object keys:', Object.keys(errorData))
+                console.warn('  Object values:', Object.values(errorData))
+                console.warn('  Has content:', hasContent)
+                console.warn('  Has error fields:', hasErrorFields)
+                errorMessage = response.statusText || `HTTP ${response.status}`
+              }
+            } else {
+              console.warn('⚠️ Save error response: Invalid error data type')
+              console.warn('  Status:', response.status)
+              console.warn('  Error data:', errorData)
+              errorMessage = response.statusText || `HTTP ${response.status}`
+            }
           }
         } catch (parseError) {
           // If response is not JSON (like "Unauthorized"), use status text

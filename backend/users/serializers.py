@@ -306,6 +306,34 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
     def get_contact_info(self, obj):
         """Get formatted contact information."""
         return obj.get_contact_info()
+    
+    def to_representation(self, instance):
+        """Customize the serialized output to provide better defaults."""
+        data = super().to_representation(instance)
+        
+        # Provide default values for empty fields
+        defaults = {
+            'company_name': '',
+            'whatsapp_number': '',
+            'email': '',
+            'facebook_username': '',
+            'facebook_link': '',
+            'website': '',
+            'address': '',
+            'description': '',
+            'brand_colors': [],
+            'preferred_logo_position': 'top_right',
+            'logo_url': None,
+            'has_complete_profile': False,
+            'contact_info': {}
+        }
+        
+        # Only include fields that have values or provide defaults
+        for field, default_value in defaults.items():
+            if field in data and (data[field] is None or data[field] == ''):
+                data[field] = default_value
+                
+        return data
 
 
 class CompanyProfileUpdateSerializer(serializers.ModelSerializer):
