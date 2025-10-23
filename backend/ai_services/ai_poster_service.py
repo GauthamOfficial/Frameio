@@ -316,14 +316,15 @@ class AIPosterService:
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
             ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
             
-            # Enhanced contrast and clarity instructions for main subject
+            # Enhanced contrast and clarity instructions for main subject with gradient transitions
             contrast_instructions = """
             
             MAIN SUBJECT ENHANCEMENT:
             - Always enhance the contrast and clarity of the main subject so it stands out clearly from the background
             - Ensure the main subject has strong visual presence and is the focal point of the image
             - Use lighting, shadows, and color contrast to make the subject pop
-            - Avoid placing the main subject in areas that might be covered by overlays
+            - Keep the main subject centered within the safe visual zone (avoiding top 20% and bottom 15%)
+            - Maintain clear subject contrast against the background while ensuring smooth tonal transitions
             """
             
             # Determine if prompt is short/simple and handle accordingly
@@ -337,29 +338,33 @@ class AIPosterService:
                 base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
             
             if has_branding:
-                # Add instructions for seamless overlay areas with dark overlay protection
+                # Add instructions for seamless gradient transitions in overlay areas
                 branding_layout_instructions = """
                 
-                OVERLAY PROTECTION AREAS:
-                - Reserve the TOP-LEFT or TOP-RIGHT corner (≈25% of image width/height) for logo placement
-                - Reserve the BOTTOM section (bottom 15% of image height) for contact information
-                - Add a seamless dark overlay to these reserved areas for smooth blending
-                - Ensure the dark overlay has soft, natural edges without harsh transitions
-                - Keep these areas visually filled but avoid placing important content there
-                - Maintain all main content within the center area, avoiding the reserved overlay zones
+                SMOOTH GRADIENT TRANSITION AREAS:
+                - Create smooth gradient transitions at the TOP region (top 20% of image height) for logo overlay compatibility
+                - Create smooth gradient transitions at the BOTTOM region (bottom 15% of image height) for contact information overlay
+                - Use seamless tonal gradients without sharp visual edges, harsh lighting, or high-contrast elements in these zones
+                - Ensure natural color blending and soft transitions in the top and bottom regions
+                - Keep these areas visually balanced but non-distracting for overlay compatibility
+                - Maintain all main content and primary text within the center safe zone (middle 65% of image)
+                - Avoid placing important visual elements or main text within the top 20% or bottom 15% areas
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{base_prompt}{branding_layout_instructions}"
             else:
-                # Add instructions to avoid random brand names when no branding is provided
+                # Add instructions to avoid random brand names when no branding is provided with gradient transitions
                 no_branding_instructions = """
                 
-                DESIGN REQUIREMENTS:
+                DESIGN REQUIREMENTS WITH GRADIENT TRANSITIONS:
                 - Do NOT include any company names, brand names, or business names in the design
                 - Do NOT add any random or placeholder brand names, prices, or marketing phrases
                 - Focus purely on the visual design and aesthetic elements with full-bleed composition
                 - Do not include any text that suggests a specific company or brand
                 - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
+                - Create smooth gradient transitions at the top and bottom regions for future overlay compatibility
+                - Ensure seamless tonal blending in the top 20% and bottom 15% areas without harsh edges
+                - Keep main content centered in the safe visual zone (middle 65% of image)
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{base_prompt}{no_branding_instructions}"
@@ -605,14 +610,15 @@ class AIPosterService:
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
             ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
             
-            # Enhanced contrast and clarity instructions for main subject
+            # Enhanced contrast and clarity instructions for main subject with gradient transitions
             contrast_instructions = """
             
             MAIN SUBJECT ENHANCEMENT:
             - Always enhance the contrast and clarity of the main subject so it stands out clearly from the background
             - Ensure the main subject has strong visual presence and is the focal point of the image
             - Use lighting, shadows, and color contrast to make the subject pop
-            - Avoid placing the main subject in areas that might be covered by overlays
+            - Keep the main subject centered within the safe visual zone (avoiding top 20% and bottom 15%)
+            - Maintain clear subject contrast against the background while ensuring smooth tonal transitions
             """
             
             # Determine if prompt is short/simple and handle accordingly
@@ -626,29 +632,33 @@ class AIPosterService:
                 base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
             
             if has_branding:
-                # Add instructions for seamless overlay areas with dark overlay protection
+                # Add instructions for seamless gradient transitions in overlay areas
                 branding_layout_instructions = """
                 
-                OVERLAY PROTECTION AREAS:
-                - Reserve the TOP-LEFT or TOP-RIGHT corner (≈25% of image width/height) for logo placement
-                - Reserve the BOTTOM section (bottom 15% of image height) for contact information
-                - Add a seamless dark overlay to these reserved areas for smooth blending
-                - Ensure the dark overlay has soft, natural edges without harsh transitions
-                - Keep these areas visually filled but avoid placing important content there
-                - Maintain all main content within the center area, avoiding the reserved overlay zones
+                SMOOTH GRADIENT TRANSITION AREAS:
+                - Create smooth gradient transitions at the TOP region (top 20% of image height) for logo overlay compatibility
+                - Create smooth gradient transitions at the BOTTOM region (bottom 15% of image height) for contact information overlay
+                - Use seamless tonal gradients without sharp visual edges, harsh lighting, or high-contrast elements in these zones
+                - Ensure natural color blending and soft transitions in the top and bottom regions
+                - Keep these areas visually balanced but non-distracting for overlay compatibility
+                - Maintain all main content and primary text within the center safe zone (middle 65% of image)
+                - Avoid placing important visual elements or main text within the top 20% or bottom 15% areas
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{base_prompt}{branding_layout_instructions}"
             else:
-                # Add instructions to avoid random brand names when no branding is provided
+                # Add instructions to avoid random brand names when no branding is provided with gradient transitions
                 no_branding_instructions = """
                 
-                DESIGN REQUIREMENTS:
+                DESIGN REQUIREMENTS WITH GRADIENT TRANSITIONS:
                 - Do NOT include any company names, brand names, or business names in the design
                 - Do NOT add any random or placeholder brand names, prices, or marketing phrases
                 - Focus purely on the visual design and aesthetic elements with full-bleed composition
                 - Do not include any text that suggests a specific company or brand
                 - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
+                - Create smooth gradient transitions at the top and bottom regions for future overlay compatibility
+                - Ensure seamless tonal blending in the top 20% and bottom 15% areas without harsh edges
+                - Keep main content centered in the safe visual zone (middle 65% of image)
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{base_prompt}{no_branding_instructions}"
