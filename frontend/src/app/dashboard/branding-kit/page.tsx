@@ -254,7 +254,7 @@ This branding kit was generated using AI and is ready for use in your marketing 
                 
                 <button
                   type="button"
-                  onClick={() => setPrompt("Create a bold and professional logo for a wholesale textile company.\n\nBrand Name: [GK Textiles]\nColor Palette: [Choose your preferred bright or pastel colors]\nDesign Elements: [Specify main visuals]\n\nThe logo should reflect trust, scale, and quality, representing a reliable wholesale textile business. Use clean typography, geometric balance, and minimal detailing to ensure it looks strong on signage, invoices, and packaging.\n\nProvide the logo on a white or light gradient professional background, centered and ready for branding use.")}
+                  onClick={() => setPrompt("Create a bold and professional logo for a wholesale textile company.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred bright or pastel colors]\nDesign Elements: [Specify main visuals]\n\nThe logo should reflect trust, scale, and quality, representing a reliable wholesale textile business. Use clean typography, geometric balance, and minimal detailing to ensure it looks strong on signage, invoices, and packaging.\n\nProvide the logo on a white or light gradient professional background, centered and ready for branding use.")}
                   className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >
