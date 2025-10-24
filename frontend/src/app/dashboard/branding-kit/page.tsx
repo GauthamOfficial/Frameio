@@ -220,12 +220,16 @@ This branding kit was generated using AI and is ready for use in your marketing 
               <div className="grid grid-cols-4 gap-3">
                 <button
                   type="button"
-                  onClick={() => setPrompt("Fashion textiles brand logo with elegant typography, luxury fabrics, premium design, sophisticated colors")}
+                  onClick={() => setPrompt("Create a professional and elegant logo for a fashion textile brand.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred colors]\nDesign Elements: [Specify main visual]\n\nThe logo should reflect a premium, modern, and stylish aesthetic suitable for a fashion and textile brand. Use smooth typography and minimalist detailing to make it versatile for social media, tags, and packaging.\n\nProvide the logo on a clean white or soft gradient background, centered and ready for branding use.")}
                   className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >
-                  <div className="w-full aspect-square rounded-md mb-2 bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">F</span>
+                  <div className="w-full aspect-square rounded-md mb-2 overflow-hidden">
+                    <img 
+                      src="/Fashion Textile.png" 
+                      alt="Fashion Textile" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="font-medium text-gray-700">Fashion Textiles</div>
                   <div className="text-gray-500 text-xs mt-1">Elegant & Luxury</div>
@@ -233,12 +237,16 @@ This branding kit was generated using AI and is ready for use in your marketing 
                 
                 <button
                   type="button"
-                  onClick={() => setPrompt("Kids textiles brand logo with playful colors, fun typography, child-friendly design, bright and cheerful")}
+                  onClick={() => setPrompt("Create a playful yet professional logo for a kids' textile brand.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred bright or pastel colors]\nDesign Elements: [Specify main visuals]\n\nThe logo should reflect a cute, friendly, and premium aesthetic suitable for a children's clothing and textile brand. Use soft, rounded typography and minimal yet fun details to appeal to both kids and parents.\n\nProvide the logo on a clean white or soft gradient pastel background, centered and ready for branding use.")}
                   className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >
-                  <div className="w-full aspect-square rounded-md mb-2 bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">K</span>
+                  <div className="w-full aspect-square rounded-md mb-2 overflow-hidden">
+                    <img 
+                      src="/Kids.png" 
+                      alt="Kids Textile" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="font-medium text-gray-700">Kids Textiles</div>
                   <div className="text-gray-500 text-xs mt-1">Playful & Bright</div>
@@ -246,12 +254,16 @@ This branding kit was generated using AI and is ready for use in your marketing 
                 
                 <button
                   type="button"
-                  onClick={() => setPrompt("Wholesale textiles logo with professional typography, business colors, bulk trade design, commercial appeal")}
+                  onClick={() => setPrompt("Create a bold and professional logo for a wholesale textile company.\n\nBrand Name: [GK Textiles]\nColor Palette: [Choose your preferred bright or pastel colors]\nDesign Elements: [Specify main visuals]\n\nThe logo should reflect trust, scale, and quality, representing a reliable wholesale textile business. Use clean typography, geometric balance, and minimal detailing to ensure it looks strong on signage, invoices, and packaging.\n\nProvide the logo on a white or light gradient professional background, centered and ready for branding use.")}
                   className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >
-                  <div className="w-full aspect-square rounded-md mb-2 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">W</span>
+                  <div className="w-full aspect-square rounded-md mb-2 overflow-hidden">
+                    <img 
+                      src="/wholesale.png" 
+                      alt="Wholesale Textile" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="font-medium text-gray-700 text-sm">Wholesale</div>
                   <div className="text-gray-500 text-xs mt-1">Professional</div>
@@ -259,12 +271,16 @@ This branding kit was generated using AI and is ready for use in your marketing 
                 
                 <button
                   type="button"
-                  onClick={() => setPrompt("Online textiles e-commerce logo with modern design, digital colors, web-friendly typography, contemporary style")}
+                  onClick={() => setPrompt("Create a modern and professional logo for an online textile e-commerce platform.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred colors]\nDesign Elements: [Specify main visual]\n\nThe logo should reflect a premium, trustworthy, and digital-friendly aesthetic, representing an e-commerce textile platform. Use smooth, modern typography and minimalist detailing that looks perfect on a website, app icon, and social media.\n\nProvide the logo on a clean white or soft gradient background, centered and ready for digital branding use.")}
                   className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >
-                  <div className="w-full aspect-square rounded-md mb-2 bg-gradient-to-br from-purple-500 to-teal-500 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">O</span>
+                  <div className="w-full aspect-square rounded-md mb-2 overflow-hidden">
+                    <img 
+                      src="/Online.png" 
+                      alt="Online Textile" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="font-medium text-gray-700">Online Textiles</div>
                   <div className="text-gray-500 text-xs mt-1">Modern & Digital</div>

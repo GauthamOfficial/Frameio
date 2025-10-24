@@ -163,6 +163,21 @@ class BrandingKitService:
             prompt_lower = prompt.lower()
             mentioned_colors = [color for color in color_keywords if color.lower() in prompt_lower]
             
+            # Check for common color combinations
+            color_combinations = [
+                'red and white', 'blue and white', 'green and white', 'black and white',
+                'red and black', 'blue and red', 'green and blue', 'yellow and black',
+                'purple and white', 'orange and white', 'pink and white', 'gray and white'
+            ]
+            
+            for combo in color_combinations:
+                if combo in prompt_lower:
+                    # Split the combination and add individual colors
+                    colors_in_combo = combo.split(' and ')
+                    for color in colors_in_combo:
+                        if color.strip() not in mentioned_colors:
+                            mentioned_colors.append(color.strip())
+            
             # Also check for hex codes and RGB values
             import re
             hex_colors = re.findall(r'#[0-9a-fA-F]{6}', prompt)
@@ -183,18 +198,17 @@ class BrandingKitService:
                     color_specifications.append(f"Use these RGB colors: {', '.join(rgb_colors)}")
                 
                 enhanced_prompt = f"""
-                Create a professional color palette for a brand with these exact specifications:
+                Create a professional color palette for a brand with these EXACT color specifications:
                 {'. '.join(color_specifications)}
                 
-                IMPORTANT: The color palette MUST prominently feature these exact colors. Do not change or modify them.
+                CRITICAL REQUIREMENTS:
+                - The color palette MUST include ONLY these exact colors
+                - Do NOT add any additional colors beyond what is specified
+                - Do NOT change, modify, or substitute these colors
+                - Use ONLY the specified colors in the palette
+                - Do NOT include complementary colors or neutral colors
                 
-                Generate a cohesive color palette that includes:
-                - The specified colors as the primary colors
-                - Complementary colors that harmonize with the specified colors
-                - Neutral colors (grays, whites, blacks) for balance
-                - Ensure the specified colors are the most prominent in the palette
-                
-                Present the colors in a clean, organized palette with the specified colors clearly visible and dominant.
+                The palette should show ONLY the specified colors in a clean, organized layout.
                 """
             else:
                 # Generate colors based on the brand description
