@@ -199,3 +199,53 @@ def branding_kit_status(request):
             'success': False,
             'error': 'Internal server error'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def test_color_detection(request):
+    """
+    POST /api/ai/branding-kit/test-colors/
+    Test color detection in prompts
+    """
+    try:
+        data = request.data
+        prompt = data.get('prompt', '')
+        
+        # Enhanced color detection (same as in service)
+        color_keywords = [
+            'blue', 'red', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'black', 'white', 
+            'gray', 'grey', 'gold', 'silver', 'navy', 'teal', 'coral', 'maroon', 'beige', 'cream',
+            'cyan', 'magenta', 'lime', 'indigo', 'violet', 'turquoise', 'amber', 'crimson', 'emerald',
+            'sapphire', 'ruby', 'pearl', 'bronze', 'copper', 'platinum', 'charcoal', 'ivory', 'tan',
+            'burgundy', 'forest green', 'sky blue', 'royal blue', 'deep blue', 'light blue', 'dark blue',
+            'bright red', 'deep red', 'light green', 'dark green', 'bright yellow', 'dark yellow',
+            'hot pink', 'deep pink', 'light pink', 'dark purple', 'light purple', 'bright orange',
+            'dark orange', 'light brown', 'dark brown', 'light gray', 'dark gray', 'steel blue',
+            'olive green', 'mint green', 'lavender', 'rose gold', 'champagne', 'coffee', 'chocolate'
+        ]
+        
+        import re
+        prompt_lower = prompt.lower()
+        mentioned_colors = [color for color in color_keywords if color.lower() in prompt_lower]
+        hex_colors = re.findall(r'#[0-9a-fA-F]{6}', prompt)
+        rgb_colors = re.findall(r'rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)', prompt)
+        
+        return Response({
+            'success': True,
+            'prompt': prompt,
+            'detected_colors': {
+                'mentioned_colors': mentioned_colors,
+                'hex_colors': hex_colors,
+                'rgb_colors': rgb_colors,
+                'total_detected': len(mentioned_colors) + len(hex_colors) + len(rgb_colors)
+            }
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error in test_color_detection: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Internal server error'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

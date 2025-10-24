@@ -185,22 +185,19 @@ This branding kit was generated using AI and is ready for use in your marketing 
   return (
     <div className="space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Branding Kit</h1>
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-foreground">AI Brand Kit Generator</h1>
             <p className="text-muted-foreground mt-1">
-            Generate custom branding assets using AI-powered prompts.
-          </p>
-        </div>
+          Generate custom branding assets using AI-powered prompts.
+            </p>
         </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Prompting Section */}
         <Card className="textile-hover textile-shadow">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Wand2 className="mr-2 h-5 w-5 text-chart-1" />
-              AI Prompt Generator
+            <CardTitle>
+              Generate Brand Kit
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -211,8 +208,68 @@ This branding kit was generated using AI and is ready for use in your marketing 
                 placeholder="describe your logo idea"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[200px] resize-none placeholder:opacity-50"
+                disabled={isGenerating}
+                rows={4}
+                className="min-h-[100px] resize-y placeholder:opacity-50"
               />
+            </div>
+
+            {/* Templates Section */}
+            <div className="space-y-2">
+              <Label>Templates</Label>
+              <div className="grid grid-cols-4 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPrompt("Fashion textiles brand logo with elegant typography, luxury fabrics, premium design, sophisticated colors")}
+                  className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                  disabled={isGenerating}
+                >
+                  <div className="w-full aspect-square rounded-md mb-2 bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">F</span>
+                  </div>
+                  <div className="font-medium text-gray-700">Fashion Textiles</div>
+                  <div className="text-gray-500 text-xs mt-1">Elegant & Luxury</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setPrompt("Kids textiles brand logo with playful colors, fun typography, child-friendly design, bright and cheerful")}
+                  className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                  disabled={isGenerating}
+                >
+                  <div className="w-full aspect-square rounded-md mb-2 bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">K</span>
+                  </div>
+                  <div className="font-medium text-gray-700">Kids Textiles</div>
+                  <div className="text-gray-500 text-xs mt-1">Playful & Bright</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setPrompt("Wholesale textiles logo with professional typography, business colors, bulk trade design, commercial appeal")}
+                  className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                  disabled={isGenerating}
+                >
+                  <div className="w-full aspect-square rounded-md mb-2 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">W</span>
+                  </div>
+                  <div className="font-medium text-gray-700 text-sm">Wholesale</div>
+                  <div className="text-gray-500 text-xs mt-1">Professional</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setPrompt("Online textiles e-commerce logo with modern design, digital colors, web-friendly typography, contemporary style")}
+                  className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                  disabled={isGenerating}
+                >
+                  <div className="w-full aspect-square rounded-md mb-2 bg-gradient-to-br from-purple-500 to-teal-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">O</span>
+                  </div>
+                  <div className="font-medium text-gray-700">Online Textiles</div>
+                  <div className="text-gray-500 text-xs mt-1">Modern & Digital</div>
+                </button>
+                </div>
             </div>
 
             <Button 
@@ -240,7 +297,7 @@ This branding kit was generated using AI and is ready for use in your marketing 
           <CardHeader>
             <CardTitle className="flex items-center">
               <Eye className="mr-2 h-5 w-5 text-chart-2" />
-              Preview
+              Generated Brand Kit
             </CardTitle>
           </CardHeader>
           <CardContent>

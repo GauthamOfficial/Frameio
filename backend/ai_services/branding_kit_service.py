@@ -146,25 +146,76 @@ class BrandingKitService:
             }
         
         try:
-            # Enhanced prompt for color palette generation
-            enhanced_prompt = f"""
-            Create a color palette for: {prompt}
+            # Enhanced color detection with more comprehensive keywords
+            color_keywords = [
+                'blue', 'red', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'black', 'white', 
+                'gray', 'grey', 'gold', 'silver', 'navy', 'teal', 'coral', 'maroon', 'beige', 'cream',
+                'cyan', 'magenta', 'lime', 'indigo', 'violet', 'turquoise', 'amber', 'crimson', 'emerald',
+                'sapphire', 'ruby', 'pearl', 'bronze', 'copper', 'platinum', 'charcoal', 'ivory', 'tan',
+                'burgundy', 'forest green', 'sky blue', 'royal blue', 'deep blue', 'light blue', 'dark blue',
+                'bright red', 'deep red', 'light green', 'dark green', 'bright yellow', 'dark yellow',
+                'hot pink', 'deep pink', 'light pink', 'dark purple', 'light purple', 'bright orange',
+                'dark orange', 'light brown', 'dark brown', 'light gray', 'dark gray', 'steel blue',
+                'olive green', 'mint green', 'lavender', 'rose gold', 'champagne', 'coffee', 'chocolate'
+            ]
             
-            Generate {num_colors} colors that work well together for a brand.
-            Include:
-            - Primary brand color
-            - Secondary colors
-            - Accent colors
-            - Neutral colors
+            # Find mentioned colors in the prompt
+            prompt_lower = prompt.lower()
+            mentioned_colors = [color for color in color_keywords if color.lower() in prompt_lower]
             
-            The colors should be:
-            - Harmonious and professional
-            - Suitable for both digital and print
-            - Accessible and readable
-            - Modern and contemporary
+            # Also check for hex codes and RGB values
+            import re
+            hex_colors = re.findall(r'#[0-9a-fA-F]{6}', prompt)
+            rgb_colors = re.findall(r'rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)', prompt)
             
-            Present the colors as a clean, organized palette.
-            """
+            logger.info(f"Detected colors in prompt: {mentioned_colors}")
+            logger.info(f"Detected hex colors: {hex_colors}")
+            logger.info(f"Detected RGB colors: {rgb_colors}")
+            
+            if mentioned_colors or hex_colors or rgb_colors:
+                # Use the colors mentioned in the prompt
+                color_specifications = []
+                if mentioned_colors:
+                    color_specifications.append(f"Use these specific colors: {', '.join(mentioned_colors)}")
+                if hex_colors:
+                    color_specifications.append(f"Use these hex colors: {', '.join(hex_colors)}")
+                if rgb_colors:
+                    color_specifications.append(f"Use these RGB colors: {', '.join(rgb_colors)}")
+                
+                enhanced_prompt = f"""
+                Create a professional color palette for a brand with these exact specifications:
+                {'. '.join(color_specifications)}
+                
+                IMPORTANT: The color palette MUST prominently feature these exact colors. Do not change or modify them.
+                
+                Generate a cohesive color palette that includes:
+                - The specified colors as the primary colors
+                - Complementary colors that harmonize with the specified colors
+                - Neutral colors (grays, whites, blacks) for balance
+                - Ensure the specified colors are the most prominent in the palette
+                
+                Present the colors in a clean, organized palette with the specified colors clearly visible and dominant.
+                """
+            else:
+                # Generate colors based on the brand description
+                enhanced_prompt = f"""
+                Create a color palette for: {prompt}
+                
+                Generate {num_colors} colors that work well together for a brand.
+                Include:
+                - Primary brand color
+                - Secondary colors
+                - Accent colors
+                - Neutral colors
+                
+                The colors should be:
+                - Harmonious and professional
+                - Suitable for both digital and print
+                - Accessible and readable
+                - Modern and contemporary
+                
+                Present the colors as a clean, organized palette.
+                """
             
             response = self.client.models.generate_content(
                 model="gemini-2.5-flash-image",
@@ -201,7 +252,8 @@ class BrandingKitService:
                     'height': image.height
                 },
                 'prompt': prompt,
-                'num_colors': num_colors
+                'num_colors': num_colors,
+                'used_colors': mentioned_colors if mentioned_colors else []
             }
             
         except Exception as e:
@@ -234,7 +286,7 @@ class BrandingKitService:
             if not logo_result.get('success'):
                 return logo_result
             
-            # Generate color palette
+            # Generate color palette using the same prompt to maintain color consistency
             palette_result = self.generate_color_palette(prompt)
             if not palette_result.get('success'):
                 return palette_result
@@ -247,6 +299,7 @@ class BrandingKitService:
                 },
                 'prompt': prompt,
                 'style': style,
+                'used_colors': palette_result.get('used_colors', []),
                 'generated_at': str(os.getenv('TIMESTAMP', 'unknown'))
             }
             

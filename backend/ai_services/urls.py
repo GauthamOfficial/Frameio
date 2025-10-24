@@ -57,4 +57,5 @@ urlpatterns = [
     path('branding-kit/logo/', branding_kit_views.generate_logo, name='generate-logo'),
     path('branding-kit/colors/', branding_kit_views.generate_color_palette, name='generate-color-palette'),
     path('branding-kit/status/', branding_kit_views.branding_kit_status, name='branding-kit-status'),
+    path('branding-kit/test-colors/', branding_kit_views.test_color_detection, name='test-color-detection'),
 ]

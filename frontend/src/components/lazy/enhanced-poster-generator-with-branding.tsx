@@ -426,7 +426,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                 
                 <button
                   type="button"
-                  onClick={() => setPrompt("Create a stylish product post featuring a real man wearing the uploaded men's T-shirt. Set the background at a cinematic beach location with soft natural lighting and a relaxed vibe. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
+                  onClick={() => setPrompt("Create a stylish product post featuring a dummy wearing the uploaded men's T-shirt. Set the background at a cinematic premium dress shop. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
                   className="flex-1 p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >
@@ -438,7 +438,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                     />
                   </div>
                   <div className="font-medium text-gray-700">Men's Casual T-shirt</div>
-                  <div className="text-gray-500 text-xs mt-1">Beach casual style</div>
+                  <div className="text-gray-500 text-xs mt-1">Premium dress shop style</div>
                 </button>
               </div>
             </div>
