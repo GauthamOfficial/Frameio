@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views, scheduling_views, file_upload_views, social_media_views, catalog_views, fabric_views, post_generation_views, ai_poster_views, ai_caption_views
+from . import views, scheduling_views, file_upload_views, social_media_views, catalog_views, fabric_views, post_generation_views, ai_poster_views, ai_caption_views, branding_kit_views
 
 # Create router for AI service-related views
 router = DefaultRouter()
@@ -51,4 +51,10 @@ urlpatterns = [
     path('ai-caption/image_caption/', ai_caption_views.generate_image_caption, name='generate-image-caption'),
     path('ai-caption/bulk_captions/', ai_caption_views.generate_bulk_captions, name='generate-bulk-captions'),
     path('ai-caption/status/', ai_caption_views.caption_service_status, name='caption-service-status'),
+    
+    # Branding Kit Generation URLs
+    path('branding-kit/generate/', branding_kit_views.generate_branding_kit, name='generate-branding-kit'),
+    path('branding-kit/logo/', branding_kit_views.generate_logo, name='generate-logo'),
+    path('branding-kit/colors/', branding_kit_views.generate_color_palette, name='generate-color-palette'),
+    path('branding-kit/status/', branding_kit_views.branding_kit_status, name='branding-kit-status'),
 ]

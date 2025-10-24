@@ -1,26 +1,186 @@
+"use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Download, RefreshCw, Palette, Type, Image } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Wand2, Eye, Download, RefreshCw } from "lucide-react"
+
+interface BrandingKitData {
+  logo?: {
+    data: string
+    format: string
+    width: number
+    height: number
+  }
+  color_palette?: {
+    data: string
+    format: string
+    width: number
+    height: number
+  }
+}
 
 export default function BrandingKitPage() {
-  const colorPalettes = [
-    { name: "Primary Palette", colors: ["#1B2951", "#8B2635", "#F5F1EB", "#B8D4E3"] },
-    { name: "Festival Collection", colors: ["#8B2635", "#FFD700", "#F4E4D6", "#1B2951"] },
-    { name: "Wedding Collection", colors: ["#F5F1EB", "#D4C4B0", "#8B2635", "#E6D7F0"] },
-  ]
+  const [prompt, setPrompt] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [brandingData, setBrandingData] = useState<BrandingKitData | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const logos = [
-    { name: "Main Logo", type: "Primary", format: "PNG" },
-    { name: "Icon Only", type: "Icon", format: "SVG" },
-    { name: "Text Logo", type: "Text", format: "PNG" },
-  ]
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return
+    
+    setIsGenerating(true)
+    setError(null)
+    
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/ai/branding-kit/generate/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          style: 'modern'
+        }),
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        setBrandingData(result.data.branding_kit)
+      } else {
+        setError(result.error || 'Failed to generate branding kit')
+      }
+    } catch (err) {
+      if (err instanceof SyntaxError) {
+        setError('Invalid response from server. Please check if the backend is running.')
+      } else {
+        setError(`Network error: ${err.message}`)
+      }
+      console.error('Error generating branding kit:', err)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
-  const banners = [
-    { name: "Shop Banner", size: "1200x300", platform: "Website" },
-    { name: "Social Cover", size: "1200x630", platform: "Facebook" },
-    { name: "Story Template", size: "1080x1920", platform: "Instagram" },
-  ]
+  const downloadImage = (base64Data: string, filename: string, format: string) => {
+    try {
+      // Create a blob from the base64 data
+      const byteCharacters = atob(base64Data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: `image/${format.toLowerCase()}` })
+      
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading image:', error)
+      setError('Failed to download image')
+    }
+  }
+
+  const createZipFile = async (logoData: string, paletteData: string, logoFormat: string, paletteFormat: string) => {
+    try {
+      // Import JSZip dynamically
+      const JSZip = (await import('jszip')).default
+      const zip = new JSZip()
+      
+      // Add logo to zip
+      if (logoData) {
+        const logoBytes = Uint8Array.from(atob(logoData), c => c.charCodeAt(0))
+        zip.file(`logo.${logoFormat.toLowerCase()}`, logoBytes)
+      }
+      
+      // Add color palette to zip
+      if (paletteData) {
+        const paletteBytes = Uint8Array.from(atob(paletteData), c => c.charCodeAt(0))
+        zip.file(`color-palette.${paletteFormat.toLowerCase()}`, paletteBytes)
+      }
+      
+      // Add a README file with branding information
+      const readmeContent = `Branding Kit Generated
+========================
+
+Generated on: ${new Date().toLocaleString()}
+Prompt: ${prompt}
+
+Files included:
+- logo.${logoFormat.toLowerCase()} - Your brand logo
+- color-palette.${paletteFormat.toLowerCase()} - Your brand color palette
+
+This branding kit was generated using AI and is ready for use in your marketing materials.
+`
+      zip.file('README.txt', readmeContent)
+      
+      // Generate the zip file
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      
+      // Create download link
+      const url = URL.createObjectURL(zipBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `branding-kit-${Date.now()}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+    } catch (error) {
+      console.error('Error creating zip file:', error)
+      setError('Failed to create zip file. Please try downloading files individually.')
+    }
+  }
+
+  const handleDownloadAll = async () => {
+    if (!brandingData) return
+    
+    try {
+      if (brandingData.logo && brandingData.color_palette) {
+        await createZipFile(
+          brandingData.logo.data,
+          brandingData.color_palette.data,
+          brandingData.logo.format,
+          brandingData.color_palette.format
+        )
+      } else {
+        // Fallback to individual downloads if zip creation fails
+        if (brandingData.logo) {
+          downloadImage(
+            brandingData.logo.data,
+            `logo-${Date.now()}.${brandingData.logo.format.toLowerCase()}`,
+            brandingData.logo.format
+          )
+        }
+        
+        if (brandingData.color_palette) {
+          downloadImage(
+            brandingData.color_palette.data,
+            `color-palette-${Date.now()}.${brandingData.color_palette.format.toLowerCase()}`,
+            brandingData.color_palette.format
+          )
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading files:', error)
+      setError('Failed to download files')
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -29,158 +189,183 @@ export default function BrandingKitPage() {
           <div>
             <h1 className="text-3xl font-bold text-foreground">Branding Kit</h1>
             <p className="text-muted-foreground mt-1">
-              Auto-generated logos, color palettes, and shop banners for your textile brand.
-            </p>
-          </div>
-          <Button className="bg-textile-accent">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Regenerate All
-          </Button>
+            Generate custom branding assets using AI-powered prompts.
+          </p>
+        </div>
         </div>
 
-        {/* Color Palettes */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Prompting Section */}
         <Card className="textile-hover textile-shadow">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Palette className="mr-2 h-5 w-5 text-chart-1" />
-              Color Palettes
+              <Wand2 className="mr-2 h-5 w-5 text-chart-1" />
+              AI Prompt Generator
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {colorPalettes.map((palette, index) => (
-                <div key={index} className="space-y-3">
-                  <h4 className="font-semibold text-foreground">{palette.name}</h4>
-                  <div className="flex space-x-2">
-                    {palette.colors.map((color, colorIndex) => (
-                      <div
-                        key={colorIndex}
-                        className="w-12 h-12 rounded-lg border border-border"
-                        style={{ backgroundColor: color }}
-                      ></div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <Download className="mr-1 h-3 w-3" />
-                      Download
-                    </Button>
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <RefreshCw className="mr-1 h-3 w-3" />
-                      Regenerate
-                    </Button>
-                  </div>
-                </div>
-              ))}
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="brand-prompt">Describe your brand vision</Label>
+              <Textarea
+                id="brand-prompt"
+                placeholder="describe your logo idea"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="min-h-[200px] resize-none placeholder:opacity-50"
+              />
             </div>
+
+            <Button 
+              onClick={handleGenerate}
+              disabled={!prompt.trim() || isGenerating}
+              className="w-full bg-textile-accent hover:bg-textile-accent/90"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  Generate Branding Kit
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Logos */}
+        {/* Preview Section */}
         <Card className="textile-hover textile-shadow">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Type className="mr-2 h-5 w-5 text-chart-2" />
-              Logo Variations
+              <Eye className="mr-2 h-5 w-5 text-chart-2" />
+              Preview
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {logos.map((logo, index) => (
-                <div key={index} className="space-y-3">
-                  <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+            <div className="space-y-6">
+              {/* Error Display */}
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
+              {/* Preview Placeholder */}
+              {!brandingData && (
+                <div className="aspect-square bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
                     <div className="text-center">
-                      <div className="w-16 h-16 bg-chart-1 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">F</span>
+                    <div className="w-16 h-16 bg-chart-1 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                      <Wand2 className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {prompt ? "Your branding preview will appear here" : "Enter a prompt to generate your branding kit"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Generated Assets Preview */}
+              {brandingData && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Logo Preview</Label>
+                        {brandingData.logo && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => downloadImage(
+                              brandingData.logo!.data,
+                              `logo-${Date.now()}.${brandingData.logo!.format.toLowerCase()}`,
+                              brandingData.logo!.format
+                            )}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Download className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground">Logo Preview</p>
+                      <div className="aspect-square bg-background rounded border flex items-center justify-center p-4">
+                        {brandingData.logo ? (
+                          <img 
+                            src={`data:image/png;base64,${brandingData.logo.data}`}
+                            alt="Generated Logo"
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-chart-1 rounded flex items-center justify-center">
+                            <span className="text-white font-bold">F</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Color Palette</Label>
+                        {brandingData.color_palette && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => downloadImage(
+                              brandingData.color_palette!.data,
+                              `color-palette-${Date.now()}.${brandingData.color_palette!.format.toLowerCase()}`,
+                              brandingData.color_palette!.format
+                            )}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Download className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="aspect-square bg-background rounded border flex items-center justify-center p-4">
+                        {brandingData.color_palette ? (
+                          <img 
+                            src={`data:image/png;base64,${brandingData.color_palette.data}`}
+                            alt="Generated Color Palette"
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        ) : (
+                          <div className="flex space-x-1">
+                            <div className="w-8 h-8 bg-chart-1 rounded"></div>
+                            <div className="w-8 h-8 bg-chart-2 rounded"></div>
+                            <div className="w-8 h-8 bg-chart-3 rounded"></div>
+                            <div className="w-8 h-8 bg-chart-4 rounded"></div>
+                          </div>
+                        )}
+            </div>
                     </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-foreground">{logo.name}</h4>
-                    <p className="text-sm text-muted-foreground">{logo.type} • {logo.format}</p>
-                  </div>
+
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={handleDownloadAll}
+                    >
                       <Download className="mr-1 h-3 w-3" />
-                      Download
+                      Download All
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={handleGenerate}
+                      disabled={isGenerating}
+                    >
                       <RefreshCw className="mr-1 h-3 w-3" />
                       Regenerate
                     </Button>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
-
-        {/* Banners */}
-        <Card className="textile-hover textile-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Image className="mr-2 h-5 w-5 text-chart-3" />
-              Shop Banners
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {banners.map((banner, index) => (
-                <div key={index} className="space-y-3">
-                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-20 h-8 bg-chart-1 rounded mx-auto mb-2"></div>
-                      <p className="text-xs text-muted-foreground">Banner Preview</p>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-foreground">{banner.name}</h4>
-                    <p className="text-sm text-muted-foreground">{banner.size} • {banner.platform}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <Download className="mr-1 h-3 w-3" />
-                      Download
-                    </Button>
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <RefreshCw className="mr-1 h-3 w-3" />
-                      Regenerate
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Brand Guidelines */}
-        <Card className="textile-hover textile-shadow">
-          <CardHeader>
-            <CardTitle>Brand Guidelines</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="font-semibold text-foreground">Typography</h4>
-                <div className="space-y-2">
-                  <p className="text-lg font-bold text-foreground">Heading Font: Inter Bold</p>
-                  <p className="text-base font-medium text-foreground">Subheading: Inter Medium</p>
-                  <p className="text-sm text-muted-foreground">Body: Inter Regular</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <h4 className="font-semibold text-foreground">Usage Guidelines</h4>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Maintain minimum clear space around logos</p>
-                  <p>• Use primary colors for main elements</p>
-                  <p>• Keep consistent spacing and alignment</p>
-                  <p>• Ensure accessibility compliance</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      </div>
       </div>
   )
 }
