@@ -203,7 +203,6 @@ def setup_ai_services():
         endpoints_to_test = [
             'textile-poster-generate-captions',
             'festival-kit-themes',
-            'catalog-builder-templates',
             'background-matcher-presets'
         ]
         

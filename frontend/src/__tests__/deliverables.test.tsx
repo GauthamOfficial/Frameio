@@ -67,30 +67,6 @@ describe('Phase 1 Week 3 Deliverables', () => {
       expect(screen.getByText('Generate Poster')).toBeInTheDocument()
     })
 
-    test('Catalog Builder component renders correctly', async () => {
-      const CatalogBuilder = (await import('@/components/lazy/catalog-builder')).default
-      
-      render(
-        <TestWrapper>
-          <CatalogBuilder />
-        </TestWrapper>
-      )
-
-      // Check if main elements are present
-      expect(screen.getByText('Catalog Builder')).toBeInTheDocument()
-      expect(screen.getByText('AI Color Suggestions')).toBeInTheDocument()
-      expect(screen.getByText('Catalog Templates')).toBeInTheDocument()
-      
-      // Check if products are displayed
-      expect(screen.getByText('Silk Saree Collection')).toBeInTheDocument()
-      expect(screen.getByText('Cotton Kurta Set')).toBeInTheDocument()
-      expect(screen.getByText('Linen Dress')).toBeInTheDocument()
-      expect(screen.getByText('Chiffon Scarf')).toBeInTheDocument()
-      
-      // Check if AI color suggestions are present
-      expect(screen.getByText('Deep Navy + Gold')).toBeInTheDocument()
-      expect(screen.getByText('Maroon + Cream')).toBeInTheDocument()
-    })
   })
 
   describe('2. Design Preview and Editing Tools', () => {
@@ -113,27 +89,6 @@ describe('Phase 1 Week 3 Deliverables', () => {
       expect(screen.getByText('Download')).toBeInTheDocument()
     })
 
-    test('Product selection in Catalog Builder works', async () => {
-      const CatalogBuilder = (await import('@/components/lazy/catalog-builder')).default
-      
-      render(
-        <TestWrapper>
-          <CatalogBuilder />
-        </TestWrapper>
-      )
-
-      // Check if product selection buttons are present
-      const addButtons = screen.getAllByText('Add')
-      expect(addButtons.length).toBeGreaterThan(0)
-      
-      // Test product selection
-      fireEvent.click(addButtons[0])
-      
-      // Check if button text changes to "Added"
-      await waitFor(() => {
-        expect(screen.getByText('Added')).toBeInTheDocument()
-      })
-    })
   })
 
   describe('3. Export and Download Functionality', () => {
@@ -154,29 +109,6 @@ describe('Phase 1 Week 3 Deliverables', () => {
       fireEvent.click(downloadButton)
     })
 
-    test('Catalog creation functionality works', async () => {
-      const CatalogBuilder = (await import('@/components/lazy/catalog-builder')).default
-      
-      render(
-        <TestWrapper>
-          <CatalogBuilder />
-        </TestWrapper>
-      )
-
-      // First select a product
-      const addButtons = screen.getAllByText('Add')
-      fireEvent.click(addButtons[0])
-      
-      // Wait for button to change to "Added"
-      await waitFor(() => {
-        expect(screen.getByText('Added')).toBeInTheDocument()
-      })
-      
-      // Check if create catalog button is enabled
-      const createButton = screen.getByText(/Create Catalog/)
-      expect(createButton).toBeInTheDocument()
-      expect(createButton).not.toBeDisabled()
-    })
   })
 
   describe('4. Real-time Collaboration Features', () => {

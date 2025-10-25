@@ -204,48 +204,7 @@ class BrandOverlayService:
             if logo_image.mode != 'RGBA':
                 logo_image = logo_image.convert('RGBA')
 
-            # Prepare a subtle 2px stroke around the logo using a color derived from the logo
-            try:
-                from PIL import ImageFilter, ImageChops
-
-                # Derive a high-contrast stroke color from the logo
-                def _average_visible_color(img: Image.Image) -> Tuple[int, int, int]:
-                    rgba = img.convert('RGBA')
-                    pixels = rgba.getdata()
-                    r_total = g_total = b_total = count = 0
-                    for (r, g, b, a) in pixels:
-                        if a > 10:
-                            r_total += r; g_total += g; b_total += b; count += 1
-                    if count == 0:
-                        return (255, 255, 255)
-                    return (r_total // count, g_total // count, b_total // count)
-
-                def _get_high_contrast_color(base_color: Tuple[int, int, int]) -> Tuple[int, int, int]:
-                    r, g, b = base_color
-                    # Calculate luminance to determine if we need light or dark stroke
-                    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-                    if luminance > 0.5:
-                        # Logo is light, use dark stroke
-                        return (0, 0, 0)
-                    else:
-                        # Logo is dark, use light stroke
-                        return (255, 255, 255)
-
-                base_color = _average_visible_color(logo_image)
-                stroke_color = _get_high_contrast_color(base_color)
-
-                # Build stroke mask: dilate alpha then subtract original alpha
-                alpha = logo_image.split()[-1]
-                # 3px stroke → use MaxFilter multiple times for better approximation
-                dilated = alpha.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.MaxFilter(3))
-                border_mask = ImageChops.subtract(dilated, alpha)
-
-                # Create stroke layer
-                stroke_layer = Image.new('RGBA', logo_image.size, stroke_color + (255,))
-                # Apply border mask
-                stroke_layer.putalpha(border_mask)
-            except Exception:
-                stroke_layer = None
+            # No stroke applied to logo
             
             # Calculate logo position based on preference
             position = self._calculate_logo_position(
@@ -256,10 +215,7 @@ class BrandOverlayService:
             
             # Create a transparent overlay for the logo
             logo_overlay = Image.new('RGBA', poster_image.size, (0, 0, 0, 0))
-            # First paste stroke if available
-            if stroke_layer is not None:
-                logo_overlay.paste(stroke_layer, position, stroke_layer)
-            # Then paste the logo itself
+            # Paste the logo directly without stroke
             logo_overlay.paste(logo_image, position, logo_image)
             
             # Composite the logo onto the poster

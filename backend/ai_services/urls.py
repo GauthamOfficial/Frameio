@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views, scheduling_views, file_upload_views, social_media_views, catalog_views, fabric_views, post_generation_views, ai_poster_views, ai_caption_views, branding_kit_views
+from . import views, scheduling_views, file_upload_views, social_media_views, fabric_views, post_generation_views, ai_poster_views, ai_caption_views, branding_kit_views
 
 # Create router for AI service-related views
 router = DefaultRouter()
@@ -20,8 +20,6 @@ router.register(r'schedule', scheduling_views.ScheduledPostViewSet, basename='sc
 # Social Media Posting endpoints
 router.register(r'social', social_media_views.SocialMediaPostViewSet, basename='social-media')
 
-# Catalog Builder endpoints
-router.register(r'catalog', catalog_views.CatalogBuilderViewSet, basename='catalog-builder')
 
 # Phase 1 Week 4 - Advanced AI Services
 router.register(r'fabric', fabric_views.FabricAnalysisViewSet, basename='fabric-analysis')

@@ -25,7 +25,6 @@ const getNavigationItems = (userRole: string | null, permissions: string[]) => {
   const designerItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: null },
     { name: "AI Poster Generator", href: "/dashboard/poster-generator", icon: Image, permission: "manage_designs" },
-    { name: "Catalog Builder", href: "/dashboard/catalog-builder", icon: BookOpen, permission: "manage_designs" },
     { name: "Branding Kit", href: "/dashboard/branding-kit", icon: Palette, permission: "manage_designs" },
     { name: "Social Media Posts", href: "/dashboard/social-media", icon: Share2, permission: "manage_designs" },
     { name: "Scheduler", href: "/dashboard/scheduler", icon: Calendar, permission: "manage_designs" },

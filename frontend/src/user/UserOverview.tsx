@@ -21,13 +21,6 @@ export function UserOverview() {
       color: "bg-blue-500"
     },
     {
-      title: "Catalog Builder",
-      description: "Build and manage your product catalogs",
-      icon: BookOpen,
-      href: "/user/catalog-builder",
-      color: "bg-green-500"
-    },
-    {
       title: "Branding Kit",
       description: "Create and manage your brand identity",
       icon: Palette,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useUser, useAuth } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -8,7 +9,7 @@ import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Badge } from '../ui/badge'
 import { Separator } from '../ui/separator'
-import { Upload, Image as ImageIcon, Save } from 'lucide-react'
+import { Upload, Image as ImageIcon, Save, Palette } from 'lucide-react'
 import { useToastHelpers } from '@/components/common'
 import { API_ENDPOINTS, API_BASE_URL } from '@/lib/config'
 
@@ -48,6 +49,7 @@ const CompanyProfileSettings: React.FC = () => {
   const { user } = useUser()
   const { getToken } = useAuth()
   const { showSuccess, showError } = useToastHelpers()
+  const router = useRouter()
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [status, setStatus] = useState<ProfileStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -657,27 +659,38 @@ const CompanyProfileSettings: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="logo">Logo Image</Label>
-              <div className="relative">
-                <Input
-                  id="logo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <div className="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-                  <div className="flex flex-col items-center space-y-1">
-                    <div className="p-2 bg-blue-100 rounded-full">
-                      <Upload className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs font-medium text-gray-700">Choose Logo</p>
+              <div className="flex gap-2 mb-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="logo"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <div className="flex flex-col items-center space-y-1">
+                      <div className="p-2 bg-blue-100 rounded-full">
+                        <Upload className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-medium text-gray-700">Choose Logo</p>
+                      </div>
                     </div>
                   </div>
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push('/dashboard/branding-kit')}
+                  className="h-24 px-4 flex flex-col items-center justify-center space-y-1"
+                >
+                  <Palette className="h-4 w-4 text-purple-600" />
+                  <span className="text-xs font-medium">Create Logo</span>
+                </Button>
               </div>
               <p className="text-xs text-gray-600">
-                Recommended: 300x300px, PNG, JPG, or SVG
+                Recommended: 300x300px, PNG, JPG, or SVG. Or create a new logo with AI.
               </p>
             </div>
             

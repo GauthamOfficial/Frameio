@@ -24,7 +24,6 @@ const getUserNavigationItems = (permissions: string[]) => {
   const userItems = [
     { name: "Dashboard", href: "/user", icon: LayoutDashboard, permission: null },
     { name: "AI Poster Generator", href: "/user/poster-generator", icon: Image, permission: "manage_designs" },
-    { name: "Catalog Builder", href: "/user/catalog-builder", icon: BookOpen, permission: "manage_designs" },
     { name: "Branding Kit", href: "/user/branding-kit", icon: Palette, permission: "manage_designs" },
     { name: "Social Media Posts", href: "/user/social-media", icon: Share2, permission: "manage_designs" },
     { name: "Scheduler", href: "/user/scheduler", icon: Calendar, permission: "manage_designs" },

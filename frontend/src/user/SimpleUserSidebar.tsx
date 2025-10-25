@@ -22,7 +22,6 @@ import {
 const userNavigationItems = [
   { name: "Dashboard", href: "/user", icon: LayoutDashboard },
   { name: "AI Poster Generator", href: "/user/poster-generator", icon: Image },
-  { name: "Catalog Builder", href: "/user/catalog-builder", icon: BookOpen },
   { name: "Branding Kit", href: "/user/branding-kit", icon: Palette },
   { name: "Social Media Posts", href: "/user/social-media", icon: Share2 },
   { name: "Scheduler", href: "/user/scheduler", icon: Calendar },
