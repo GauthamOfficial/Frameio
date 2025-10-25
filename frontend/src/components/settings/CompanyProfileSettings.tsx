@@ -19,7 +19,6 @@ interface CompanyProfile {
   logo?: string
   logo_url?: string
   whatsapp_number?: string
-  email?: string
   facebook_username?: string
   facebook_link?: string
   website?: string
@@ -30,7 +29,6 @@ interface CompanyProfile {
   has_complete_profile?: boolean
   contact_info?: {
     whatsapp?: string
-    email?: string
     facebook?: string
   }
   created_at?: string
@@ -61,7 +59,6 @@ const CompanyProfileSettings: React.FC = () => {
   const [formData, setFormData] = useState({
     company_name: '',
     whatsapp_number: '',
-    email: '',
     facebook_username: '',
     facebook_link: '',
     website: '',
@@ -155,7 +152,6 @@ const CompanyProfileSettings: React.FC = () => {
           setFormData({
             company_name: data.company_name || '',
             whatsapp_number: data.whatsapp_number || '',
-            email: data.email || '',
             facebook_username: data.facebook_username || '',
             facebook_link: data.facebook_link || '',
             website: data.website || '',
@@ -513,8 +509,6 @@ const CompanyProfileSettings: React.FC = () => {
           // For 400 errors, show more specific error message
           if (errorMessage.includes('company_name') || errorMessage.includes('name')) {
             showError('Please enter a valid company name.')
-          } else if (errorMessage.includes('email')) {
-            showError('Please enter a valid email address.')
           } else if (errorMessage.includes('website') && errorMessage.includes('URL')) {
             showError('Please enter a valid website URL (e.g., https://example.com)')
           } else if (errorMessage.includes('facebook') && errorMessage.includes('URL')) {
@@ -751,16 +745,6 @@ const CompanyProfileSettings: React.FC = () => {
                 value={formData.whatsapp_number}
                 onChange={(e) => handleInputChange('whatsapp_number', e.target.value)}
                 placeholder="+1234567890"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="contact@yourcompany.com"
               />
             </div>
             <div className="space-y-2">

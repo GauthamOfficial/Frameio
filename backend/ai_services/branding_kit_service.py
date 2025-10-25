@@ -130,7 +130,7 @@ class BrandingKitService:
     
     def generate_color_palette(self, prompt: str, num_colors: int = 5) -> Dict[str, Any]:
         """
-        Generate a color palette based on the prompt
+        Generate a color palette based on the prompt using programmatic generation
         
         Args:
             prompt: Description of the brand/design
@@ -139,12 +139,6 @@ class BrandingKitService:
         Returns:
             Dict containing color palette data
         """
-        if not self.client:
-            return {
-                'success': False,
-                'error': 'Gemini client not available'
-            }
-        
         try:
             # Enhanced color detection with more comprehensive keywords
             color_keywords = [
@@ -186,88 +180,42 @@ class BrandingKitService:
             logger.info(f"Detected colors in prompt: {mentioned_colors}")
             logger.info(f"Detected hex colors: {hex_colors}")
             logger.info(f"Detected RGB colors: {rgb_colors}")
+            logger.info(f"Original prompt: {prompt}")
             
+            # ALWAYS use programmatic color palette generation for strict control
             if mentioned_colors or hex_colors or rgb_colors:
-                # Use the colors mentioned in the prompt
-                color_specifications = []
-                if mentioned_colors:
-                    color_specifications.append(f"Use these specific colors: {', '.join(mentioned_colors)}")
-                if hex_colors:
-                    color_specifications.append(f"Use these hex colors: {', '.join(hex_colors)}")
-                if rgb_colors:
-                    color_specifications.append(f"Use these RGB colors: {', '.join(rgb_colors)}")
-                
-                enhanced_prompt = f"""
-                Create a professional color palette for a brand with these EXACT color specifications:
-                {'. '.join(color_specifications)}
-                
-                CRITICAL REQUIREMENTS:
-                - The color palette MUST include ONLY these exact colors
-                - Do NOT add any additional colors beyond what is specified
-                - Do NOT change, modify, or substitute these colors
-                - Use ONLY the specified colors in the palette
-                - Do NOT include complementary colors or neutral colors
-                
-                The palette should show ONLY the specified colors in a clean, organized layout.
-                """
+                logger.info(f"Using mentioned colors: {mentioned_colors}")
+                # Generate palette using only the mentioned colors
+                palette_image = self._create_programmatic_palette(mentioned_colors, hex_colors, rgb_colors)
             else:
-                # Generate colors based on the brand description
-                enhanced_prompt = f"""
-                Create a color palette for: {prompt}
-                
-                Generate {num_colors} colors that work well together for a brand.
-                Include:
-                - Primary brand color
-                - Secondary colors
-                - Accent colors
-                - Neutral colors
-                
-                The colors should be:
-                - Harmonious and professional
-                - Suitable for both digital and print
-                - Accessible and readable
-                - Modern and contemporary
-                
-                Present the colors as a clean, organized palette.
-                """
-            
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash-image",
-                contents=enhanced_prompt
-            )
-            
-            # Extract image data
-            image_parts = [
-                part.inline_data.data
-                for part in response.candidates[0].content.parts
-                if part.inline_data
-            ]
-            
-            if not image_parts:
-                return {
-                    'success': False,
-                    'error': 'No color palette generated'
-                }
-            
-            # Convert to PIL Image
-            image = Image.open(BytesIO(image_parts[0]))
+                logger.info("No specific colors detected, using default colors")
+                # Generate a default palette if no specific colors mentioned
+                default_colors = ['blue', 'green', 'purple', 'orange', 'pink']
+                palette_image = self._create_programmatic_palette(default_colors[:num_colors], [], [])
             
             # Convert to base64 for API response
             buffered = BytesIO()
-            image.save(buffered, format="PNG")
+            palette_image.save(buffered, format="PNG")
             img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+            logger.info(f"Programmatic color palette generated with mentioned colors: {mentioned_colors}")
             
             return {
                 'success': True,
                 'palette': {
                     'data': img_str,
                     'format': 'PNG',
-                    'width': image.width,
-                    'height': image.height
+                    'width': palette_image.width,
+                    'height': palette_image.height
                 },
                 'prompt': prompt,
-                'num_colors': num_colors,
-                'used_colors': mentioned_colors if mentioned_colors else []
+                'num_colors': len(mentioned_colors) if mentioned_colors else 5,
+                'used_colors': mentioned_colors if mentioned_colors else [],
+                'strict_mode': True,  # Indicates strict color adherence
+                'instructions': f'Only these colors included: {", ".join(mentioned_colors)}',
+                'original_prompt': prompt,
+                'detected_colors': mentioned_colors,
+                'generation_method': 'programmatic'
             }
             
         except Exception as e:
@@ -276,6 +224,97 @@ class BrandingKitService:
                 'success': False,
                 'error': str(e)
             }
+    
+    def _create_programmatic_palette(self, mentioned_colors: list, hex_colors: list, rgb_colors: list) -> Image.Image:
+        """
+        Create a color palette programmatically using only the specified colors
+        """
+        from PIL import Image, ImageDraw, ImageFont
+        
+        # Color mapping for mentioned colors
+        color_map = {
+            'blue': '#0000FF', 'red': '#FF0000', 'green': '#00FF00', 'yellow': '#FFFF00',
+            'purple': '#800080', 'orange': '#FFA500', 'pink': '#FFC0CB', 'brown': '#A52A2A',
+            'black': '#000000', 'white': '#FFFFFF', 'gray': '#808080', 'grey': '#808080',
+            'gold': '#FFD700', 'silver': '#C0C0C0', 'navy': '#000080', 'teal': '#008080',
+            'coral': '#FF7F50', 'maroon': '#800000', 'beige': '#F5F5DC', 'cream': '#FFFDD0',
+            'cyan': '#00FFFF', 'magenta': '#FF00FF', 'lime': '#00FF00', 'indigo': '#4B0082',
+            'violet': '#8A2BE2', 'turquoise': '#40E0D0', 'amber': '#FFBF00', 'crimson': '#DC143C',
+            'emerald': '#50C878', 'sapphire': '#0F52BA', 'ruby': '#E0115F', 'pearl': '#F8F6F0',
+            'bronze': '#CD7F32', 'copper': '#B87333', 'platinum': '#E5E4E2', 'charcoal': '#36454F',
+            'ivory': '#FFFFF0', 'tan': '#D2B48C', 'burgundy': '#800020', 'forest green': '#228B22',
+            'sky blue': '#87CEEB', 'royal blue': '#4169E1', 'deep blue': '#000080', 'light blue': '#ADD8E6',
+            'dark blue': '#00008B', 'bright red': '#FF0000', 'deep red': '#8B0000', 'light green': '#90EE90',
+            'dark green': '#006400', 'bright yellow': '#FFFF00', 'dark yellow': '#B8860B',
+            'hot pink': '#FF69B4', 'deep pink': '#FF1493', 'light pink': '#FFB6C1', 'dark purple': '#663399',
+            'light purple': '#DDA0DD', 'bright orange': '#FFA500', 'dark orange': '#FF8C00',
+            'light brown': '#D2B48C', 'dark brown': '#8B4513', 'light gray': '#D3D3D3', 'dark gray': '#A9A9A9',
+            'steel blue': '#4682B4', 'olive green': '#808000', 'mint green': '#98FB98', 'lavender': '#E6E6FA',
+            'rose gold': '#E8B4B8', 'champagne': '#F7E7CE', 'coffee': '#6F4E37', 'chocolate': '#7B3F00'
+        }
+        
+        # Collect all colors to use
+        colors_to_use = []
+        
+        # Add mentioned colors
+        for color in mentioned_colors:
+            if color.lower() in color_map:
+                colors_to_use.append(color_map[color.lower()])
+        
+        # Add hex colors
+        colors_to_use.extend(hex_colors)
+        
+        # Add RGB colors (convert to hex)
+        for rgb in rgb_colors:
+            # Extract RGB values
+            rgb_values = re.findall(r'\d+', rgb)
+            if len(rgb_values) == 3:
+                r, g, b = map(int, rgb_values)
+                hex_color = f"#{r:02x}{g:02x}{b:02x}"
+                colors_to_use.append(hex_color)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_colors = []
+        for color in colors_to_use:
+            if color not in seen:
+                seen.add(color)
+                unique_colors.append(color)
+        
+        logger.info(f"Colors to use in palette: {unique_colors}")
+        
+        if not unique_colors:
+            # Fallback to default colors
+            unique_colors = ['#0000FF', '#00FF00', '#FF0000', '#FFFF00', '#800080']
+            logger.info(f"Using fallback colors: {unique_colors}")
+        
+        logger.info(f"Final colors for palette: {unique_colors}")
+        
+        # Create the palette image
+        num_colors = len(unique_colors)
+        section_width = 200
+        section_height = 100
+        total_width = section_width * num_colors
+        total_height = section_height
+        
+        # Create image with white background
+        img = Image.new('RGB', (total_width, total_height), 'white')
+        draw = ImageDraw.Draw(img)
+        
+        # Draw color sections
+        for i, color in enumerate(unique_colors):
+            x1 = i * section_width
+            y1 = 0
+            x2 = x1 + section_width
+            y2 = section_height
+            
+            # Draw the color rectangle
+            draw.rectangle([x1, y1, x2, y2], fill=color)
+            
+            # Add a border
+            draw.rectangle([x1, y1, x2, y2], outline='black', width=2)
+        
+        return img
     
     def generate_branding_kit(self, prompt: str, style: str = "modern") -> Dict[str, Any]:
         """

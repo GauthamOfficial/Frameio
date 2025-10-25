@@ -284,7 +284,7 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
         model = CompanyProfile
         fields = [
             'user', 'user_email', 'user_name', 'company_name', 'logo', 'logo_url',
-            'whatsapp_number', 'email', 'facebook_username', 'facebook_link', 'website', 'address', 'description',
+            'whatsapp_number', 'facebook_username', 'facebook_link', 'website', 'address', 'description',
             'brand_colors', 'preferred_logo_position', 'has_complete_profile', 'contact_info',
             'created_at', 'updated_at'
         ]
@@ -343,7 +343,7 @@ class CompanyProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyProfile
         fields = [
-            'company_name', 'logo', 'whatsapp_number', 'email', 'facebook_username', 'facebook_link',
+            'company_name', 'logo', 'whatsapp_number', 'facebook_username', 'facebook_link',
             'website', 'address', 'description', 'brand_colors', 'preferred_logo_position'
         ]
     
