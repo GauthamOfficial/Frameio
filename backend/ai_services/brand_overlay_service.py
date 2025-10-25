@@ -27,7 +27,7 @@ class BrandOverlayService:
         """Initialize the brand overlay service."""
         self.default_font_size = 24
         self.logo_size = (150, 150)  # Decreased from (200, 200)
-        self.contact_font_size = 22  # Decreased for better fit with icons
+        self.contact_font_size = 22
         self.margin = 30
         
     def add_brand_overlay(self, 
@@ -239,33 +239,20 @@ class BrandOverlayService:
                            poster_image: Image.Image, 
                            contact_info: Dict[str, str],
                            company_profile) -> Tuple[Image.Image, Optional[Dict[str, Any]]]:
-        """Add contact information with icons and proper spacing."""
+        """Add contact information with proper spacing."""
         try:
-            # Build contact items (plain text, no icons)
-            contact_items = []
-            whatsapp = contact_info.get('whatsapp')
-            facebook = contact_info.get('facebook')
-            email = contact_info.get('email')
+            # Prepare contact items
+            contact_items = self._prepare_contact_items(contact_info)
             
-            if whatsapp:
-                contact_items.append(f"{whatsapp}")
-            if facebook:
-                contact_items.append(f"{facebook}")
-            if email:
-                contact_items.append(f"{email}")
-                
             if not contact_items:
                 logger.warning("No contact information to display")
                 return poster_image, None
 
-            # Use simple spacing between contact items (no center dot)
-            contact_line = "   ".join(contact_items)
-
             # Create drawing context
             draw = ImageDraw.Draw(poster_image)
 
-            # Choose bold font for better emphasis
-            desired_size = max(28, int(min(poster_image.size) * 0.035))
+            # Choose smaller font to fit within frame
+            desired_size = max(18, int(min(poster_image.size) * 0.025))
             font = None
             font_paths = [
                 # Prefer bold fonts
@@ -300,32 +287,51 @@ class BrandOverlayService:
                 font = ImageFont.load_default()
                 logger.warning("Using default font - emoji support may be limited")
 
-            # Measure text size to center it
-            bbox = draw.textbbox((0, 0), contact_line, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
+            # Calculate total width needed for all contact items (text only)
+            total_width = 0
+            item_widths = []
+            spacing = 25  # Increased from 15 to add extra 10px
+            
+            for item in contact_items:
+                # Calculate text width
+                text = f"{item['value']}"
+                bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = bbox[2] - bbox[0]
+                item_width = text_width
+                item_widths.append(item_width)
+                total_width += item_width + spacing
 
-            # Center horizontally and place near bottom without background or shadow
-            x = max(10, (poster_image.width - text_width) // 2)
-            y_margin = max(25, int(poster_image.height * 0.05))
-            y = poster_image.height - y_margin - text_height
+            # Center horizontally and place near bottom
+            start_x = max(10, (poster_image.width - total_width) // 2)
+            y_margin = max(20, int(poster_image.height * 0.04))
+            y = poster_image.height - y_margin - desired_size
 
+            current_x = start_x
             text_color = (255, 255, 255, 255)
-            draw.text((x, y), contact_line, font=font, fill=text_color)
 
-            logger.info("Contact information with icons rendered successfully")
+            # Draw each contact item as text only
+            for i, item in enumerate(contact_items):
+                # Draw text without icons
+                text_x = current_x
+                text_y = y
+                draw.text((text_x, text_y), item['value'], font=font, fill=text_color)
+                
+                # Move to next item
+                current_x += item_widths[i] + spacing
+
+            logger.info("Contact information rendered successfully")
             meta = {
-                "x": int(x),
+                "x": int(start_x),
                 "y": int(y),
-                "width": int(text_width),
-                "height": int(text_height),
+                "width": int(total_width),
+                "height": int(desired_size),
                 "font_size": int(getattr(font, "size", desired_size)),
-                "text": contact_line
+                "text": "Contact items"
             }
             return poster_image, meta
 
         except Exception as e:
-            logger.error(f"Error adding simplified contact overlay: {str(e)}")
+            logger.error(f"Error adding contact overlay: {str(e)}")
             return poster_image, None
     
     def _calculate_logo_position(self, 
@@ -496,7 +502,7 @@ class BrandOverlayService:
         return title_font, body_font
     
     def _prepare_contact_items(self, contact_info: Dict[str, str]) -> List[Dict[str, Any]]:
-        """Prepare contact items with proper icons and formatting."""
+        """Prepare contact items with text formatting only."""
         items = []
         
         # WhatsApp contact
@@ -504,9 +510,15 @@ class BrandOverlayService:
             items.append({
                 'type': 'whatsapp',
                 'label': 'WhatsApp',
-                'value': contact_info['whatsapp'],
-                'icon': '📱',
-                'color': (37, 211, 102)  # WhatsApp green
+                'value': contact_info['whatsapp']
+            })
+        
+        # Facebook contact
+        if 'facebook' in contact_info and contact_info['facebook']:
+            items.append({
+                'type': 'facebook',
+                'label': 'Facebook',
+                'value': contact_info['facebook']
             })
         
         # Email contact
@@ -514,9 +526,7 @@ class BrandOverlayService:
             items.append({
                 'type': 'email',
                 'label': 'Email',
-                'value': contact_info['email'],
-                'icon': '✉️',
-                'color': (66, 133, 244)  # Gmail blue
+                'value': contact_info['email']
             })
         
         # Phone contact
@@ -524,9 +534,7 @@ class BrandOverlayService:
             items.append({
                 'type': 'phone',
                 'label': 'Phone',
-                'value': contact_info['phone'],
-                'icon': '📞',
-                'color': (52, 152, 219)  # Phone blue
+                'value': contact_info['phone']
             })
         
         # Website contact
@@ -534,9 +542,7 @@ class BrandOverlayService:
             items.append({
                 'type': 'website',
                 'label': 'Website',
-                'value': contact_info['website'],
-                'icon': '🌐',
-                'color': (155, 89, 182)  # Purple
+                'value': contact_info['website']
             })
         
         return items
@@ -556,7 +562,7 @@ class BrandOverlayService:
         # Calculate total height
         padding = 40
         title_spacing = 20
-        item_spacing = 15
+        item_spacing = 25  # Increased from 15 to add extra 10px
         total_height = padding + title_height + title_spacing + (len(contact_items) * (item_height + item_spacing)) + padding
         
         return {
@@ -637,27 +643,8 @@ class BrandOverlayService:
         
         # Draw contact items
         for item in contact_items:
-            # Draw icon
-            icon_x = x_offset
-            icon_y = y_offset + 5
-            
-            # Create icon background circle
-            icon_radius = 15
-            icon_bg_color = item['color'] + (200,)
-            draw.ellipse([
-                icon_x - icon_radius, icon_y - icon_radius,
-                icon_x + icon_radius, icon_y + icon_radius
-            ], fill=icon_bg_color)
-            
-            # Draw icon text (emoji)
-            icon_text = item['icon']
-            icon_bbox = body_font.getbbox(icon_text)
-            icon_text_x = icon_x - (icon_bbox[2] - icon_bbox[0]) // 2
-            icon_text_y = icon_y - (icon_bbox[3] - icon_bbox[1]) // 2
-            draw.text((icon_text_x, icon_text_y), icon_text, font=body_font, fill=(255, 255, 255, 255))
-            
-            # Draw label and value
-            text_x = icon_x + icon_radius + 15
+            # Draw label and value (text only)
+            text_x = x_offset
             text_y = y_offset
             
             # Label
@@ -757,14 +744,3 @@ class BrandOverlayService:
                 "branding_applied": False
             }
 
-    def _load_svg_icon(self, svg_path: str, size: Tuple[int, int] = (32, 32)) -> Optional[Image.Image]:
-        """Load SVG icon - currently using emoji fallback."""
-        try:
-            # For now, return None to use emoji fallback
-            # This prevents the Cairo dependency error
-            logger.info(f"Using emoji fallback for {svg_path}")
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error loading SVG icon {svg_path}: {str(e)}")
-            return None
