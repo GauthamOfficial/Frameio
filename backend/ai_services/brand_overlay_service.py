@@ -13,6 +13,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
 import uuid
+import xml.etree.ElementTree as ET
 
 logger = logging.getLogger(__name__)
 
@@ -755,3 +756,15 @@ class BrandOverlayService:
                 "image_url": default_storage.url(poster_path),
                 "branding_applied": False
             }
+
+    def _load_svg_icon(self, svg_path: str, size: Tuple[int, int] = (32, 32)) -> Optional[Image.Image]:
+        """Load SVG icon - currently using emoji fallback."""
+        try:
+            # For now, return None to use emoji fallback
+            # This prevents the Cairo dependency error
+            logger.info(f"Using emoji fallback for {svg_path}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error loading SVG icon {svg_path}: {str(e)}")
+            return None

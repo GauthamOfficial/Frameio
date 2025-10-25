@@ -342,7 +342,7 @@ class AIPosterService:
                 branding_layout_instructions = """
                 
                 SMOOTH GRADIENT TRANSITION AREAS:
-                - Create smooth gradient transitions at the TOP region (top 20% of image height) for logo overlay compatibility
+                - Create smooth gradient transitions at the TOP region (top 10% of image height) for logo overlay compatibility
                 - Create smooth gradient transitions at the BOTTOM region (bottom 15% of image height) for contact information overlay
                 - Use seamless tonal gradients without sharp visual edges, harsh lighting, or high-contrast elements in these zones
                 - Ensure natural color blending and soft transitions in the top and bottom regions
@@ -636,13 +636,13 @@ class AIPosterService:
                 branding_layout_instructions = """
                 
                 SMOOTH GRADIENT TRANSITION AREAS:
-                - Create smooth gradient transitions at the TOP region (top 20% of image height) for logo overlay compatibility
+                - Create smooth gradient transitions at the TOP region (top 10% of image height) for logo overlay compatibility
                 - Create smooth gradient transitions at the BOTTOM region (bottom 15% of image height) for contact information overlay
                 - Use seamless tonal gradients without sharp visual edges, harsh lighting, or high-contrast elements in these zones
                 - Ensure natural color blending and soft transitions in the top and bottom regions
                 - Keep these areas visually balanced but non-distracting for overlay compatibility
                 - Maintain all main content and primary text within the center safe zone (middle 65% of image)
-                - Avoid placing important visual elements or main text within the top 20% or bottom 15% areas
+                - Avoid placing important visual elements or main text within the top 20% or bottom 20% areas
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{base_prompt}{branding_layout_instructions}"
@@ -657,7 +657,7 @@ class AIPosterService:
                 - Do not include any text that suggests a specific company or brand
                 - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
                 - Create smooth gradient transitions at the top and bottom regions for future overlay compatibility
-                - Ensure seamless tonal blending in the top 20% and bottom 15% areas without harsh edges
+                - Ensure seamless tonal blending in the top 10% and bottom 15% areas without harsh edges
                 - Keep main content centered in the safe visual zone (middle 65% of image)
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
@@ -865,15 +865,11 @@ class AIPosterService:
             # Create enhanced prompt with smart layout guidance for branding areas
             spacing_instructions = """
             
-            IMPORTANT LAYOUT REQUIREMENTS:
-            - Keep the TOP-RIGHT corner (approximately 25% of image width and height) free of text but NOT empty - use background patterns, colors, or visual elements
-            - Keep the BOTTOM area (bottom 18% of image height) free of text but NOT empty - use background patterns, colors, or visual elements  
+            IMPORTANT LAYOUT REQUIREMENTS: 
             - Place all main text and visual elements in the CENTER and LEFT areas of the image
             - Ensure text is readable and doesn't overlap with reserved areas
             - Use the center-left 55% of the image for main content
             - Maintain all textual content within the middle 65% of the canvas
-            - Fill the reserved areas with background elements, patterns, or colors - do not leave them blank
-            - Make the design cohesive while keeping logo and contact areas text-free but visually rich
             - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
             """
             
@@ -1254,49 +1250,26 @@ class AIPosterService:
                 }
             else:
                 logger.warning(f"Caption generation failed: {caption_result.get('message', 'Unknown error')}")
-                # Create more meaningful fallback captions
-                fallback_captions = [
-                    "✨ Discover the elegance of this stunning textile design... Perfect for making a statement! ✨",
-                    "🌟 Elevate your style with this beautiful creation... A must-have for your wardrobe! 🌟",
-                    "💫 Fall in love with this gorgeous design... Timeless beauty meets modern elegance! 💫",
-                    "🌸 Embrace the beauty of this elegant piece... Where tradition meets contemporary fashion! 🌸",
-                    "✨ Step into elegance with this breathtaking design... Perfect for any special occasion! ✨",
-                    "🌟 Make a statement with this gorgeous textile... Timeless style that never goes out of fashion! 🌟"
-                ]
-                
-                import random
-                selected_caption = random.choice(fallback_captions)
-                
                 return {
-                    "status": "success",
-                    "caption": selected_caption,
-                    "full_caption": f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸",
-                    "hashtags": ["#fashion", "#style", "#elegant", "#beautiful", "#textile", "#design", "#trendy", "#outfit", "#fashionista", "#styleinspo", "#ootd", "#fashionblogger", "#stylegoals", "#fashionlover", "#styletips"],
-                    "emoji": "✨",
-                    "call_to_action": "✨ Shop now and elevate your style! ✨"
+                    "status": "error",
+                    "message": "Failed to generate caption and hashtags",
+                    "caption": "",
+                    "full_caption": "",
+                    "hashtags": [],
+                    "emoji": "",
+                    "call_to_action": ""
                 }
                 
         except Exception as e:
             logger.error(f"Error generating caption and hashtags: {str(e)}")
-            # Create meaningful fallback even for exceptions
-            fallback_captions = [
-                "✨ Discover the elegance of this stunning textile design... Perfect for making a statement! ✨",
-                "🌟 Elevate your style with this beautiful creation... A must-have for your wardrobe! 🌟",
-                "💫 Fall in love with this gorgeous design... Timeless beauty meets modern elegance! 💫",
-                "🌸 Embrace the beauty of this elegant piece... Where tradition meets contemporary fashion! 🌸",
-                "✨ Step into elegance with this breathtaking design... Perfect for any special occasion! ✨"
-            ]
-            
-            import random
-            selected_caption = random.choice(fallback_captions)
-            
             return {
-                "status": "success",
-                "caption": selected_caption,
-                "full_caption": f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸",
-                "hashtags": ["#fashion", "#style", "#elegant", "#beautiful", "#textile", "#design", "#trendy", "#outfit", "#fashionista", "#styleinspo", "#ootd", "#fashionblogger", "#stylegoals", "#fashionlover", "#styletips"],
-                "emoji": "✨",
-                "call_to_action": "✨ Shop now and elevate your style! ✨"
+                "status": "error",
+                "message": f"Error generating caption and hashtags: {str(e)}",
+                "caption": "",
+                "full_caption": "",
+                "hashtags": [],
+                "emoji": "",
+                "call_to_action": ""
             }
     
     def is_available(self) -> bool:
