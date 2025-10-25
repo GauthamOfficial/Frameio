@@ -159,6 +159,39 @@ export default function EnhancedPosterGeneratorWithBranding() {
     await copyToClipboard(shareText, 'share')
   }
 
+  // Parse JSON caption if it's in JSON format
+  const parseCaption = (caption: string) => {
+    try {
+      // Check if the caption starts with JSON-like structure
+      if (caption.trim().startsWith('{') && caption.trim().endsWith('}')) {
+        const parsed = JSON.parse(caption)
+        return {
+          main_text: parsed.main_text || parsed.caption || caption,
+          full_caption: parsed.full_caption || parsed.main_text || caption,
+          hashtags: parsed.hashtags || [],
+          call_to_action: parsed.call_to_action || '',
+          emoji: parsed.emoji || ''
+        }
+      }
+      return {
+        main_text: caption,
+        full_caption: caption,
+        hashtags: [],
+        call_to_action: '',
+        emoji: ''
+      }
+    } catch (e) {
+      // If parsing fails, return the original caption
+      return {
+        main_text: caption,
+        full_caption: caption,
+        hashtags: [],
+        call_to_action: '',
+        emoji: ''
+      }
+    }
+  }
+
   const generatePoster = async () => {
     if (!prompt.trim()) {
       setError('Please enter a prompt')
@@ -641,19 +674,6 @@ export default function EnhancedPosterGeneratorWithBranding() {
                   </Button>
                 </div>
 
-                {/* Branding Status */}
-                {result.branding_applied && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-green-800 text-sm font-medium">Business branding applied</span>
-                    </div>
-                    <div className="text-green-700 text-xs mt-1">
-                      {result.logo_added && "✓ Logo added "}
-                      {result.contact_info_added && "✓ Contact info added"}
-                    </div>
-                  </div>
-                )}
 
                 {/* AI Generated Caption and Hashtags Section */}
                 {result && (
@@ -680,158 +700,58 @@ export default function EnhancedPosterGeneratorWithBranding() {
                     </div>
 
                     <div className="space-y-4">
-                        {/* Caption Section */}
-                        {(result.caption || result.full_caption) ? (
-                          <Card className="border-l-4 border-l-blue-500">
-                            <CardHeader className="pb-3">
-                              <CardTitle className="text-sm flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <MessageSquare className="h-4 w-4 text-blue-500" />
-                                  Caption
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={copyFullCaption}
-                                  className="h-6 px-2"
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </Button>
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
-                                <p className="text-sm text-gray-800 leading-relaxed">{result.caption || result.full_caption}</p>
-                                {result.full_caption && result.caption && result.full_caption !== result.caption && (
-                                  <div className="mt-3 pt-3 border-t border-blue-200">
-                                    <p className="text-xs text-blue-600 font-medium mb-2">Extended Caption:</p>
-                                    <p className="text-sm text-gray-700">{result.full_caption}</p>
+                        {/* AI Generated Caption and Hashtags as Single Text */}
+                        {(result.caption || result.full_caption || result.hashtags) ? (() => {
+                          const parsedCaption = parseCaption(result.caption || result.full_caption || '')
+                          const allHashtags = [...(result.hashtags || []), ...(parsedCaption.hashtags || [])]
+                          const uniqueHashtags = [...new Set(allHashtags)]
+                          
+                          // Combine caption and hashtags into a single text
+                          const fullText = `${parsedCaption.full_caption || parsedCaption.main_text}${uniqueHashtags.length > 0 ? '\n\n' + uniqueHashtags.join(' ') : ''}`
+                          
+                          return (
+                            <Card className="border-l-4 border-l-blue-500">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-sm flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <MessageSquare className="h-4 w-4 text-blue-500" />
+                                    AI Generated Content
                                   </div>
-                                )}
-                              </div>
-                              <div className="mt-3 flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={copyFullCaption}
-                                  className="flex-1"
-                                >
-                                  <Copy className="mr-2 h-3 w-3" />
-                                  {copiedItem === 'caption' ? 'Copied!' : 'Copy Caption'}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => shareToClipboard()}
-                                  className="flex-1"
-                                >
-                                  <Share2 className="mr-2 h-3 w-3" />
-                                  Share
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => copyToClipboard(fullText, 'all')}
+                                    className="h-6 px-2"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="pt-0">
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
+                                  <div className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
+                                    {fullText}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })() : (
                           <Card className="bg-gray-50 border-gray-200">
                             <CardHeader className="pb-3">
                               <CardTitle className="text-sm flex items-center gap-2">
                                 <MessageSquare className="h-4 w-4" />
-                                Caption
+                                AI Generated Content
                               </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-0">
                               <p className="text-sm text-gray-600">
-                                No caption generated. This might be due to caption service issues.
+                                No caption or hashtags generated. This might be due to caption service issues.
                               </p>
                             </CardContent>
                           </Card>
                         )}
 
-                        {/* Hashtags Section */}
-                        {result.hashtags && result.hashtags.length > 0 ? (
-                          <Card className="border-l-4 border-l-green-500">
-                            <CardHeader className="pb-3">
-                              <CardTitle className="text-sm flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <Hash className="h-4 w-4 text-green-500" />
-                                  Hashtags ({result.hashtags.length})
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={copyHashtags}
-                                  className="h-6 px-2"
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </Button>
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border">
-                                <div className="flex flex-wrap gap-2">
-                                  {result.hashtags.map((hashtag, index) => (
-                                    <span
-                                      key={index}
-                                      className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition-colors cursor-pointer"
-                                      onClick={() => copyToClipboard(hashtag, 'hashtag')}
-                                    >
-                                      {hashtag}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="mt-3 flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={copyHashtags}
-                                  className="flex-1"
-                                >
-                                  <Copy className="mr-2 h-3 w-3" />
-                                  {copiedItem === 'hashtags' ? 'Copied!' : 'Copy All Hashtags'}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const hashtagText = result.hashtags.join(' ')
-                                    copyToClipboard(hashtagText, 'hashtags')
-                                  }}
-                                  className="flex-1"
-                                >
-                                  <Share2 className="mr-2 h-3 w-3" />
-                                  Share
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ) : (
-                          <Card className="bg-gray-50 border-gray-200">
-                            <CardHeader className="pb-3">
-                              <CardTitle className="text-sm flex items-center gap-2">
-                                <Hash className="h-4 w-4" />
-                                Hashtags
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <p className="text-sm text-gray-600">
-                                No hashtags generated.
-                              </p>
-                            </CardContent>
-                          </Card>
-                        )}
-
-                        {/* Call to Action */}
-                        {result.call_to_action && (
-                          <Card>
-                            <CardHeader className="pb-3">
-                              <CardTitle className="text-sm">Call to Action</CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <p className="text-sm text-gray-700">{result.call_to_action}</p>
-                            </CardContent>
-                          </Card>
-                        )}
 
                         {/* Social Media Sharing */}
                         <Card className="border-l-4 border-l-purple-500">
@@ -906,7 +826,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                           </CardContent>
                         </Card>
                       </div>
-                    </div>
+                  </div>
                 )}
               </div>
             ) : (
