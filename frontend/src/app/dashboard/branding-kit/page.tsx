@@ -187,9 +187,6 @@ This branding kit was generated using AI and is ready for use in your marketing 
         {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-foreground">AI Brand Kit Generator</h1>
-            <p className="text-muted-foreground mt-1">
-          Generate custom branding assets using AI-powered prompts.
-            </p>
         </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

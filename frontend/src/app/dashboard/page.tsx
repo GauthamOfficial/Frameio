@@ -29,8 +29,6 @@ export default function DashboardPage() {
   const getQuickActions = () => {
     const actions = [
       { name: "Generate AI Poster", href: "/dashboard/poster-generator", icon: Image },
-      { name: "AI Post Generator", href: "/dashboard/ai-post-generator", icon: Wand2 },
-      { name: "AI Image Generator", href: "/dashboard/ai-image-generator", icon: Sparkles },
       { name: "Schedule Post", href: "/dashboard/scheduler", icon: Calendar },
       { name: "View Analytics", href: "/dashboard/analytics", icon: TrendingUp },
     ]
@@ -77,7 +75,10 @@ export default function DashboardPage() {
               Welcome back! Here&apos;s what&apos;s happening with your textile marketing.
             </p>
           </div>
-          <Button className="bg-textile-accent">
+          <Button 
+            className="bg-textile-accent"
+            onClick={() => router.push('/dashboard/poster-generator')}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Create New Post
           </Button>
