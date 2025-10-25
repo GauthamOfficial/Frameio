@@ -19,7 +19,13 @@ import {
   MessageSquare,
   Sparkles,
   Building2,
-  Settings
+  Settings,
+  Share2,
+  ExternalLink,
+  Facebook,
+  Twitter,
+  Instagram,
+  Mail
 } from "lucide-react"
 import React, { useState, useRef } from "react"
 import { useUser, useAuth } from '@clerk/nextjs'
@@ -81,6 +87,77 @@ export default function EnhancedPosterGeneratorWithBranding() {
   // Caption and hashtag functionality
   const [showCaption, setShowCaption] = useState(false)
   const [copiedItem, setCopiedItem] = useState<string | null>(null)
+
+  // Copy and share functions
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedItem(type)
+      setTimeout(() => setCopiedItem(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
+  }
+
+  const copyHashtags = async () => {
+    if (result?.hashtags) {
+      const hashtagText = result.hashtags.join(' ')
+      await copyToClipboard(hashtagText, 'hashtags')
+    }
+  }
+
+  const copyFullCaption = async () => {
+    if (result?.full_caption) {
+      await copyToClipboard(result.full_caption, 'caption')
+    }
+  }
+
+  const shareToSocialMedia = (platform: string) => {
+    if (!result?.image_url || !result?.full_caption) return
+
+    const imageUrl = result.image_url.startsWith('http') 
+      ? result.image_url 
+      : `http://localhost:8000${result.image_url}`
+    
+    const shareText = result.full_caption
+    const shareUrl = imageUrl
+
+    let shareLink = ''
+    
+    switch (platform) {
+      case 'facebook':
+        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`
+        break
+      case 'twitter':
+        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
+        break
+      case 'instagram':
+        // Instagram doesn't support direct sharing, copy to clipboard
+        copyToClipboard(`${shareText}\n\n${shareUrl}`, 'instagram')
+        return
+      case 'whatsapp':
+        shareLink = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`
+        break
+      case 'email':
+        shareLink = `mailto:?subject=Check out this poster&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`
+        break
+    }
+    
+    if (shareLink) {
+      window.open(shareLink, '_blank')
+    }
+  }
+
+  const shareToClipboard = async () => {
+    if (!result?.image_url || !result?.full_caption) return
+
+    const imageUrl = result.image_url.startsWith('http') 
+      ? result.image_url 
+      : `http://localhost:8000${result.image_url}`
+    
+    const shareText = `${result.full_caption}\n\n${imageUrl}`
+    await copyToClipboard(shareText, 'share')
+  }
 
   const generatePoster = async () => {
     if (!prompt.trim()) {
@@ -308,15 +385,6 @@ export default function EnhancedPosterGeneratorWithBranding() {
     }
   }
 
-  const copyToClipboard = async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopiedItem(type)
-      setTimeout(() => setCopiedItem(null), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
-    }
-  }
 
   const goToSettings = () => {
     router.push('/dashboard/settings')
@@ -585,6 +653,260 @@ export default function EnhancedPosterGeneratorWithBranding() {
                       {result.contact_info_added && "✓ Contact info added"}
                     </div>
                   </div>
+                )}
+
+                {/* AI Generated Caption and Hashtags Section */}
+                {result && (
+                  <div className="mt-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-purple-500" />
+                        AI Generated Content
+                      </h3>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const content = `${result.caption || result.full_caption || ''}\n\n${result.hashtags ? result.hashtags.join(' ') : ''}`
+                            copyToClipboard(content, 'all')
+                          }}
+                          className="text-xs"
+                        >
+                          <Copy className="mr-1 h-3 w-3" />
+                          {copiedItem === 'all' ? 'Copied!' : 'Copy All'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Caption Section */}
+                        {(result.caption || result.full_caption) ? (
+                          <Card className="border-l-4 border-l-blue-500">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <MessageSquare className="h-4 w-4 text-blue-500" />
+                                  Caption
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={copyFullCaption}
+                                  className="h-6 px-2"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
+                                <p className="text-sm text-gray-800 leading-relaxed">{result.caption || result.full_caption}</p>
+                                {result.full_caption && result.caption && result.full_caption !== result.caption && (
+                                  <div className="mt-3 pt-3 border-t border-blue-200">
+                                    <p className="text-xs text-blue-600 font-medium mb-2">Extended Caption:</p>
+                                    <p className="text-sm text-gray-700">{result.full_caption}</p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="mt-3 flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={copyFullCaption}
+                                  className="flex-1"
+                                >
+                                  <Copy className="mr-2 h-3 w-3" />
+                                  {copiedItem === 'caption' ? 'Copied!' : 'Copy Caption'}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => shareToClipboard()}
+                                  className="flex-1"
+                                >
+                                  <Share2 className="mr-2 h-3 w-3" />
+                                  Share
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          <Card className="bg-gray-50 border-gray-200">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                Caption
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <p className="text-sm text-gray-600">
+                                No caption generated. This might be due to caption service issues.
+                              </p>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Hashtags Section */}
+                        {result.hashtags && result.hashtags.length > 0 ? (
+                          <Card className="border-l-4 border-l-green-500">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Hash className="h-4 w-4 text-green-500" />
+                                  Hashtags ({result.hashtags.length})
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={copyHashtags}
+                                  className="h-6 px-2"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border">
+                                <div className="flex flex-wrap gap-2">
+                                  {result.hashtags.map((hashtag, index) => (
+                                    <span
+                                      key={index}
+                                      className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition-colors cursor-pointer"
+                                      onClick={() => copyToClipboard(hashtag, 'hashtag')}
+                                    >
+                                      {hashtag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="mt-3 flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={copyHashtags}
+                                  className="flex-1"
+                                >
+                                  <Copy className="mr-2 h-3 w-3" />
+                                  {copiedItem === 'hashtags' ? 'Copied!' : 'Copy All Hashtags'}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const hashtagText = result.hashtags.join(' ')
+                                    copyToClipboard(hashtagText, 'hashtags')
+                                  }}
+                                  className="flex-1"
+                                >
+                                  <Share2 className="mr-2 h-3 w-3" />
+                                  Share
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          <Card className="bg-gray-50 border-gray-200">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm flex items-center gap-2">
+                                <Hash className="h-4 w-4" />
+                                Hashtags
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <p className="text-sm text-gray-600">
+                                No hashtags generated.
+                              </p>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Call to Action */}
+                        {result.call_to_action && (
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm">Call to Action</CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <p className="text-sm text-gray-700">{result.call_to_action}</p>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Social Media Sharing */}
+                        <Card className="border-l-4 border-l-purple-500">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                              <Share2 className="h-4 w-4 text-purple-500" />
+                              Share to Social Media
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border mb-4">
+                              <p className="text-xs text-gray-600 mb-3">Share your poster and AI-generated content:</p>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => shareToSocialMedia('facebook')}
+                                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
+                                >
+                                  <Facebook className="h-4 w-4 text-blue-600" />
+                                  Facebook
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => shareToSocialMedia('twitter')}
+                                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
+                                >
+                                  <Twitter className="h-4 w-4 text-blue-400" />
+                                  Twitter
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => shareToSocialMedia('instagram')}
+                                  className="flex items-center gap-2 hover:bg-pink-50 hover:border-pink-300"
+                                >
+                                  <Instagram className="h-4 w-4 text-pink-600" />
+                                  {copiedItem === 'instagram' ? 'Copied!' : 'Instagram'}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => shareToSocialMedia('whatsapp')}
+                                  className="flex items-center gap-2 hover:bg-green-50 hover:border-green-300"
+                                >
+                                  <ExternalLink className="h-4 w-4 text-green-600" />
+                                  WhatsApp
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => shareToSocialMedia('email')}
+                                  className="flex items-center gap-2 col-span-2 hover:bg-gray-50 hover:border-gray-300"
+                                >
+                                  <Mail className="h-4 w-4 text-gray-600" />
+                                  Email
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={shareToClipboard}
+                                className="w-full"
+                              >
+                                <Share2 className="mr-2 h-4 w-4" />
+                                {copiedItem === 'share' ? 'Copied to Clipboard!' : 'Copy All Content to Clipboard'}
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
                 )}
               </div>
             ) : (

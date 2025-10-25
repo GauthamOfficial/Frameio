@@ -98,7 +98,12 @@ class AICaptionService:
                     for part in candidate.content.parts:
                         if hasattr(part, 'text') and part.text:
                             generated_text += part.text
+                elif candidate.finish_reason and candidate.finish_reason.name == 'MAX_TOKENS':
+                    # Handle case where response was truncated due to token limit
+                    logger.warning("Response truncated due to MAX_TOKENS limit")
+                    return {"status": "error", "message": "Response too long, please try a shorter prompt"}
                 else:
+                    logger.error(f"No content parts in candidate. Content: {candidate.content}")
                     return {"status": "error", "message": "No content in response"}
             else:
                 return {"status": "error", "message": "No valid response from Gemini"}
@@ -169,7 +174,7 @@ class AICaptionService:
                 config=types.GenerateContentConfig(
                     response_modalities=['TEXT'],
                     temperature=0.8,
-                    max_output_tokens=600
+                    max_output_tokens=2000
                 ),
             )
             
@@ -181,7 +186,12 @@ class AICaptionService:
                     for part in candidate.content.parts:
                         if hasattr(part, 'text') and part.text:
                             generated_text += part.text
+                elif candidate.finish_reason and candidate.finish_reason.name == 'MAX_TOKENS':
+                    # Handle case where response was truncated due to token limit
+                    logger.warning("Response truncated due to MAX_TOKENS limit")
+                    return {"status": "error", "message": "Response too long, please try a shorter prompt"}
                 else:
+                    logger.error(f"No content parts in candidate. Content: {candidate.content}")
                     return {"status": "error", "message": "No content in response"}
             else:
                 return {"status": "error", "message": "No valid response from Gemini"}
@@ -260,7 +270,12 @@ class AICaptionService:
                     for part in candidate.content.parts:
                         if hasattr(part, 'text') and part.text:
                             generated_text += part.text
+                elif candidate.finish_reason and candidate.finish_reason.name == 'MAX_TOKENS':
+                    # Handle case where response was truncated due to token limit
+                    logger.warning("Response truncated due to MAX_TOKENS limit")
+                    return {"status": "error", "message": "Response too long, please try a shorter prompt"}
                 else:
+                    logger.error(f"No content parts in candidate. Content: {candidate.content}")
                     return {"status": "error", "message": "No content in response"}
             else:
                 return {"status": "error", "message": "No valid response from Gemini"}
@@ -329,7 +344,12 @@ class AICaptionService:
                     for part in candidate.content.parts:
                         if hasattr(part, 'text') and part.text:
                             generated_text += part.text
+                elif candidate.finish_reason and candidate.finish_reason.name == 'MAX_TOKENS':
+                    # Handle case where response was truncated due to token limit
+                    logger.warning("Response truncated due to MAX_TOKENS limit")
+                    return {"status": "error", "message": "Response too long, please try a shorter prompt"}
                 else:
+                    logger.error(f"No content parts in candidate. Content: {candidate.content}")
                     return {"status": "error", "message": "No content in response"}
             else:
                 return {"status": "error", "message": "No valid response from Gemini"}
@@ -431,54 +451,34 @@ class AICaptionService:
             'promotional': 'Create compelling promotional content'
         }
         
-        prompt = f"""
-        Create a {platform} caption for a {post_type} post about: {content}
-        
-        Platform: {platform_instructions.get(platform, 'Create an engaging social media post')}
-        Post Type: {post_type_instructions.get(post_type, 'Create engaging content')}
-        Style: {style} - Use {style} language and approach
-        Tone: {tone} - Maintain a {tone} tone throughout
-        
-        IMPORTANT: Create a caption that:
-        - Tells a story and creates emotional connection
-        - Uses power words like "stunning", "elegant", "breathtaking", "gorgeous"
-        - Includes sensory descriptions (colors, textures, feelings)
-        - Creates urgency or FOMO (fear of missing out)
-        - Mentions the craftsmanship and quality
-        - Appeals to the target audience's aspirations
-        - Uses conversational language that feels personal
-        - Includes relatable scenarios or occasions
-        """
+        prompt = f"""Create a {platform} caption for a {post_type} post about: {content}
+
+Requirements:
+- Engaging and attention-grabbing
+- Use power words like "stunning", "elegant", "breathtaking"
+- Include sensory descriptions
+- Create emotional connection
+- Conversational and relatable tone"""
         
         if include_hashtags:
-            prompt += """
-        - Include 8-12 highly relevant hashtags for textile/fashion industry
-        - Mix popular hashtags (#fashion, #style) with niche ones (#handmade, #artisan)
-        - Include seasonal/occasion hashtags when relevant
-        - Use trending fashion hashtags
-        - Include location-based hashtags if applicable
-        - Add lifestyle and aspiration hashtags"""
+            prompt += "\n- Include 5-8 relevant hashtags"
         
         if include_emoji:
-            prompt += "\n- Use 2-3 appropriate emojis"
+            prompt += "\n- Use 1-2 appropriate emojis"
         
         if call_to_action:
-            prompt += """
-        - Include a compelling call-to-action that creates urgency
-        - Use action words like "Shop now", "Get yours", "Don't miss out"
-        - Create FOMO with phrases like "Limited time", "Exclusive", "Only a few left"
-        - Include contact information or next steps
-        - Make it feel personal and direct"""
+            prompt += "\n- Include a call-to-action"
         
         prompt += """
         
-        Format the response as:
-        - Main caption text
-        - Hashtags (if requested)
-        - Call-to-action (if requested)
-        
-        Make it highly engaging and optimized for the specified platform.
-        """
+        Return as JSON:
+        {
+            "main_text": "Caption text",
+            "full_caption": "Complete caption with hashtags",
+            "hashtags": ["#tag1", "#tag2"],
+            "emoji": "✨",
+            "call_to_action": "CTA text"
+        }"""
         
         return prompt
     
@@ -555,6 +555,38 @@ class AICaptionService:
                              include_emoji: bool) -> Dict[str, Any]:
         """Parse and structure the generated caption content"""
         
+        # Try to parse as JSON first
+        try:
+            import json
+            # Look for JSON in the text
+            json_start = text.find('{')
+            json_end = text.rfind('}') + 1
+            if json_start != -1 and json_end > json_start:
+                json_text = text[json_start:json_end]
+                parsed_json = json.loads(json_text)
+                
+                # Extract data from JSON
+                main_content = parsed_json.get('main_text', '')
+                full_caption = parsed_json.get('full_caption', main_content)
+                hashtags = parsed_json.get('hashtags', [])
+                call_to_action = parsed_json.get('call_to_action', '')
+                emoji = parsed_json.get('emoji', '')
+                
+                return {
+                    'main_text': main_content,
+                    'full_caption': full_caption,
+                    'hashtags': hashtags,
+                    'call_to_action': call_to_action,
+                    'emoji': emoji,
+                    'word_count': len(main_content.split()),
+                    'character_count': len(main_content),
+                    'has_emoji': bool(emoji) or any(ord(char) > 127 for char in main_content)
+                }
+        except (json.JSONDecodeError, KeyError, ValueError):
+            # Fall back to text parsing if JSON parsing fails
+            pass
+        
+        # Fallback to original text parsing
         lines = text.strip().split('\n')
         main_content = ""
         hashtags = []
@@ -579,9 +611,11 @@ class AICaptionService:
             hashtags = hashtag_matches[:5]  # Limit to 5 hashtags
         
         return {
-            'main_content': main_content,
+            'main_text': main_content,
+            'full_caption': main_content,
             'hashtags': hashtags,
             'call_to_action': call_to_action,
+            'emoji': '',
             'word_count': len(main_content.split()),
             'character_count': len(main_content),
             'has_emoji': any(ord(char) > 127 for char in main_content)

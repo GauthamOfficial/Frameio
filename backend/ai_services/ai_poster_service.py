@@ -478,7 +478,7 @@ class AIPosterService:
                             logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}; size={final_w}x{final_h}")
                             
                             # Generate caption and hashtags for the poster
-                            caption_result = self.generate_caption_and_hashtags(prompt, image_url)
+                            caption_result = self.generate_caption_and_hashtags(prompt, image_url, user)
                             
                             # Add brand overlay if user has company profile
                             final_result = {
@@ -748,7 +748,7 @@ class AIPosterService:
                     logger.info(f"Edited poster generated successfully: {saved_path}; size={final_w}x{final_h}")
                     
                     # Generate caption and hashtags for the poster
-                    caption_result = self.generate_caption_and_hashtags(prompt, image_url)
+                    caption_result = self.generate_caption_and_hashtags(prompt, image_url, user)
                     
                     # Add brand overlay if user has company profile
                     final_result = {
@@ -1004,7 +1004,7 @@ class AIPosterService:
                                     break
                     
                     # Generate caption and hashtags for the poster
-                    caption_result = self.generate_caption_and_hashtags(prompt, image_url)
+                    caption_result = self.generate_caption_and_hashtags(prompt, image_url, None)
                     
                     return {
                         "status": "success", 
@@ -1137,7 +1137,7 @@ class AIPosterService:
                     logger.info(f"Text overlay added successfully: {saved_path}")
                     
                     # Generate caption and hashtags for the poster
-                    caption_result = self.generate_caption_and_hashtags(text_prompt, image_url)
+                    caption_result = self.generate_caption_and_hashtags(text_prompt, image_url, None)
                     
                     return {
                         "status": "success", 
@@ -1159,39 +1159,73 @@ class AIPosterService:
             logger.error(f"Error adding text overlay: {str(e)}")
             return {"status": "error", "message": str(e)}
     
-    def generate_caption_and_hashtags(self, prompt: str, image_url: str = None) -> Dict[str, Any]:
+    def generate_caption_and_hashtags(self, prompt: str, image_url: str = None, user=None) -> Dict[str, Any]:
         """
-        Generate caption and hashtags for the generated poster
+        Generate caption and hashtags for the generated poster with contact details
         
         Args:
             prompt: Original prompt used to generate the poster
             image_url: URL of the generated image (optional)
+            user: User object for contact details
             
         Returns:
             Dict containing caption and hashtags
         """
         try:
+            logger.info(f"Caption service available: {self.caption_service.client is not None}")
+            logger.info(f"Caption service API key: {bool(self.caption_service.api_key)}")
+            
             if not self.caption_service.client:
+                logger.error("Caption service client not available")
                 return {"status": "error", "message": "Caption service not available"}
             
             logger.info(f"Generating caption and hashtags for generated poster...")
+            logger.info(f"User provided for caption generation: {user}")
             
-            # Create enhanced content for better social media captions without using the exact prompt
-            enhanced_content = """
-            Create an engaging social media caption for a beautiful textile/fashion poster that showcases elegant design and style.
+            # Get user contact details if available
+            contact_info = ""
+            company_name = ""
+            if user:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and company_profile.has_complete_profile:
+                        company_name = company_profile.company_name or ""
+                        contact_info = company_profile.get_contact_info() or ""
+                        logger.info(f"Using contact info for caption: {contact_info}")
+                except Exception as e:
+                    logger.warning(f"Error getting contact info: {e}")
             
-            The caption should be:
-            - Engaging and attention-grabbing
-            - Perfect for Instagram, Facebook, and other social platforms
-            - Include emotional appeal and storytelling
-            - Mention the beauty and elegance of the textile/fashion item
-            - Create desire and interest in the product
-            - Be conversational and relatable
-            - Include relevant fashion/beauty keywords
-            - Focus on the visual appeal and craftsmanship
-            - Highlight the elegance and style of the design
-            - Create a sense of aspiration and desire
+            # Create enhanced content based on the original prompt for better social media captions
+            enhanced_content = f"""
+            Create an engaging social media caption for a beautiful textile/fashion poster based on this specific description: "{prompt}"
+            
+            Analyze the prompt and create a caption that:
+            - Captures the essence and details mentioned in the original prompt
+            - Highlights the specific features, colors, materials, or style mentioned
+            - Creates emotional connection with the target audience
+            - Mentions the occasion, season, or purpose if specified in the prompt
+            - Emphasizes the unique selling points from the original description
+            - Uses relevant keywords from the prompt naturally
+            - Creates desire and interest based on the specific product described
+            - Be conversational and relatable to the intended use case
+            - Include relevant fashion/beauty keywords that match the prompt
+            - Focus on the visual appeal and craftsmanship mentioned
+            - Highlight the elegance and style specific to the prompt
+            - Create a sense of aspiration based on the original description
+            - Include a compelling call-to-action relevant to the product type
             """
+            
+            # Add contact details to the content if available
+            if contact_info and company_name:
+                enhanced_content += f"""
+                
+                IMPORTANT: Include the following contact information naturally in the caption:
+                - Company: {company_name}
+                - Contact: {contact_info}
+                
+                Make sure to integrate this contact information smoothly into the caption without making it feel forced or spammy.
+                """
             
             # Generate social media caption with enhanced content
             caption_result = self.caption_service.generate_social_media_caption(
@@ -1205,8 +1239,11 @@ class AIPosterService:
                 call_to_action=True
             )
             
+            logger.info(f"Caption generation result: {caption_result}")
+            
             if caption_result.get("status") == "success":
                 caption_data = caption_result.get("caption", {})
+                logger.info(f"Caption data received: {caption_data}")
                 
                 # Extract hashtags from the caption
                 hashtags = []
@@ -1218,17 +1255,41 @@ class AIPosterService:
                     hashtag_matches = re.findall(r'#\w+', caption_data["full_caption"])
                     hashtags = list(set(hashtag_matches))  # Remove duplicates
                 
-                # Generate additional textile-specific hashtags
+                # Generate additional hashtags based on the original prompt
+                prompt_hashtags = []
+                prompt_lower = prompt.lower()
+                
+                # Extract relevant hashtags based on prompt content
+                if any(word in prompt_lower for word in ['silk', 'saree', 'sari']):
+                    prompt_hashtags.extend(["#silk", "#saree", "#traditional", "#elegant"])
+                if any(word in prompt_lower for word in ['cotton', 'kurta', 'shirt']):
+                    prompt_hashtags.extend(["#cotton", "#kurta", "#comfortable", "#casual"])
+                if any(word in prompt_lower for word in ['wool', 'shawl', 'warm']):
+                    prompt_hashtags.extend(["#wool", "#shawl", "#warm", "#cozy"])
+                if any(word in prompt_lower for word in ['embroidered', 'embroidery']):
+                    prompt_hashtags.extend(["#embroidered", "#handcrafted", "#artisan"])
+                if any(word in prompt_lower for word in ['printed', 'print']):
+                    prompt_hashtags.extend(["#printed", "#pattern", "#design"])
+                if any(word in prompt_lower for word in ['summer', 'summer']):
+                    prompt_hashtags.extend(["#summer", "#light", "#breathable"])
+                if any(word in prompt_lower for word in ['winter', 'warm']):
+                    prompt_hashtags.extend(["#winter", "#warm", "#cozy"])
+                if any(word in prompt_lower for word in ['office', 'formal', 'professional']):
+                    prompt_hashtags.extend(["#office", "#formal", "#professional"])
+                if any(word in prompt_lower for word in ['party', 'celebration', 'festival']):
+                    prompt_hashtags.extend(["#party", "#celebration", "#festival"])
+                
+                # Add general textile hashtags
                 textile_hashtags = [
                     "#textile", "#fashion", "#design", "#style", "#trendy",
                     "#handmade", "#artisan", "#craft", "#beautiful", "#elegant"
                 ]
                 
                 # Combine hashtags and remove duplicates
-                all_hashtags = list(set(hashtags + textile_hashtags))
+                all_hashtags = list(set(hashtags + prompt_hashtags + textile_hashtags))
                 
                 logger.info(f"Caption and hashtags generated successfully")
-                return {
+                final_caption_result = {
                     "status": "success",
                     "caption": caption_data.get("main_text", ""),
                     "full_caption": caption_data.get("full_caption", ""),
@@ -1236,6 +1297,8 @@ class AIPosterService:
                     "emoji": caption_data.get("emoji", ""),
                     "call_to_action": caption_data.get("call_to_action", "")
                 }
+                logger.info(f"Final caption result: {final_caption_result}")
+                return final_caption_result
             else:
                 logger.warning(f"Caption generation failed: {caption_result.get('message', 'Unknown error')}")
                 # Create more meaningful fallback captions
