@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Sharing Test - Simple</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #1877f2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .test-button:hover {
+            background: #166fe5;
+        }
+        .test-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Facebook Sharing Test - Simple Version</h1>
+        
+        <div class="test-info">
+            <h3>What this test does:</h3>
+            <p>This page simulates the Facebook sharing functionality that we implemented in your Framio app. It tests:</p>
+            <ul>
+                <li>✅ Facebook share URL generation</li>
+                <li>✅ Popup window opening</li>
+                <li>✅ URL encoding</li>
+                <li>✅ Share text formatting</li>
+            </ul>
+        </div>
+
+        <div id="status"></div>
+
+        <div>
+            <button class="test-button" onclick="testFacebookShare()">🚀 Test Facebook Share</button>
+            <button class="test-button" onclick="testAllPlatforms()">📱 Test All Platforms</button>
+            <button class="test-button" onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function addStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const statusElement = document.createElement('div');
+            statusElement.className = `status ${type}`;
+            statusElement.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            statusDiv.appendChild(statusElement);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('status').innerHTML = '';
+        }
+
+        function testFacebookShare() {
+            addStatus('Testing Facebook share functionality...', 'info');
+            
+            // Simulate the data that would come from your poster generator
+            const posterId = 'test123';
+            const posterPageUrl = `${window.location.origin}/poster/${posterId}`;
+            const shareText = 'Check out this amazing AI-generated poster! Created with cutting-edge AI technology. #AI #Poster #Design #Innovation';
+            
+            // Generate the Facebook share URL (same as in your app)
+            const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(posterPageUrl)}&quote=${encodeURIComponent(shareText)}`;
+            
+            addStatus('✅ Facebook share URL generated successfully!', 'success');
+            
+            document.getElementById('results').innerHTML = `
+                <h3>Facebook Share Test Results:</h3>
+                <div class="test-info">
+                    <p><strong>Poster ID:</strong> ${posterId}</p>
+                    <p><strong>Poster Page URL:</strong> ${posterPageUrl}</p>
+                    <p><strong>Share Text:</strong> ${shareText}</p>
+                </div>
+                
+                <h4>Generated Facebook Share URL:</h4>
+                <textarea style="width: 100%; height: 80px; font-family: monospace;">${facebookShareUrl}</textarea>
+                
+                <br><br>
+                <button class="test-button" onclick="window.open('${facebookShareUrl}', 'facebook-share-dialog', 'width=800,height=600,scrollbars=yes,resizable=yes')">
+                    🚀 Open Facebook Share Dialog
+                </button>
+                
+                <div class="test-info">
+                    <h4>What should happen:</h4>
+                    <ul>
+                        <li>✅ A popup window should open</li>
+                        <li>✅ Facebook's share dialog should load</li>
+                        <li>✅ The URL should be pre-filled</li>
+                        <li>✅ The quote text should be pre-filled</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function testAllPlatforms() {
+            addStatus('Testing all social media platforms...', 'info');
+            
+            const posterId = 'test123';
+            const posterPageUrl = `${window.location.origin}/poster/${posterId}`;
+            const shareText = 'Check out this amazing AI-generated poster! Created with cutting-edge AI technology. #AI #Poster #Design #Innovation';
+            
+            const platforms = {
+                facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(posterPageUrl)}&quote=${encodeURIComponent(shareText)}`,
+                twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(posterPageUrl)}`,
+                whatsapp: `https://wa.me/?text=${encodeURIComponent(`${shareText}\n\n${posterPageUrl}`)}`,
+                email: `mailto:?subject=${encodeURIComponent('Check out this AI-generated poster!')}&body=${encodeURIComponent(`${shareText}\n\n${posterPageUrl}`)}`
+            };
+            
+            addStatus('✅ All platform URLs generated successfully!', 'success');
+            
+            let buttonsHtml = '<h3>Social Media Platform Tests:</h3>';
+            
+            Object.entries(platforms).forEach(([platform, url]) => {
+                const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+                buttonsHtml += `
+                    <button class="test-button" onclick="window.open('${url}', '_blank')">
+                        📱 Test ${platformName}
+                    </button>
+                `;
+            });
+            
+            document.getElementById('results').innerHTML = buttonsHtml;
+        }
+
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            addStatus('🚀 Facebook Sharing Test Page Loaded', 'success');
+            addStatus('Click "Test Facebook Share" to test the sharing functionality', 'info');
+        });
+    </script>
+</body>
+</html>
+

@@ -19,8 +19,8 @@ interface CompanyProfile {
   logo?: string
   logo_url?: string
   whatsapp_number?: string
+  email?: string
   facebook_username?: string
-  facebook_link?: string
   website?: string
   address?: string
   description?: string
@@ -29,7 +29,7 @@ interface CompanyProfile {
   has_complete_profile?: boolean
   contact_info?: {
     whatsapp?: string
-    facebook?: string
+    email?: string
   }
   created_at?: string
   updated_at?: string
@@ -59,8 +59,8 @@ const CompanyProfileSettings: React.FC = () => {
   const [formData, setFormData] = useState({
     company_name: '',
     whatsapp_number: '',
+    email: '',
     facebook_username: '',
-    facebook_link: '',
     website: '',
     address: '',
     description: '',
@@ -152,8 +152,8 @@ const CompanyProfileSettings: React.FC = () => {
           setFormData({
             company_name: data.company_name || '',
             whatsapp_number: data.whatsapp_number || '',
+            email: data.email || '',
             facebook_username: data.facebook_username || '',
-            facebook_link: data.facebook_link || '',
             website: data.website || '',
             address: data.address || '',
             description: data.description || '',
@@ -361,17 +361,12 @@ const CompanyProfileSettings: React.FC = () => {
       // Format URLs before sending
       const formattedData = {
         ...formData,
-        website: formData.website ? formatUrl(formData.website) : formData.website,
-        facebook_link: formData.facebook_link ? formatUrl(formData.facebook_link) : formData.facebook_link
+        website: formData.website ? formatUrl(formData.website) : formData.website
       }
 
       // Validate URLs before sending
       if (formattedData.website && !validateUrl(formattedData.website)) {
         showError('Please enter a valid website URL (e.g., https://example.com)')
-        return
-      }
-      if (formattedData.facebook_link && !validateUrl(formattedData.facebook_link)) {
-        showError('Please enter a valid Facebook URL (e.g., https://facebook.com/yourpage)')
         return
       }
 
@@ -757,13 +752,13 @@ const CompanyProfileSettings: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="facebook_link">Facebook Page URL</Label>
+              <Label htmlFor="email">Email Address</Label>
               <Input
-                id="facebook_link"
-                type="url"
-                value={formData.facebook_link}
-                onChange={(e) => handleInputChange('facebook_link', e.target.value)}
-                placeholder="https://facebook.com/yourcompany"
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="contact@yourcompany.com"
               />
             </div>
             <div className="space-y-2">

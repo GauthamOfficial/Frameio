@@ -11,7 +11,7 @@ interface CompanyProfile {
   logo: string | null;
   whatsapp_number: string | null;
   email: string | null;
-  facebook_link: string | null;
+  facebook_username: string | null;
   has_complete_profile: boolean;
 }
 
@@ -54,7 +54,7 @@ export default function BrandingPreview({ className }: BrandingPreviewProps) {
           logo: null,
           whatsapp_number: '+1234567890',
           email: 'contact@yourcompany.com',
-          facebook_link: 'https://facebook.com/yourcompany',
+          facebook_username: 'yourcompany',
           has_complete_profile: false,
         });
       }
@@ -68,7 +68,7 @@ export default function BrandingPreview({ className }: BrandingPreviewProps) {
         logo: null,
         whatsapp_number: '+1234567890',
         email: 'contact@yourcompany.com',
-        facebook_link: 'https://facebook.com/yourcompany',
+        facebook_username: 'yourcompany',
         has_complete_profile: false,
       });
     } finally {
@@ -120,8 +120,8 @@ export default function BrandingPreview({ className }: BrandingPreviewProps) {
   if (companyProfile?.email) {
     contactInfo.push({ type: 'email', value: companyProfile.email });
   }
-  if (companyProfile?.facebook_link) {
-    contactInfo.push({ type: 'facebook', value: companyProfile.facebook_link });
+  if (companyProfile?.facebook_username) {
+    contactInfo.push({ type: 'facebook', value: `@${companyProfile.facebook_username}` });
   }
 
   return (

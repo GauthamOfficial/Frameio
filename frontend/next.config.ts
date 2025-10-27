@@ -3,6 +3,22 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   outputFileTracingRoot: 'D:\\My Files\\Yarl IT Hub\\Framio',
+  images: {
+    domains: ['localhost', '127.0.0.1'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
+        pathname: '/media/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.ngrok.io',
+        pathname: '/media/**',
+      },
+    ],
+  },
   async rewrites() {
     return [
       {

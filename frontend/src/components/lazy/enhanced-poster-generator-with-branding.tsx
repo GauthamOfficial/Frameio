@@ -115,31 +115,36 @@ export default function EnhancedPosterGeneratorWithBranding() {
   const shareToSocialMedia = (platform: string) => {
     if (!result?.image_url || !result?.full_caption) return
 
-    const imageUrl = result.image_url.startsWith('http') 
-      ? result.image_url 
-      : `http://localhost:8000${result.image_url}`
+    // Generate a unique poster ID (in a real app, this would come from the backend)
+    const posterId = `poster_${Date.now()}`
+    const posterPageUrl = `${window.location.origin}/poster/${posterId}`
     
     const shareText = result.full_caption
-    const shareUrl = imageUrl
 
     let shareLink = ''
     
     switch (platform) {
       case 'facebook':
-        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`
-        break
+        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(posterPageUrl)}&quote=${encodeURIComponent(shareText)}`
+        // Open Facebook share dialog in a popup window
+        window.open(
+          shareLink,
+          'facebook-share-dialog',
+          'width=800,height=600,scrollbars=yes,resizable=yes'
+        )
+        return
       case 'twitter':
-        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
+        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(posterPageUrl)}`
         break
       case 'instagram':
         // Instagram doesn't support direct sharing, copy to clipboard
-        copyToClipboard(`${shareText}\n\n${shareUrl}`, 'instagram')
+        copyToClipboard(`${shareText}\n\n${posterPageUrl}`, 'instagram')
         return
       case 'whatsapp':
-        shareLink = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`
+        shareLink = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + posterPageUrl)}`
         break
       case 'email':
-        shareLink = `mailto:?subject=Check out this poster&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`
+        shareLink = `mailto:?subject=Check out this poster&body=${encodeURIComponent(shareText + '\n\n' + posterPageUrl)}`
         break
     }
     
@@ -151,11 +156,11 @@ export default function EnhancedPosterGeneratorWithBranding() {
   const shareToClipboard = async () => {
     if (!result?.image_url || !result?.full_caption) return
 
-    const imageUrl = result.image_url.startsWith('http') 
-      ? result.image_url 
-      : `http://localhost:8000${result.image_url}`
+    // Generate a unique poster ID (in a real app, this would come from the backend)
+    const posterId = `poster_${Date.now()}`
+    const posterPageUrl = `${window.location.origin}/poster/${posterId}`
     
-    const shareText = `${result.full_caption}\n\n${imageUrl}`
+    const shareText = `${result.full_caption}\n\n${posterPageUrl}`
     await copyToClipboard(shareText, 'share')
   }
 

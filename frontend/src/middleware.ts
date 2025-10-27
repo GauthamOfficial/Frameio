@@ -5,7 +5,8 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/api/webhooks(.*)"
+  "/api/webhooks(.*)",
+  "/poster(.*)"  // Allow public access to poster sharing pages
 ]);
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
