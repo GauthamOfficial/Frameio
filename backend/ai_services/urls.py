@@ -42,6 +42,7 @@ urlpatterns = [
     path('ai-poster/composite_poster/', ai_poster_views.composite_poster, name='composite-poster'),
     path('ai-poster/add_text_overlay/', ai_poster_views.add_text_overlay, name='add-text-overlay'),
     path('ai-poster/status/', ai_poster_views.poster_service_status, name='poster-service-status'),
+    path('ai-poster/poster/<str:poster_id>/', ai_poster_views.get_poster, name='get-poster'),
     
     # AI Caption Generation URLs
     path('ai-caption/product_caption/', ai_caption_views.generate_product_caption, name='generate-product-caption'),

@@ -176,7 +176,7 @@ class CompanyProfileAdmin(admin.ModelAdmin):
             'fields': ('company_name', 'logo', 'website', 'address', 'description')
         }),
         ('Contact Information', {
-            'fields': ('whatsapp_number', 'email', 'facebook_link')
+            'fields': ('whatsapp_number', 'email', 'facebook_username')
         }),
         ('Brand Preferences', {
             'fields': ('brand_colors', 'preferred_logo_position'),

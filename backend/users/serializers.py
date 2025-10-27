@@ -284,7 +284,7 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
         model = CompanyProfile
         fields = [
             'user', 'user_email', 'user_name', 'company_name', 'logo', 'logo_url',
-            'whatsapp_number', 'facebook_username', 'facebook_link', 'website', 'address', 'description',
+            'whatsapp_number', 'email', 'facebook_username', 'website', 'address', 'description',
             'brand_colors', 'preferred_logo_position', 'has_complete_profile', 'contact_info',
             'created_at', 'updated_at'
         ]
@@ -317,7 +317,6 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
             'whatsapp_number': '',
             'email': '',
             'facebook_username': '',
-            'facebook_link': '',
             'website': '',
             'address': '',
             'description': '',
@@ -343,7 +342,7 @@ class CompanyProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyProfile
         fields = [
-            'company_name', 'logo', 'whatsapp_number', 'facebook_username', 'facebook_link',
+            'company_name', 'logo', 'whatsapp_number', 'email', 'facebook_username',
             'website', 'address', 'description', 'brand_colors', 'preferred_logo_position'
         ]
     
@@ -357,9 +356,12 @@ class CompanyProfileUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("WhatsApp number must be at least 10 digits.")
         return value
     
-    def validate_facebook_link(self, value):
-        """Validate Facebook link format."""
-        if value and not value.startswith(('http://', 'https://')):
-            value = 'https://' + value
+    def validate_email(self, value):
+        """Validate email format."""
+        if value:
+            import re
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, value):
+                raise serializers.ValidationError("Please enter a valid email address.")
         return value
 

@@ -470,9 +470,14 @@ class AIPosterService:
                             
                             saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
                             image_url = default_storage.url(saved_path)
-                            # Ensure full URL for download
+                            # Ensure full URL for sharing and download
                             if not image_url.startswith('http'):
-                                image_url = f"http://localhost:8000{image_url}"
+                                # Use request context if available, otherwise fallback to localhost
+                                request = getattr(self, '_request', None)
+                                if request:
+                                    image_url = request.build_absolute_uri(image_url)
+                                else:
+                                    image_url = f"http://localhost:8000{image_url}"
                             
                             final_w, final_h = image.size
                             logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}; size={final_w}x{final_h}")

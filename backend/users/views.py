@@ -492,7 +492,7 @@ class CompanyProfileViewSet(viewsets.ModelViewSet):
             'has_profile': bool(profile.company_name),
             'has_logo': bool(profile.logo),
             'has_contact_info': bool(
-                profile.whatsapp_number or profile.email or profile.facebook_link
+                profile.whatsapp_number or profile.email
             ),
             'is_complete': profile.has_complete_profile,
             'completion_percentage': self._calculate_completion_percentage(profile)
@@ -502,7 +502,7 @@ class CompanyProfileViewSet(viewsets.ModelViewSet):
         """Calculate profile completion percentage."""
         fields = [
             'company_name', 'logo', 'whatsapp_number', 'email', 
-            'facebook_link', 'website', 'address', 'description'
+            'website', 'address', 'description'
         ]
         completed = sum(1 for field in fields if getattr(profile, field))
         return int((completed / len(fields)) * 100)

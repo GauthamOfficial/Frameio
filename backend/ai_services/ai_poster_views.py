@@ -124,6 +124,8 @@ def generate_poster(request):
             except Exception as e:
                 logger.error(f"Error checking company profile: {e}")
         
+        # Pass request context to service for proper URL generation
+        ai_poster_service._request = request
         result = ai_poster_service.generate_from_prompt(prompt, aspect_ratio, user)
         
         if result.get('status') == 'success':
@@ -303,6 +305,48 @@ def edit_poster(request):
             "success": False,
             "error": "Internal server error"
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_poster(request, poster_id):
+    """
+    GET /api/ai-poster/poster/<poster_id>/
+    Get individual poster data for sharing
+    """
+    try:
+        # For now, we'll return mock data since we don't have a Poster model yet
+        # In a real implementation, you would query the database for the poster
+        
+        # Mock poster data - replace with actual database query
+        poster_data = {
+            "id": poster_id,
+            "image_url": f"http://localhost:8000/media/generated_posters/poster_{poster_id}.png",
+            "caption": "Check out this amazing AI-generated poster!",
+            "full_caption": "Check out this amazing AI-generated poster! Created with cutting-edge AI technology. #AI #Poster #Design #Innovation",
+            "hashtags": ["#AI", "#Poster", "#Design", "#Innovation"],
+            "prompt": "Create a modern textile poster for a silk saree brand",
+            "aspect_ratio": "4:5",
+            "width": 1080,
+            "height": 1350,
+            "generated_at": "2024-01-01T00:00:00Z",
+            "branding_applied": False,
+            "logo_added": False,
+            "contact_info_added": False
+        }
+        
+        return Response({
+            "success": True,
+            "poster": poster_data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error in get_poster endpoint: {str(e)}")
+        return Response({
+            "success": False,
+            "error": "Poster not found"
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 @csrf_exempt
