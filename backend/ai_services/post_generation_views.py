@@ -56,14 +56,22 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
         # Add company branding to the content
         branding_text = ""
         
-        # Add contact information with icons
+        # Add contact information with proper formatting
         contact_info = company_branding.get('contact_info', {})
         if contact_info:
+            # Add proper line breaks and spacing for better alignment
+            branding_text += "\n\n"  # Add spacing before contact details
+            
             if contact_info.get('whatsapp'):
-                branding_text += f"\n📱 WhatsApp: {contact_info['whatsapp']}"
+                branding_text += f"📱 WhatsApp: {contact_info['whatsapp']}\n"
             
             if contact_info.get('email'):
-                branding_text += f"\n✉️ Email: {contact_info['email']}"
+                branding_text += f"✉️ Email: {contact_info['email']}\n"
+            
+            # Add Facebook contact if available
+            facebook_contact = company_branding.get('facebook_contact', '')
+            if facebook_contact:
+                branding_text += f"📘 Facebook: {facebook_contact}\n"
         
         # Append branding to the main content
         if 'main_text' in content:

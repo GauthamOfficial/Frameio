@@ -91,7 +91,35 @@ export async function generateMetadata({ params }: PosterPageProps): Promise<Met
     }
   }
 
-  const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/poster/${params.id}`
+  // Try to get ngrok URL for public sharing
+  let pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/poster/${params.id}`
+  
+  try {
+    // Check if we're in a browser environment and ngrok is available
+    if (typeof window === 'undefined') {
+      // Server-side: try to detect ngrok URL
+      const response = await fetch('http://localhost:4040/api/tunnels', {
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(1000)
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const tunnels = data.tunnels || []
+        const httpsTunnel = tunnels.find((t: any) => 
+          t.proto === 'https' && 
+          t.config.addr.includes('3000')
+        )
+        
+        if (httpsTunnel) {
+          pageUrl = `${httpsTunnel.public_url}/poster/${params.id}`
+        }
+      }
+    }
+  } catch (error) {
+    // Silently fall back to localhost URL
+    console.log('Ngrok not available, using localhost URL')
+  }
   
   return {
     title: poster.caption,
@@ -131,7 +159,35 @@ export default async function PosterPage({ params }: PosterPageProps) {
     notFound()
   }
 
-  const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/poster/${params.id}`
+  // Try to get ngrok URL for public sharing
+  let pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/poster/${params.id}`
+  
+  try {
+    // Check if we're in a browser environment and ngrok is available
+    if (typeof window === 'undefined') {
+      // Server-side: try to detect ngrok URL
+      const response = await fetch('http://localhost:4040/api/tunnels', {
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(1000)
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const tunnels = data.tunnels || []
+        const httpsTunnel = tunnels.find((t: any) => 
+          t.proto === 'https' && 
+          t.config.addr.includes('3000')
+        )
+        
+        if (httpsTunnel) {
+          pageUrl = `${httpsTunnel.public_url}/poster/${params.id}`
+        }
+      }
+    }
+  } catch (error) {
+    // Silently fall back to localhost URL
+    console.log('Ngrok not available, using localhost URL')
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">

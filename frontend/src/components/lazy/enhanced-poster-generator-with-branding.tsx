@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { FacebookSharingModal } from "@/components/FacebookSharingModal"
 import { 
   Wand2, 
   Download, 
@@ -87,6 +88,11 @@ export default function EnhancedPosterGeneratorWithBranding() {
   // Caption and hashtag functionality
   const [showCaption, setShowCaption] = useState(false)
   const [copiedItem, setCopiedItem] = useState<string | null>(null)
+  
+  // Facebook sharing modal
+  const [showFacebookModal, setShowFacebookModal] = useState(false)
+  const [facebookContent, setFacebookContent] = useState('')
+  const [facebookImageUrl, setFacebookImageUrl] = useState('')
 
   // Copy and share functions
   const copyToClipboard = async (text: string, type: string) => {
@@ -112,39 +118,83 @@ export default function EnhancedPosterGeneratorWithBranding() {
     }
   }
 
-  const shareToSocialMedia = (platform: string) => {
+  const shareToSocialMedia = async (platform: string) => {
     if (!result?.image_url || !result?.full_caption) return
 
     // Generate a unique poster ID (in a real app, this would come from the backend)
     const posterId = `poster_${Date.now()}`
-    const posterPageUrl = `${window.location.origin}/poster/${posterId}`
+    
+    // Import ngrok utility dynamically to avoid SSR issues
+    const { getPosterShareUrl, isAnyTunnelRunning } = await import('@/utils/ngrok')
     
     const shareText = result.full_caption
-
     let shareLink = ''
     
     switch (platform) {
       case 'facebook':
-        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(posterPageUrl)}&quote=${encodeURIComponent(shareText)}`
-        // Open Facebook share dialog in a popup window
-        window.open(
-          shareLink,
-          'facebook-share-dialog',
-          'width=800,height=600,scrollbars=yes,resizable=yes'
-        )
-        return
+        try {
+          // Check if any tunnel is running for Facebook sharing
+          const tunnelRunning = await isAnyTunnelRunning()
+          
+          if (tunnelRunning) {
+            // Use ngrok URL for Facebook sharing
+            const posterPageUrl = await getPosterShareUrl(posterId)
+            shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(posterPageUrl)}&quote=${encodeURIComponent(shareText)}`
+          } else {
+            // Fallback: Show modal for better user experience
+            const imageUrl = result.image_url.startsWith('http') 
+              ? result.image_url 
+              : `http://localhost:8000${result.image_url}`
+            
+            // Create a better formatted Facebook post
+            const facebookText = `${shareText}\n\n🖼️ View the full poster: ${imageUrl}\n\n#AIPoster #Design #Innovation`
+            
+            // Set modal content and show modal
+            setFacebookContent(facebookText)
+            setFacebookImageUrl(imageUrl)
+            setShowFacebookModal(true)
+            return
+          }
+          
+          // Open Facebook share dialog in a popup window
+          window.open(
+            shareLink,
+            'facebook-share-dialog',
+            'width=800,height=600,scrollbars=yes,resizable=yes'
+          )
+          return
+        } catch (error) {
+          console.error('Facebook sharing error:', error)
+          // Fallback to modal
+          const imageUrl = result.image_url.startsWith('http') 
+            ? result.image_url 
+            : `http://localhost:8000${result.image_url}`
+          
+          // Create a better formatted Facebook post
+          const facebookText = `${shareText}\n\n🖼️ View the full poster: ${imageUrl}\n\n#AIPoster #Design #Innovation`
+          
+          // Set modal content and show modal
+          setFacebookContent(facebookText)
+          setFacebookImageUrl(imageUrl)
+          setShowFacebookModal(true)
+          return
+        }
       case 'twitter':
+        const posterPageUrl = await getPosterShareUrl(posterId)
         shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(posterPageUrl)}`
         break
       case 'instagram':
         // Instagram doesn't support direct sharing, copy to clipboard
-        copyToClipboard(`${shareText}\n\n${posterPageUrl}`, 'instagram')
+        const instagramUrl = await getPosterShareUrl(posterId)
+        copyToClipboard(`${shareText}\n\n${instagramUrl}`, 'instagram')
         return
       case 'whatsapp':
-        shareLink = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + posterPageUrl)}`
+        const whatsappUrl = await getPosterShareUrl(posterId)
+        shareLink = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + whatsappUrl)}`
         break
       case 'email':
-        shareLink = `mailto:?subject=Check out this poster&body=${encodeURIComponent(shareText + '\n\n' + posterPageUrl)}`
+        const emailUrl = await getPosterShareUrl(posterId)
+        shareLink = `mailto:?subject=Check out this poster&body=${encodeURIComponent(shareText + '\n\n' + emailUrl)}`
         break
     }
     
@@ -158,8 +208,11 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
     // Generate a unique poster ID (in a real app, this would come from the backend)
     const posterId = `poster_${Date.now()}`
-    const posterPageUrl = `${window.location.origin}/poster/${posterId}`
     
+    // Import ngrok utility dynamically to avoid SSR issues
+    const { getPosterShareUrl } = await import('@/utils/ngrok')
+    
+    const posterPageUrl = await getPosterShareUrl(posterId)
     const shareText = `${result.full_caption}\n\n${posterPageUrl}`
     await copyToClipboard(shareText, 'share')
   }
@@ -847,6 +900,14 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
         </div>
       </div>
+      
+      {/* Facebook Sharing Modal */}
+      <FacebookSharingModal
+        isOpen={showFacebookModal}
+        onClose={() => setShowFacebookModal(false)}
+        content={facebookContent}
+        imageUrl={facebookImageUrl}
+      />
     </div>
     )
   } catch (error) {

@@ -1196,7 +1196,18 @@ class AIPosterService:
                     company_profile = getattr(user, 'company_profile', None)
                     if company_profile and company_profile.has_complete_profile:
                         company_name = company_profile.company_name or ""
-                        contact_info = company_profile.get_contact_info() or ""
+                        contact_dict = company_profile.get_contact_info() or {}
+                        
+                        # Format contact information properly
+                        contact_details = []
+                        if contact_dict.get('whatsapp'):
+                            contact_details.append(f"📱 WhatsApp: {contact_dict['whatsapp']}")
+                        if contact_dict.get('email'):
+                            contact_details.append(f"✉️ Email: {contact_dict['email']}")
+                        if contact_dict.get('facebook'):
+                            contact_details.append(f"📘 Facebook: {contact_dict['facebook']}")
+                        
+                        contact_info = "\n".join(contact_details)
                         logger.info(f"Using contact info for caption: {contact_info}")
                 except Exception as e:
                     logger.warning(f"Error getting contact info: {e}")
@@ -1225,11 +1236,22 @@ class AIPosterService:
             if contact_info and company_name:
                 enhanced_content += f"""
                 
-                IMPORTANT: Include the following contact information naturally in the caption:
-                - Company: {company_name}
-                - Contact: {contact_info}
+                CRITICAL REQUIREMENT: You MUST include the following contact information in the caption:
                 
-                Make sure to integrate this contact information smoothly into the caption without making it feel forced or spammy.
+                Company: {company_name}
+                
+                Contact Details (each on separate line):
+                {contact_info}
+                
+                IMPORTANT FORMATTING RULES:
+                - Include ALL the contact details exactly as provided above
+                - Each contact method (WhatsApp, Email, Facebook) MUST be on its own separate line
+                - Use the exact emoji icons and formatting shown
+                - Place contact details at the end of the caption after the main content
+                - Add proper spacing before the contact details
+                - Make sure the contact information is clearly visible and readable
+                - Do NOT modify or change the contact details - use them exactly as provided
+                - Ensure each contact detail appears on its own line with proper line breaks
                 """
             
             # Generate social media caption with enhanced content
@@ -1249,7 +1271,56 @@ class AIPosterService:
             if caption_result.get("status") == "success":
                 caption_data = caption_result.get("caption", {})
                 logger.info(f"Caption data received: {caption_data}")
-                
+
+                # Ensure we have a non-empty lead caption
+                try:
+                    main_text = (caption_data.get("main_text") or "").strip()
+                    full_text = (caption_data.get("full_caption") or "").strip()
+                    if not main_text:
+                        # Synthesize a concise default from the prompt
+                        base = prompt.strip().split("\n")[0]
+                        base = base[:140].rstrip() if len(base) > 140 else base
+                        default_caption = (
+                            "Elevate your style with this beautiful creation... A must-have for your wardrobe!"
+                            if not base else base
+                        )
+                        caption_data["main_text"] = default_caption
+                        main_text = default_caption
+                    if not full_text:
+                        caption_data["full_caption"] = main_text
+                        full_text = main_text
+                    # Ensure full_caption starts with the main_text
+                    if not full_text.startswith(main_text):
+                        caption_data["full_caption"] = f"{main_text}\n\n{full_text}".strip()
+                except Exception as _e:
+                    logger.warning(f"Failed to normalize caption lead text: {_e}")
+
+                # Ensure contact details are present in both caption and full_caption when available
+                try:
+                    if contact_info and company_name:
+                        original_main = caption_data.get("main_text", "") or ""
+                        original_full = caption_data.get("full_caption", original_main) or ""
+
+                        # Avoid duplicating if already present
+                        needs_append = not ("WhatsApp" in original_full or "Email" in original_full or "Facebook" in original_full)
+                        if needs_append:
+                            # Format contact details with proper line breaks
+                            formatted_block = f"\n\n📞 Contact us for inquiries:\n{contact_info}"
+                            caption_data["full_caption"] = f"{original_full}{formatted_block}".strip()
+                            caption_data["main_text"] = f"{original_main}{formatted_block}".strip()
+                        else:
+                            # Post-process existing contact details to ensure proper formatting
+                            # Replace any single-line contact details with properly formatted ones
+                            import re
+                            contact_pattern = r'(📱 WhatsApp: [^\n]+)(?:\s+)(✉️ Email: [^\n]+)(?:\s+)(📘 Facebook: [^\n]+)'
+                            if re.search(contact_pattern, original_full):
+                                # Replace with properly formatted version using the already formatted contact_info
+                                formatted_contacts = f"\n{contact_info}"
+                                caption_data["full_caption"] = re.sub(contact_pattern, formatted_contacts, original_full)
+                                caption_data["main_text"] = re.sub(contact_pattern, formatted_contacts, original_main)
+                except Exception as _e:
+                    logger.warning(f"Failed to append contact details to caption text: {_e}")
+
                 # Extract hashtags from the caption
                 hashtags = []
                 if "hashtags" in caption_data:
@@ -1300,7 +1371,9 @@ class AIPosterService:
                     "full_caption": caption_data.get("full_caption", ""),
                     "hashtags": all_hashtags[:15],  # Limit to 15 hashtags
                     "emoji": caption_data.get("emoji", ""),
-                    "call_to_action": caption_data.get("call_to_action", "")
+                    "call_to_action": caption_data.get("call_to_action", ""),
+                    "caption_source": "ai",
+                    "ai_generated": True
                 }
                 logger.info(f"Final caption result: {final_caption_result}")
                 return final_caption_result
@@ -1319,13 +1392,25 @@ class AIPosterService:
                 import random
                 selected_caption = random.choice(fallback_captions)
                 
+                # Add contact details to fallback caption if available
+                base_full = f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸"
+                if contact_info and company_name:
+                    contact_block = f"\n\n📞 Contact us for inquiries:\n{contact_info}"
+                    full_caption = f"{base_full}{contact_block}"
+                    caption_with_contact = f"{selected_caption}{contact_block}"
+                else:
+                    full_caption = base_full
+                    caption_with_contact = selected_caption
+
                 return {
                     "status": "success",
-                    "caption": selected_caption,
-                    "full_caption": f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸",
+                    "caption": caption_with_contact,
+                    "full_caption": full_caption,
                     "hashtags": ["#fashion", "#style", "#elegant", "#beautiful", "#textile", "#design", "#trendy", "#outfit", "#fashionista", "#styleinspo", "#ootd", "#fashionblogger", "#stylegoals", "#fashionlover", "#styletips"],
                     "emoji": "✨",
-                    "call_to_action": "✨ Shop now and elevate your style! ✨"
+                    "call_to_action": "✨ Shop now and elevate your style! ✨",
+                    "caption_source": "fallback",
+                    "ai_generated": False
                 }
                 
         except Exception as e:
@@ -1342,13 +1427,25 @@ class AIPosterService:
             import random
             selected_caption = random.choice(fallback_captions)
             
+            # Add contact details to exception fallback caption if available
+            base_full = f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸"
+            if contact_info and company_name:
+                contact_block = f"\n\n📞 Contact us for inquiries:\n{contact_info}"
+                full_caption = f"{base_full}{contact_block}"
+                caption_with_contact = f"{selected_caption}{contact_block}"
+            else:
+                full_caption = base_full
+                caption_with_contact = selected_caption
+
             return {
                 "status": "success",
-                "caption": selected_caption,
-                "full_caption": f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸",
+                "caption": caption_with_contact,
+                "full_caption": full_caption,
                 "hashtags": ["#fashion", "#style", "#elegant", "#beautiful", "#textile", "#design", "#trendy", "#outfit", "#fashionista", "#styleinspo", "#ootd", "#fashionblogger", "#stylegoals", "#fashionlover", "#styletips"],
                 "emoji": "✨",
-                "call_to_action": "✨ Shop now and elevate your style! ✨"
+                "call_to_action": "✨ Shop now and elevate your style! ✨",
+                "caption_source": "fallback",
+                "ai_generated": False
             }
     
     def is_available(self) -> bool:

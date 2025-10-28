@@ -42,13 +42,14 @@ class SimpleBrandingService:
             company_name = company_profile.company_name or ""
             contact_info = company_profile.get_contact_info()
             
-            # Build contact details text
+            # Build contact details text with proper formatting
             contact_details = []
             if contact_info.get('whatsapp'):
                 contact_details.append(f"📱 WhatsApp: {contact_info['whatsapp']}")
             if contact_info.get('email'):
                 contact_details.append(f"✉️ Email: {contact_info['email']}")
             
+            # Join with proper line breaks for better formatting
             contact_text = "\n".join(contact_details) if contact_details else ""
             
             # Create a comprehensive branding prompt

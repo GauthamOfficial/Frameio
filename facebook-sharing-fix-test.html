@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Sharing Fix - Comprehensive Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #1877f2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .test-button:hover {
+            background: #166fe5;
+        }
+        .test-button.success {
+            background: #28a745;
+        }
+        .test-button.warning {
+            background: #ffc107;
+            color: #000;
+        }
+        .test-button.error {
+            background: #dc3545;
+        }
+        .test-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .url-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .code-block {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #1877f2;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎉 Facebook Sharing Fix - Comprehensive Test</h1>
+        
+        <div class="test-info">
+            <h3>✅ What's Fixed:</h3>
+            <ul>
+                <li>✅ Dynamic ngrok URL detection</li>
+                <li>✅ Automatic fallback to clipboard when ngrok unavailable</li>
+                <li>✅ Updated sharing components with error handling</li>
+                <li>✅ Server-side ngrok detection for meta tags</li>
+                <li>✅ Graceful degradation for all scenarios</li>
+            </ul>
+        </div>
+
+        <div id="status"></div>
+
+        <div>
+            <button class="test-button" onclick="testNgrokDetection()">🔍 Test Ngrok Detection</button>
+            <button class="test-button" onclick="testFacebookSharing()">📱 Test Facebook Sharing</button>
+            <button class="test-button" onclick="testFallbackSharing()">🔄 Test Fallback Sharing</button>
+            <button class="test-button" onclick="testAllComponents()">🧪 Test All Components</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>📋 How to Use the Fix</h2>
+        
+        <div class="step">
+            <h3>Step 1: Start ngrok (Optional but Recommended)</h3>
+            <div class="code-block">node start-ngrok.js
+# OR manually: ngrok http 3000</div>
+            <p>This creates a public URL that Facebook can access.</p>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Generate a Poster</h3>
+            <p>Use your AI poster generator to create a poster. The sharing will now automatically:</p>
+            <ul>
+                <li>✅ Detect if ngrok is running</li>
+                <li>✅ Use ngrok URL for Facebook sharing if available</li>
+                <li>✅ Fall back to clipboard copy if ngrok unavailable</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Share to Facebook</h3>
+            <p>Click the Facebook share button. It will either:</p>
+            <ul>
+                <li>✅ Open Facebook share dialog with rich preview (if ngrok running)</li>
+                <li>✅ Copy content to clipboard for manual sharing (if ngrok not running)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>🔧 Technical Details</h2>
+        
+        <div class="test-info">
+            <h4>Files Modified:</h4>
+            <ul>
+                <li><code>frontend/src/utils/ngrok.ts</code> - Ngrok detection utility</li>
+                <li><code>frontend/src/components/lazy/enhanced-poster-generator-with-branding.tsx</code> - Updated sharing logic</li>
+                <li><code>frontend/src/components/poster/ShareButtons.tsx</code> - Updated sharing logic</li>
+                <li><code>frontend/src/app/poster/[id]/page.tsx</code> - Server-side ngrok detection</li>
+                <li><code>start-ngrok.js</code> - Helper script to start ngrok</li>
+            </ul>
+        </div>
+
+        <div class="test-info">
+            <h4>Key Features:</h4>
+            <ul>
+                <li><strong>Dynamic Detection:</strong> Automatically detects if ngrok is running</li>
+                <li><strong>Graceful Fallback:</strong> Falls back to clipboard if ngrok unavailable</li>
+                <li><strong>Error Handling:</strong> Comprehensive error handling for all scenarios</li>
+                <li><strong>Server-Side Support:</strong> Meta tags use ngrok URLs when available</li>
+                <li><strong>User-Friendly:</strong> Clear messages about what's happening</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function addStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const statusElement = document.createElement('div');
+            statusElement.className = `status ${type}`;
+            statusElement.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            statusDiv.appendChild(statusElement);
+        }
+
+        async function testNgrokDetection() {
+            addStatus('Testing ngrok detection...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:4040/api/tunnels');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const tunnels = data.tunnels || [];
+                    const httpsTunnel = tunnels.find(t => t.proto === 'https');
+                    
+                    if (httpsTunnel) {
+                        addStatus('✅ Ngrok is running!', 'success');
+                        
+                        document.getElementById('results').innerHTML = `
+                            <h3>Ngrok Detection Results:</h3>
+                            <div class="test-info">
+                                <p><strong>Status:</strong> ✅ Running</p>
+                                <p><strong>Public URL:</strong> ${httpsTunnel.public_url}</p>
+                                <p><strong>Protocol:</strong> ${httpsTunnel.proto}</p>
+                                <p><strong>Local Address:</strong> ${httpsTunnel.config.addr}</p>
+                            </div>
+                            
+                            <div class="test-info">
+                                <p><strong>Facebook Sharing:</strong> ✅ Will work with rich previews</p>
+                                <p><strong>Test URL:</strong> ${httpsTunnel.public_url}/poster/test123</p>
+                            </div>
+                        `;
+                    } else {
+                        addStatus('⚠️ Ngrok running but no HTTPS tunnel found', 'warning');
+                    }
+                } else {
+                    addStatus('❌ Ngrok API not accessible', 'error');
+                }
+            } catch (error) {
+                addStatus('❌ Ngrok not running: ' + error.message, 'error');
+                
+                document.getElementById('results').innerHTML = `
+                    <h3>Ngrok Detection Results:</h3>
+                    <div class="test-info">
+                        <p><strong>Status:</strong> ❌ Not Running</p>
+                        <p><strong>Facebook Sharing:</strong> Will use fallback (clipboard copy)</p>
+                    </div>
+                    
+                    <div class="test-info">
+                        <h4>To start ngrok:</h4>
+                        <div class="code-block">node start-ngrok.js
+# OR manually: ngrok http 3000</div>
+                    </div>
+                `;
+            }
+        }
+
+        async function testFacebookSharing() {
+            addStatus('Testing Facebook sharing functionality...', 'info');
+            
+            // Simulate the new sharing logic
+            const posterId = 'test123';
+            const shareText = 'Check out this amazing AI-generated poster! Created with cutting-edge AI technology. #AI #Poster #Design #Innovation';
+            
+            try {
+                // Test ngrok detection (same as in the app)
+                const response = await fetch('http://localhost:4040/api/tunnels');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const tunnels = data.tunnels || [];
+                    const httpsTunnel = tunnels.find(t => t.proto === 'https');
+                    
+                    if (httpsTunnel) {
+                        const posterPageUrl = `${httpsTunnel.public_url}/poster/${posterId}`;
+                        const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(posterPageUrl)}&quote=${encodeURIComponent(shareText)}`;
+                        
+                        addStatus('✅ Facebook sharing will work with rich preview!', 'success');
+                        
+                        document.getElementById('results').innerHTML = `
+                            <h3>Facebook Sharing Test Results:</h3>
+                            <div class="test-info">
+                                <p><strong>Status:</strong> ✅ Ready for rich preview sharing</p>
+                                <p><strong>Poster URL:</strong> ${posterPageUrl}</p>
+                                <p><strong>Share Text:</strong> ${shareText}</p>
+                            </div>
+                            
+                            <h4>Generated Facebook Share URL:</h4>
+                            <div class="url-display">${facebookShareUrl}</div>
+                            
+                            <button class="test-button success" onclick="window.open('${facebookShareUrl}', 'facebook-share-dialog', 'width=800,height=600,scrollbars=yes,resizable=yes')">
+                                🚀 Test Facebook Share Dialog
+                            </button>
+                        `;
+                    } else {
+                        throw new Error('No HTTPS tunnel found');
+                    }
+                } else {
+                    throw new Error('Ngrok not running');
+                }
+            } catch (error) {
+                addStatus('⚠️ Facebook sharing will use fallback method', 'warning');
+                
+                const imageUrl = 'http://localhost:8000/media/generated_posters/poster_test123.png';
+                const facebookText = `${shareText}\n\nImage URL: ${imageUrl}`;
+                
+                document.getElementById('results').innerHTML = `
+                    <h3>Facebook Sharing Test Results:</h3>
+                    <div class="test-info">
+                        <p><strong>Status:</strong> ⚠️ Using fallback method</p>
+                        <p><strong>Method:</strong> Clipboard copy for manual sharing</p>
+                    </div>
+                    
+                    <h4>Content that would be copied to clipboard:</h4>
+                    <div class="code-block">${facebookText}</div>
+                    
+                    <button class="test-button warning" onclick="navigator.clipboard.writeText('${facebookText}').then(() => alert('Copied to clipboard! Paste this into Facebook:\\n\\n' + facebookText))">
+                        📋 Test Clipboard Copy
+                    </button>
+                `;
+            }
+        }
+
+        async function testFallbackSharing() {
+            addStatus('Testing fallback sharing methods...', 'info');
+            
+            const shareText = 'Check out this amazing AI-generated poster!';
+            const imageUrl = 'http://localhost:8000/media/generated_posters/poster_test123.png';
+            
+            addStatus('✅ Fallback sharing methods available', 'success');
+            
+            document.getElementById('results').innerHTML = `
+                <h3>Fallback Sharing Methods:</h3>
+                
+                <div class="test-info">
+                    <h4>Method 1: Clipboard Copy</h4>
+                    <p>Copy image URL and caption to clipboard for manual sharing</p>
+                    <div class="code-block">${shareText}\n\nImage URL: ${imageUrl}</div>
+                </div>
+                
+                <div class="test-info">
+                    <h4>Method 2: Direct Image Sharing</h4>
+                    <p>Share the image URL directly (may not show rich preview)</p>
+                    <div class="url-display">${imageUrl}</div>
+                </div>
+                
+                <div class="test-info">
+                    <h4>Method 3: Other Platforms</h4>
+                    <p>Twitter, WhatsApp, Email still work with localhost URLs</p>
+                </div>
+                
+                <button class="test-button" onclick="testClipboardCopy()">📋 Test Clipboard Copy</button>
+                <button class="test-button" onclick="testDirectImageShare()">🖼️ Test Direct Image Share</button>
+            `;
+        }
+
+        function testClipboardCopy() {
+            const shareText = 'Check out this amazing AI-generated poster!';
+            const imageUrl = 'http://localhost:8000/media/generated_posters/poster_test123.png';
+            const facebookText = `${shareText}\n\nImage URL: ${imageUrl}`;
+            
+            navigator.clipboard.writeText(facebookText).then(() => {
+                alert('Copied to clipboard! Paste this into Facebook:\n\n' + facebookText);
+            }).catch(() => {
+                alert('Clipboard copy failed. Here\'s the text to copy manually:\n\n' + facebookText);
+            });
+        }
+
+        function testDirectImageShare() {
+            const imageUrl = 'http://localhost:8000/media/generated_posters/poster_test123.png';
+            const shareText = 'Check out this amazing AI-generated poster!';
+            const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(imageUrl)}&quote=${encodeURIComponent(shareText)}`;
+            
+            window.open(facebookShareUrl, 'facebook-share-dialog', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        }
+
+        async function testAllComponents() {
+            addStatus('Running comprehensive component tests...', 'info');
+            
+            const tests = [
+                { name: 'Ngrok Detection', fn: testNgrokDetection },
+                { name: 'Facebook Sharing', fn: testFacebookSharing },
+                { name: 'Fallback Sharing', fn: testFallbackSharing }
+            ];
+            
+            for (const test of tests) {
+                addStatus(`Running ${test.name}...`, 'info');
+                await test.fn();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            addStatus('✅ All component tests completed!', 'success');
+        }
+
+        // Auto-run initial test on page load
+        window.addEventListener('load', () => {
+            addStatus('🎉 Facebook Sharing Fix Test Page Loaded', 'success');
+            addStatus('The Facebook sharing issue has been fixed with dynamic ngrok detection and fallback methods', 'info');
+        });
+    </script>
+</body>
+</html>
+

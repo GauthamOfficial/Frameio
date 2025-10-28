@@ -53,3 +53,4 @@ if (Test-Path $exeFile) {
     Write-Host "Please install manually from: https://ngrok.com/download" -ForegroundColor Yellow
 }
 
+

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Set Tunnel URL</title>
+</head>
+<body>
+    <h1>Set Cloudflare Tunnel URL</h1>
+    <p>Click the button below to set your tunnel URL for Facebook sharing:</p>
+    <button onclick="setTunnelUrl()">Set Tunnel URL</button>
+    <p id="status"></p>
+    
+    <script>
+        function setTunnelUrl() {
+            const tunnelUrl = 'https://blah-literature-drives-hrs.trycloudflare.com';
+            localStorage.setItem('cloudflare-tunnel-url', tunnelUrl);
+            document.getElementById('status').innerHTML = '✅ Tunnel URL set! Now go back to your app and try Facebook sharing.';
+            console.log('✅ Cloudflare Tunnel URL set:', tunnelUrl);
+        }
+    </script>
+</body>
+</html>
+

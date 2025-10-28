@@ -15,6 +15,54 @@ A full-stack application built with Django backend and Next.js frontend, featuri
 - **AI Service**: NanoBanana API
 - **Testing**: Pytest (backend), Jest (frontend)
 
+## 📱 Social Media Sharing
+
+### Facebook Sharing Fix
+
+Facebook sharing now works correctly with automatic ngrok detection and fallback methods:
+
+#### Option 1: With ngrok (Requires Free Account)
+1. **Sign up for ngrok account:**
+   - Go to: https://dashboard.ngrok.com/signup
+   - Create a free account
+
+2. **Get your authtoken:**
+   - Go to: https://dashboard.ngrok.com/get-started/your-authtoken
+   - Copy your authtoken
+
+3. **Configure ngrok:**
+   ```bash
+   ngrok config add-authtoken YOUR_AUTHTOKEN_HERE
+   ```
+
+4. **Start ngrok:**
+   ```bash
+   ngrok http 3000
+   ```
+
+#### Option 2: With Cloudflare Tunnel (No Account Required - Recommended)
+1. **Start Cloudflare Tunnel:**
+   ```bash
+   node start-cloudflare-tunnel.js
+   # OR manually: cloudflared tunnel --url http://localhost:3000
+   ```
+
+2. **Generate and share posters** - Facebook will automatically use the tunnel URL for rich previews
+
+#### Option 3: Without Tunnel (Fallback Method)
+- Facebook sharing will automatically copy content to clipboard for manual sharing
+- Other platforms (Twitter, WhatsApp, Email) work normally
+
+#### Testing Facebook Sharing
+Open `facebook-sharing-fix-test.html` in your browser to test the sharing functionality.
+
+### Supported Platforms
+- ✅ **Facebook** - Rich previews with ngrok, clipboard fallback without
+- ✅ **Twitter** - Direct sharing with URLs
+- ✅ **WhatsApp** - Direct sharing with URLs  
+- ✅ **Email** - Direct sharing with URLs
+- ✅ **Instagram** - Clipboard copy (no direct API)
+
 ## 🚀 Quick Start
 
 ### Prerequisites

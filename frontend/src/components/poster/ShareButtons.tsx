@@ -48,7 +48,7 @@ export function ShareButtons({ poster, pageUrl }: ShareButtonsProps) {
     }
   }
 
-  const shareToSocialMedia = (platform: string) => {
+  const shareToSocialMedia = async (platform: string) => {
     const shareText = poster.full_caption
     const shareUrl = pageUrl
 
@@ -56,13 +56,54 @@ export function ShareButtons({ poster, pageUrl }: ShareButtonsProps) {
     
     switch (platform) {
       case 'facebook':
-        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`
-        window.open(
-          shareLink,
-          'facebook-share-dialog',
-          'width=800,height=600,scrollbars=yes,resizable=yes'
-        )
-        return
+        try {
+          // Import ngrok utility dynamically to avoid SSR issues
+          const { isAnyTunnelRunning } = await import('@/utils/ngrok')
+          
+          // Check if any tunnel is running for Facebook sharing
+          const tunnelRunning = await isAnyTunnelRunning()
+          
+          if (tunnelRunning) {
+            // Use the provided pageUrl (which should be ngrok URL if available)
+            shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`
+          } else {
+            // Fallback: Copy image URL and caption for manual sharing
+            const imageUrl = poster.image_url.startsWith('http') 
+              ? poster.image_url 
+              : `http://localhost:8000${poster.image_url}`
+            
+            // Create a better formatted Facebook post
+            const facebookText = `${shareText}\n\n🖼️ View the full poster: ${imageUrl}\n\n#AIPoster #Design #Innovation`
+            await copyToClipboard(facebookText, 'facebook')
+            
+            // Show a better formatted alert
+            const alertMessage = `📋 Copied to clipboard!\n\nPaste this into Facebook:\n\n${facebookText}\n\n💡 Tip: You can also download the image and upload it directly to Facebook for better results.`
+            alert(alertMessage)
+            return
+          }
+          
+          window.open(
+            shareLink,
+            'facebook-share-dialog',
+            'width=800,height=600,scrollbars=yes,resizable=yes'
+          )
+          return
+        } catch (error) {
+          console.error('Facebook sharing error:', error)
+          // Fallback to clipboard
+          const imageUrl = poster.image_url.startsWith('http') 
+            ? poster.image_url 
+            : `http://localhost:8000${poster.image_url}`
+          
+          // Create a better formatted Facebook post
+          const facebookText = `${shareText}\n\n🖼️ View the full poster: ${imageUrl}\n\n#AIPoster #Design #Innovation`
+          await copyToClipboard(facebookText, 'facebook')
+          
+          // Show a better formatted alert
+          const alertMessage = `📋 Copied to clipboard!\n\nPaste this into Facebook:\n\n${facebookText}\n\n💡 Tip: You can also download the image and upload it directly to Facebook for better results.`
+          alert(alertMessage)
+          return
+        }
       case 'twitter':
         shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
         break
