@@ -1,22 +1,34 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// This example protects all routes including api/trpc routes
-// Please edit this to allow other routes to be public as needed.
-// See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your Middleware
+// Clerk-protected routes (user routes only)
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
   '/ai-poster-generator(.*)',
   '/settings(.*)',
 ]);
 
+// Admin routes should be excluded from Clerk
+const isPublicRoute = createRouteMatcher([
+  '/admin(.*)',
+  '/api/admin(.*)',
+  '/',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+]);
+
 export default clerkMiddleware((auth, req) => {
-  if (isProtectedRoute(req)) auth().protect();
+  // Only protect non-admin routes
+  if (!isPublicRoute(req) && isProtectedRoute(req)) {
+    auth().protect();
+  }
 });
 
 export const config = {
-  // Protects all routes, including api/trpc routes
-  // Please edit this to allow other routes to be public as needed.
-  // See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your Middleware
-  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: [
+    // Skip Next.js internals and all static files
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 };
 

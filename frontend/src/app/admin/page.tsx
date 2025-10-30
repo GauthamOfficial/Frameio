@@ -1,327 +1,263 @@
-"use client"
+'use client';
 
-import { AdminErrorBoundary } from "@/components/common/error-boundary"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, SortableTableHead, Pagination, useDataTable } from "@/components/common"
-import { useApp } from "@/contexts/app-context"
-import { useOrganization } from "@/contexts/organization-context"
-import { useToastHelpers } from "@/components/common"
-import { useState } from "react"
-import { Users, Settings, BarChart3, Shield, Plus, Edit, Trash2 } from "lucide-react"
-import { ConfirmationModal } from "@/components/common"
+import { useState } from 'react';
+import { useAdminAuth } from '@/contexts/admin-auth-context';
+import { StatsCard } from '@/components/admin/StatsCard';
+import { AnalyticsChart } from '@/components/admin/AnalyticsChart';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { 
+  Users, 
+  Image, 
+  TrendingUp, 
+  Building2,
+  Activity,
+  Clock,
+  Shield,
+  Loader2,
+  AlertCircle
+} from 'lucide-react';
 
-interface User {
-  id: string
-  email: string
-  first_name: string
-  last_name: string
-  role: string
-  is_active: boolean
-  created_at: string
-}
+function AdminLoginForm() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAdminAuth();
 
-export default function AdminPage() {
-  const { isAuthenticated } = useApp()
-  const { userRole, permissions } = useOrganization()
-  const { showSuccess, showError } = useToastHelpers()
-  
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: "1",
-      email: "admin@example.com",
-      first_name: "Admin",
-      last_name: "User",
-      role: "Admin",
-      is_active: true,
-      created_at: "2024-01-01T00:00:00Z"
-    },
-    {
-      id: "2",
-      email: "designer@example.com",
-      first_name: "Designer",
-      last_name: "User",
-      role: "Designer",
-      is_active: true,
-      created_at: "2024-01-02T00:00:00Z"
-    }
-  ])
-  
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [userToDelete, setUserToDelete] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-  const {
-    data: paginatedUsers,
-    sort,
-    currentPage,
-    totalPages,
-    handleSort: handleSortInternal,
-    handlePageChange,
-  } = useDataTable({
-    data: users,
-    initialSort: { key: 'created_at', direction: 'desc' },
-    initialPageSize: 10,
-  })
-
-  // Wrapper function to convert string to keyof User
-  const handleSort = (key: string) => {
-    handleSortInternal(key as keyof User)
-  }
-
-  // Check if user has admin permissions
-  const isAdmin = userRole === 'Admin' || permissions.includes('admin_access')
-  
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <p className="text-muted-foreground">Please log in to access the admin panel.</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">You don&apos;t have permission to access the admin panel.</p>
-        </div>
-      </div>
-    )
-  }
-
-  const handleDeleteUser = (user: User) => {
-    setUserToDelete(user)
-    setShowDeleteModal(true)
-  }
-
-  const confirmDeleteUser = async () => {
-    if (!userToDelete) return
-
-    setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const result = await login(username, password);
       
-      setUsers(prev => prev.filter(u => u.id !== userToDelete.id))
-      showSuccess("User deleted successfully")
-      setShowDeleteModal(false)
-      setUserToDelete(null)
-    } catch {
-      showError("Failed to delete user")
+      if (!result.success) {
+        setError(result.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Login error:', err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
-
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'Admin':
-        return 'destructive'
-      case 'Manager':
-        return 'default'
-      case 'Designer':
-        return 'secondary'
-      default:
-        return 'outline'
-    }
-  }
+  };
 
   return (
-    <AdminErrorBoundary>
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-            <p className="text-muted-foreground">
-              Manage users, settings, and organization details.
-            </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Shield className="h-8 w-8 text-primary" />
+            </div>
           </div>
-          <Button className="bg-textile-accent">
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{users.length}</div>
-              <p className="text-xs text-muted-foreground">
-                +2 from last month
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {users.filter(u => u.is_active).length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {Math.round((users.filter(u => u.is_active).length / users.length) * 100)}% of total
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Admins</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {users.filter(u => u.role === 'Admin').length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Administrative users
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Designers</CardTitle>
-              <Settings className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {users.filter(u => u.role === 'Designer').length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Design team members
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Users Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Users Management</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableTableHead
-                    sortKey="first_name"
-                    currentSort={sort}
-                    onSort={handleSort}
-                  >
-                    Name
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="email"
-                    currentSort={sort}
-                    onSort={handleSort}
-                  >
-                    Email
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="role"
-                    currentSort={sort}
-                    onSort={handleSort}
-                  >
-                    Role
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="is_active"
-                    currentSort={sort}
-                    onSort={handleSort}
-                  >
-                    Status
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="created_at"
-                    currentSort={sort}
-                    onSort={handleSort}
-                  >
-                    Created
-                  </SortableTableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.first_name} {user.last_name}
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.is_active ? 'default' : 'secondary'}>
-                        {user.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user)}
-                          disabled={user.id === "1"} // Prevent deleting the first admin
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            
-            {totalPages > 1 && (
-              <div className="mt-4">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
+          <CardTitle className="text-2xl font-bold">Admin Dashboard</CardTitle>
+          <CardDescription>
+            Enter your credentials to access the admin panel
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                <AlertCircle className="h-4 w-4" />
+                <span>{error}</span>
               </div>
             )}
-          </CardContent>
-        </Card>
+            
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoComplete="username"
+                disabled={isLoading}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                disabled={isLoading}
+              />
+            </div>
 
-        {/* Delete Confirmation Modal */}
-        <ConfirmationModal
-          isOpen={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          onConfirm={confirmDeleteUser}
-          title="Delete User"
-          message={`Are you sure you want to delete ${userToDelete?.first_name} ${userToDelete?.last_name}? This action cannot be undone.`}
-          confirmText="Delete"
-          cancelText="Cancel"
-          variant="destructive"
-          isLoading={isLoading}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <p>Protected admin area</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AdminDashboard() {
+  // Mock data - Replace with real data from your API
+  const stats = {
+    totalUsers: 1247,
+    totalPosts: 8934,
+    activeCompanies: 156,
+    averageEngagement: '8.2%',
+  };
+
+  const aspectRatioData = [
+    { label: '1:1 Square', value: 450 },
+    { label: '16:9 Landscape', value: 320 },
+    { label: '9:16 Portrait', value: 280 },
+    { label: '4:5 Instagram', value: 210 },
+    { label: '2:3 Pinterest', value: 150 },
+  ];
+
+  const topCompanies = [
+    { label: 'Fashion Textiles Co.', value: 234 },
+    { label: 'Modern Fabrics Ltd.', value: 198 },
+    { label: 'Elite Designs Inc.', value: 176 },
+    { label: 'Textile Masters', value: 145 },
+    { label: 'Fabric Innovations', value: 132 },
+  ];
+
+  const recentActivity = [
+    { user: 'John Doe', action: 'Generated AI poster', time: '2 minutes ago' },
+    { user: 'Jane Smith', action: 'Created new branding kit', time: '15 minutes ago' },
+    { user: 'Mike Johnson', action: 'Updated company profile', time: '1 hour ago' },
+    { user: 'Sarah Williams', action: 'Downloaded 5 designs', time: '2 hours ago' },
+    { user: 'Tom Brown', action: 'Invited team member', time: '3 hours ago' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+        <p className="text-muted-foreground">
+          Monitor platform metrics and user activity
+        </p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title="Total Users"
+          value={stats.totalUsers.toLocaleString()}
+          description="+12% from last month"
+          icon={Users}
+          trend={{ value: '12%', isPositive: true }}
+        />
+        <StatsCard
+          title="AI Posts Generated"
+          value={stats.totalPosts.toLocaleString()}
+          description="+23% from last month"
+          icon={Image}
+          trend={{ value: '23%', isPositive: true }}
+        />
+        <StatsCard
+          title="Active Companies"
+          value={stats.activeCompanies}
+          description="+8 new this month"
+          icon={Building2}
+          trend={{ value: '5.4%', isPositive: true }}
+        />
+        <StatsCard
+          title="Avg. Engagement"
+          value={stats.averageEngagement}
+          description="+2.1% from last week"
+          icon={TrendingUp}
+          trend={{ value: '2.1%', isPositive: true }}
         />
       </div>
-    </AdminErrorBoundary>
-  )
+
+      {/* Charts Row */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <AnalyticsChart
+          title="Most Used Aspect Ratios"
+          description="Popular poster dimensions"
+          data={aspectRatioData}
+        />
+        <AnalyticsChart
+          title="Most Active Textile Companies"
+          description="By posts generated"
+          data={topCompanies}
+        />
+      </div>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Latest user actions on the platform</CardDescription>
+            </div>
+            <Activity className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentActivity.map((activity, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                    {activity.user.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{activity.user}</p>
+                    <p className="text-sm text-muted-foreground">{activity.action}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  {activity.time}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  const { isAuthenticated } = useAdminAuth();
+
+  // Show login form if not authenticated, otherwise show dashboard
+  if (!isAuthenticated) {
+    return <AdminLoginForm />;
+  }
+
+  return <AdminDashboard />;
 }

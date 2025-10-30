@@ -52,6 +52,20 @@ const nextConfig: NextConfig = {
             key: 'X-XSS-Protection',
             value: '1; mode=block',
           },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com https://sound-mule-24.clerk.accounts.dev",
+              "worker-src 'self' blob:", // Allow blob workers for Clerk
+              "child-src 'self' blob:",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://clerk.com https://*.clerk.com https://sound-mule-24.clerk.accounts.dev http://localhost:8000 ws://localhost:3000",
+              "frame-src 'self' https://clerk.com https://*.clerk.com",
+            ].join('; '),
+          },
         ],
       },
     ]
