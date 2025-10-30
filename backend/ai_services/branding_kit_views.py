@@ -129,23 +129,22 @@ def generate_logo(request):
 def generate_color_palette(request):
     """
     POST /api/ai/branding-kit/colors/
-    Generate color palette from text prompt
+    Generate color palette from a logo image (preferred) or from text prompt
     
     Body: {
-        "prompt": "describe your brand",
-        "num_colors": 5  // Optional, default 5
+        // Preferred input:
+        "logo": "<base64 image>",
+        "num_colors": 5,
+        
+        // Backward-compatible fallback:
+        "prompt": "describe your brand"
     }
     """
     try:
         data = request.data
         prompt = data.get('prompt')
+        logo_b64 = data.get('logo') or data.get('logo_base64')
         num_colors = data.get('num_colors', 5)
-        
-        if not prompt:
-            return Response({
-                'success': False,
-                'error': 'Prompt is required'
-            }, status=status.HTTP_400_BAD_REQUEST)
         
         if not branding_kit_service.is_available():
             return Response({
@@ -153,8 +152,17 @@ def generate_color_palette(request):
                 'error': 'Branding kit service not available'
             }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         
-        # Generate the color palette
-        result = branding_kit_service.generate_color_palette(prompt, num_colors)
+        # Prefer extracting from provided logo if present
+        if logo_b64:
+            result = branding_kit_service.generate_color_palette_from_logo(logo_b64, num_colors)
+        else:
+            if not prompt:
+                return Response({
+                    'success': False,
+                    'error': 'Provide either logo (base64) or prompt'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            # Fallback to prompt-based color palette
+            result = branding_kit_service.generate_color_palette(prompt, num_colors)
         
         if result.get('success'):
             return Response({
