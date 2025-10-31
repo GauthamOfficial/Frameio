@@ -1,90 +1,78 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
+import { API_BASE_URL } from '@/lib/config';
 import { UserTable, User } from '@/components/admin/UserTable';
+import { UserDetailsModal } from '@/components/admin/UserDetailsModal';
+import { UserEditModal } from '@/components/admin/UserEditModal';
+import { UserDeleteDialog } from '@/components/admin/UserDeleteDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Download } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminUsersPage() {
+  const { getToken } = useAuth();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Modal states
+  const [viewUser, setViewUser] = useState<User | null>(null);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
 
-  // Mock data - Replace with real data from your API
-  const [users] = useState<User[]>([
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john.doe@fashiontextiles.com',
-      company: 'Fashion Textiles Co.',
-      signupDate: '2024-01-15',
-      lastActivity: '2 hours ago',
-      status: 'active',
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane.smith@modernfabrics.com',
-      company: 'Modern Fabrics Ltd.',
-      signupDate: '2024-01-20',
-      lastActivity: '1 day ago',
-      status: 'active',
-    },
-    {
-      id: '3',
-      name: 'Mike Johnson',
-      email: 'mike.j@elitedesigns.com',
-      company: 'Elite Designs Inc.',
-      signupDate: '2024-02-05',
-      lastActivity: '5 minutes ago',
-      status: 'active',
-    },
-    {
-      id: '4',
-      name: 'Sarah Williams',
-      email: 'sarah.w@textilemasters.com',
-      company: 'Textile Masters',
-      signupDate: '2024-02-10',
-      lastActivity: '3 days ago',
-      status: 'inactive',
-    },
-    {
-      id: '5',
-      name: 'Tom Brown',
-      email: 'tom.brown@fabricinnovations.com',
-      company: 'Fabric Innovations',
-      signupDate: '2024-02-15',
-      lastActivity: '1 week ago',
-      status: 'suspended',
-    },
-    {
-      id: '6',
-      name: 'Emily Davis',
-      email: 'emily.d@cottonworks.com',
-      company: 'Cotton Works',
-      signupDate: '2024-03-01',
-      lastActivity: '30 minutes ago',
-      status: 'active',
-    },
-    {
-      id: '7',
-      name: 'David Wilson',
-      email: 'david.w@silkroad.com',
-      company: 'Silk Road Textiles',
-      signupDate: '2024-03-05',
-      lastActivity: '2 days ago',
-      status: 'active',
-    },
-    {
-      id: '8',
-      name: 'Lisa Anderson',
-      email: 'lisa.a@woolcraft.com',
-      company: 'Wool Craft',
-      signupDate: '2024-03-10',
-      lastActivity: '4 hours ago',
-      status: 'active',
-    },
-  ]);
+  useEffect(() => {
+    let isMounted = true;
+    async function loadUsers() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const token = (await getToken()) || 'test_clerk_token';
+        const devHeaders = process.env.NODE_ENV !== 'production'
+          ? { 
+              'X-Dev-User-Id': '684af5c8-5dd6-4c20-911c-3c8c39a5ca86', 
+              'X-Dev-Org-Id': '4fc5b2aa-031b-46be-a723-0e5d5b0f7ddb' 
+            }
+          : {};
+        const res = await fetch(`${API_BASE_URL}/api/users/`, {
+          cache: 'no-store',
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            ...devHeaders
+          }
+        });
+        if (!res.ok) throw new Error('Failed to fetch users');
+        const data = await res.json();
+        if (!isMounted) return;
+        const list = Array.isArray(data) ? data : data?.results || [];
+        // Best-effort mapping to table User shape
+        const mapped: User[] = list.map((u: any) => ({
+          id: String(u.id ?? u.uuid ?? u.pk ?? Math.random()),
+          name: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.name || u.username || u.email || 'Unknown',
+          email: u.email || u.username || '',
+          company: u.organization?.name || u.company?.name || u.company || '',
+          signupDate: u.date_joined || u.created_at || '',
+          lastActivity: u.last_login || u.last_activity || '',
+          status: (u.status || u.is_active ? (u.is_active ? 'active' : 'inactive') : 'active') as User['status']
+        }));
+        setUsers(mapped);
+      } catch (e: any) {
+        if (isMounted) setError(e?.message || 'Failed to load users');
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    loadUsers();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredUsers = users.filter(
     (user) =>
@@ -94,23 +82,94 @@ export default function AdminUsersPage() {
   );
 
   const handleView = (user: User) => {
-    console.log('View user:', user);
-    // Implement view user details modal
+    setViewUser(user);
   };
 
   const handleEdit = (user: User) => {
-    console.log('Edit user:', user);
-    // Implement edit user modal
+    setEditUser(user);
   };
 
   const handleDelete = (user: User) => {
-    console.log('Delete user:', user);
-    // Implement delete confirmation
+    setDeleteUser(user);
+  };
+
+  const handleSaveUser = async (userId: string, updates: Partial<User>) => {
+    const token = (await getToken()) || 'test_clerk_token';
+    const devHeaders = process.env.NODE_ENV !== 'production'
+      ? { 
+          'X-Dev-User-Id': '684af5c8-5dd6-4c20-911c-3c8c39a5ca86', 
+          'X-Dev-Org-Id': '4fc5b2aa-031b-46be-a723-0e5d5b0f7ddb' 
+        }
+      : {};
+    
+    const res = await fetch(`${API_BASE_URL}/api/users/${userId}/`, {
+      method: 'PATCH',
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...devHeaders
+      },
+      body: JSON.stringify(updates)
+    });
+
+    if (!res.ok) throw new Error('Failed to update user');
+
+    // Update local state
+    setUsers(users.map(u => u.id === userId ? { ...u, ...updates } : u));
+    
+    toast({
+      title: 'Success',
+      description: 'User updated successfully',
+    });
+  };
+
+  const handleConfirmDelete = async (userId: string) => {
+    const token = (await getToken()) || 'test_clerk_token';
+    const devHeaders = process.env.NODE_ENV !== 'production'
+      ? { 
+          'X-Dev-User-Id': '684af5c8-5dd6-4c20-911c-3c8c39a5ca86', 
+          'X-Dev-Org-Id': '4fc5b2aa-031b-46be-a723-0e5d5b0f7ddb' 
+        }
+      : {};
+    
+    const res = await fetch(`${API_BASE_URL}/api/users/${userId}/`, {
+      method: 'DELETE',
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        ...devHeaders
+      }
+    });
+
+    if (!res.ok) throw new Error('Failed to delete user');
+
+    // Update local state
+    setUsers(users.filter(u => u.id !== userId));
+    
+    toast({
+      title: 'Success',
+      description: 'User deleted successfully',
+    });
   };
 
   const handleExport = () => {
-    console.log('Export users data');
-    // Implement CSV export
+    // Export users to CSV
+    const csv = [
+      ['Name', 'Email', 'Company', 'Signup Date', 'Last Activity', 'Status'].join(','),
+      ...users.map(u => [u.name, u.email, u.company, u.signupDate, u.lastActivity, u.status].join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `users-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: 'Success',
+      description: 'Users exported to CSV',
+    });
   };
 
   return (
@@ -139,8 +198,8 @@ export default function AdminUsersPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Users</CardDescription>
-            <CardTitle className="text-3xl">{users.length}</CardTitle>
+          <CardDescription>Total Users</CardDescription>
+          <CardTitle className="text-3xl">{users.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -190,14 +249,42 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
-          <UserTable
-            users={filteredUsers}
-            onView={handleView}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          {error && (
+            <div className="mb-4 text-sm text-red-600">{error}</div>
+          )}
+          {isLoading ? (
+            <div className="text-sm text-muted-foreground">Loading users...</div>
+          ) : (
+            <UserTable
+              users={filteredUsers}
+              onView={handleView}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <UserDetailsModal
+        user={viewUser}
+        open={!!viewUser}
+        onOpenChange={(open) => !open && setViewUser(null)}
+      />
+      
+      <UserEditModal
+        user={editUser}
+        open={!!editUser}
+        onOpenChange={(open) => !open && setEditUser(null)}
+        onSave={handleSaveUser}
+      />
+      
+      <UserDeleteDialog
+        user={deleteUser}
+        open={!!deleteUser}
+        onOpenChange={(open) => !open && setDeleteUser(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

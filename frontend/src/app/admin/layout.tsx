@@ -4,6 +4,7 @@ import { AdminAuthProvider } from '@/contexts/admin-auth-context';
 import { Sidebar } from '@/components/admin/Sidebar';
 import { Navbar } from '@/components/admin/Navbar';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
+import { Toaster } from '@/components/ui/toaster';
 import { Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -52,6 +53,7 @@ export default function AdminLayout({
   return (
     <AdminAuthProvider>
       <AdminLayoutContent>{children}</AdminLayoutContent>
+      <Toaster />
     </AdminAuthProvider>
   );
 }

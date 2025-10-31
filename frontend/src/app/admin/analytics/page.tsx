@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
+import { API_BASE_URL } from '@/lib/config';
 import { StatsCard } from '@/components/admin/StatsCard';
 import { AnalyticsChart } from '@/components/admin/AnalyticsChart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,47 +20,89 @@ import {
 import { Badge } from '@/components/ui/badge';
 
 export default function AdminAnalyticsPage() {
+  const { getToken } = useAuth();
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalRevenue, setTotalRevenue] = useState<string>('');
+  const [totalViews, setTotalViews] = useState<number>(0);
+  const [conversionRate, setConversionRate] = useState<string>('');
+  const [avgSessionTime, setAvgSessionTime] = useState<string>('');
+  const [userGrowthData, setUserGrowthData] = useState<{ label: string; value: number }[]>([]);
+  const [postGenerationData, setPostGenerationData] = useState<{ label: string; value: number }[]>([]);
+  const [topFeatures, setTopFeatures] = useState<{ name: string; usage: number; growth?: string }[]>([]);
+  const [deviceBreakdown, setDeviceBreakdown] = useState<{ label: string; value: number }[]>([]);
 
-  // Mock analytics data
-  const overviewStats = {
-    totalRevenue: '$12,450',
-    totalViews: 45678,
-    conversionRate: '3.2%',
-    avgSessionTime: '4m 32s',
-  };
+  useEffect(() => {
+    let isMounted = true;
+    async function loadAnalytics() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const token = (await getToken()) || 'test_clerk_token';
+        const devHeaders = process.env.NODE_ENV !== 'production'
+          ? { 
+              'X-Dev-User-Id': '684af5c8-5dd6-4c20-911c-3c8c39a5ca86', 
+              'X-Dev-Org-Id': '4fc5b2aa-031b-46be-a723-0e5d5b0f7ddb' 
+            }
+          : {};
+        const res = await fetch(`${API_BASE_URL}/api/ai/analytics/`, { 
+          cache: 'no-store', 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            ...devHeaders
+          } 
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!isMounted) return;
+          // Best-effort mapping
+          if (data) {
+            if (data.total_revenue || data.revenue) setTotalRevenue(String(data.total_revenue ?? data.revenue));
+            if (data.total_views || data.views) setTotalViews(Number(data.total_views ?? data.views ?? 0));
+            if (data.conversion_rate || data.conversion) setConversionRate(String(data.conversion_rate ?? data.conversion));
+            if (data.avg_session_time || data.average_session) setAvgSessionTime(String(data.avg_session_time ?? data.average_session));
 
-  const userGrowthData = [
-    { label: 'Jan', value: 120 },
-    { label: 'Feb', value: 150 },
-    { label: 'Mar', value: 180 },
-    { label: 'Apr', value: 220 },
-    { label: 'May', value: 280 },
-    { label: 'Jun', value: 340 },
-  ];
-
-  const postGenerationData = [
-    { label: 'Jan', value: 450 },
-    { label: 'Feb', value: 680 },
-    { label: 'Mar', value: 820 },
-    { label: 'Apr', value: 950 },
-    { label: 'May', value: 1200 },
-    { label: 'Jun', value: 1450 },
-  ];
-
-  const topFeatures = [
-    { name: 'AI Poster Generator', usage: 2340, growth: '+23%' },
-    { name: 'Branding Kit', usage: 1890, growth: '+18%' },
-    { name: 'Template Library', usage: 1456, growth: '+12%' },
-    { name: 'Collaboration Tools', usage: 987, growth: '+8%' },
-    { name: 'Export & Download', usage: 756, growth: '+15%' },
-  ];
-
-  const deviceBreakdown = [
-    { label: 'Desktop', value: 65 },
-    { label: 'Mobile', value: 25 },
-    { label: 'Tablet', value: 10 },
-  ];
+            if (Array.isArray(data.user_growth)) {
+              setUserGrowthData(
+                data.user_growth
+                  .filter((d: any) => d && (d.label || d.month) && (d.value ?? d.count) !== undefined)
+                  .map((d: any) => ({ label: d.label ?? d.month, value: d.value ?? d.count }))
+              );
+            }
+            if (Array.isArray(data.post_generation)) {
+              setPostGenerationData(
+                data.post_generation
+                  .filter((d: any) => d && (d.label || d.month) && (d.value ?? d.count) !== undefined)
+                  .map((d: any) => ({ label: d.label ?? d.month, value: d.value ?? d.count }))
+              );
+            }
+            if (Array.isArray(data.top_features)) {
+              setTopFeatures(
+                data.top_features
+                  .filter((f: any) => f && (f.name || f.feature))
+                  .map((f: any) => ({ name: f.name ?? f.feature, usage: f.usage ?? f.count ?? 0, growth: f.growth }))
+              );
+            }
+            if (Array.isArray(data.device_breakdown)) {
+              setDeviceBreakdown(
+                data.device_breakdown
+                  .filter((d: any) => d && d.label && (d.value ?? d.percent) !== undefined)
+                  .map((d: any) => ({ label: d.label, value: d.value ?? d.percent }))
+              );
+            }
+          }
+        }
+      } catch (e: any) {
+        if (isMounted) setError(e?.message || 'Failed to load analytics');
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    loadAnalytics();
+    return () => { isMounted = false; };
+  }, [timeRange]);
 
   return (
     <div className="space-y-6">
@@ -85,50 +129,54 @@ export default function AdminAnalyticsPage() {
         </div>
       </div>
 
-      {/* Overview Stats */}
+      {/* Overview Stats (show only available values) */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatsCard
           title="Total Revenue"
-          value={overviewStats.totalRevenue}
-          description="This month"
+          value={totalRevenue || '-'}
+          description=""
           icon={DollarSign}
-          trend={{ value: '12.5%', isPositive: true }}
+          trend={undefined}
         />
         <StatsCard
           title="Total Views"
-          value={overviewStats.totalViews.toLocaleString()}
-          description="Page views this month"
+          value={totalViews ? totalViews.toLocaleString() : '-'}
+          description=""
           icon={Eye}
-          trend={{ value: '8.2%', isPositive: true }}
+          trend={undefined}
         />
         <StatsCard
           title="Conversion Rate"
-          value={overviewStats.conversionRate}
-          description="Trial to paid"
+          value={conversionRate || '-'}
+          description=""
           icon={TrendingUp}
-          trend={{ value: '0.5%', isPositive: true }}
+          trend={undefined}
         />
         <StatsCard
           title="Avg. Session Time"
-          value={overviewStats.avgSessionTime}
-          description="Per user session"
+          value={avgSessionTime || '-'}
+          description=""
           icon={Users}
-          trend={{ value: '12s', isPositive: true }}
+          trend={undefined}
         />
       </div>
 
       {/* Growth Charts */}
       <div className="grid gap-4 md:grid-cols-2">
-        <AnalyticsChart
-          title="User Growth"
-          description="New users per month"
-          data={userGrowthData}
-        />
-        <AnalyticsChart
-          title="Post Generation"
-          description="AI posts created per month"
-          data={postGenerationData}
-        />
+        {userGrowthData.length > 0 && (
+          <AnalyticsChart
+            title="User Growth"
+            description="New users per month"
+            data={userGrowthData}
+          />
+        )}
+        {postGenerationData.length > 0 && (
+          <AnalyticsChart
+            title="Post Generation"
+            description="AI posts created per month"
+            data={postGenerationData}
+          />
+        )}
       </div>
 
       {/* Feature Usage & Device Breakdown */}
@@ -152,9 +200,11 @@ export default function AdminAnalyticsPage() {
                       {feature.usage.toLocaleString()} uses
                     </p>
                   </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {feature.growth}
-                  </Badge>
+                  {feature.growth && (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      {feature.growth}
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
@@ -162,11 +212,13 @@ export default function AdminAnalyticsPage() {
         </Card>
 
         {/* Device Breakdown */}
-        <AnalyticsChart
-          title="Device Breakdown"
-          description="User device distribution (%)"
-          data={deviceBreakdown}
-        />
+        {deviceBreakdown.length > 0 && (
+          <AnalyticsChart
+            title="Device Breakdown"
+            description="User device distribution (%)"
+            data={deviceBreakdown}
+          />
+        )}
       </div>
 
       {/* Google Analytics Integration Placeholder */}
@@ -191,6 +243,12 @@ export default function AdminAnalyticsPage() {
               Connect Google Analytics
             </Button>
           </div>
+          {error && (
+            <div className="mt-4 text-sm text-red-600">{error}</div>
+          )}
+          {isLoading && (
+            <div className="mt-2 text-sm text-muted-foreground">Loading analytics...</div>
+          )}
         </CardContent>
       </Card>
     </div>
