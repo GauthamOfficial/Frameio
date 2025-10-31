@@ -540,10 +540,74 @@ class BrandingKitService:
             Dict containing complete branding kit
         """
         if not self.client:
-            return {
-                'success': False,
-                'error': 'Gemini client not available'
-            }
+            # Graceful fallback: generate a simple placeholder logo and palette
+            try:
+                from PIL import Image as PILImage
+                from PIL import ImageDraw, ImageFont
+                # Create a simple placeholder logo (512x512) with first letter
+                canvas_size = 512
+                bg_color = (240, 240, 240)
+                text_color = (26, 26, 26)
+                img = PILImage.new('RGB', (canvas_size, canvas_size), color=bg_color)
+                draw = ImageDraw.Draw(img)
+                letter = (prompt.strip()[:1] or 'F').upper()
+                try:
+                    font = ImageFont.truetype("arial.ttf", 220)
+                except Exception:
+                    try:
+                        font = ImageFont.truetype("Arial.ttf", 220)
+                    except Exception:
+                        font = ImageFont.load_default()
+                bbox = draw.textbbox((0, 0), letter, font=font)
+                text_w = bbox[2] - bbox[0]
+                text_h = bbox[3] - bbox[1]
+                draw.text(((canvas_size - text_w) / 2, (canvas_size - text_h) / 2), letter, fill=text_color, font=font)
+
+                buffered_logo = BytesIO()
+                img.save(buffered_logo, format="PNG")
+                logo_b64 = base64.b64encode(buffered_logo.getvalue()).decode()
+
+                palette_result = self.generate_color_palette_from_logo(logo_b64, 5, title=prompt)
+                if not palette_result.get('success'):
+                    # Fallback to programmatic default palette
+                    prog_palette = self._create_programmatic_palette(['blue', 'green', 'purple', 'orange', 'pink'], [], [])
+                    buffered = BytesIO()
+                    prog_palette.save(buffered, format="PNG")
+                    palette_b64 = base64.b64encode(buffered.getvalue()).decode()
+                    palette_payload = {
+                        'data': palette_b64,
+                        'format': 'PNG',
+                        'width': prog_palette.width,
+                        'height': prog_palette.height,
+                        'colors': ['#0000FF', '#00FF00', '#800080', '#FFA500', '#FFC0CB'],
+                    }
+                else:
+                    palette_payload = palette_result['palette']
+
+                return {
+                    'success': True,
+                    'branding_kit': {
+                        'logo': {
+                            'data': logo_b64,
+                            'format': 'PNG',
+                            'width': img.width,
+                            'height': img.height,
+                        },
+                        'color_palette': palette_payload,
+                    },
+                    'prompt': prompt,
+                    'style': style,
+                    'used_colors': palette_payload.get('colors', []),
+                    'generated_at': str(os.getenv('TIMESTAMP', 'fallback')),
+                    'fallback': True,
+                    'message': 'Generated using local fallback (Gemini unavailable)'
+                }
+            except Exception as e:
+                logger.error(f"Fallback branding kit generation failed: {str(e)}")
+                return {
+                    'success': False,
+                    'error': 'Gemini client not available and fallback failed'
+                }
         
         try:
             # Generate logo
