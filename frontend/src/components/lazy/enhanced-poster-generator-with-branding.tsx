@@ -273,7 +273,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
       // Get authentication token
       const token = await getToken()
-      const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {}
+      const authHeaders: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {}
       
       // Multitenancy: pass organization context if available
       try {
@@ -308,32 +308,73 @@ export default function EnhancedPosterGeneratorWithBranding() {
       // Helper to try same-origin first (so Next.js rewrites apply), then fall back
       const fetchWithFallback = async (path: string, init: RequestInit) => {
         let lastErr: unknown = null
+        let lastResponse: Response | null = null
 
         // 1) Try same-origin relative path (leverages Next.js rewrites)
         try {
           const controller = new AbortController()
           const localTimeout = setTimeout(() => controller.abort(), 180000)
-          const res = await fetch(path, { ...init, signal: controller.signal })
+          // For relative paths, same-origin mode (Next.js rewrite handles proxy)
+          const relativeInit = { ...init, signal: controller.signal }
+          // Remove mode if present (not needed for same-origin)
+          if ('mode' in relativeInit && relativeInit.mode === 'cors') {
+            delete relativeInit.mode
+          }
+          const res = await fetch(path, relativeInit)
           clearTimeout(localTimeout)
           if (res.ok) return res
+          // Store last non-ok response for better error reporting
+          lastResponse = res
+          // If we got a response, try to extract error details before trying fallbacks
+          if (res.status >= 400 && res.status < 500) {
+            // Client error (4xx) - don't try fallbacks, return this response
+            return res
+          }
         } catch (e) {
           lastErr = e
+          // If it's an AbortError, preserve it but continue trying
+          if (e instanceof DOMException && e.name === 'AbortError') {
+            lastErr = new Error('Request timed out after 180 seconds')
+          } else if (e instanceof TypeError && e.message.includes('fetch')) {
+            // Network error - will try fallbacks
+            console.warn('Relative path fetch failed, trying absolute URLs:', e.message)
+          }
         }
 
-        // 2) Try absolute bases as fallbacks
+        // 2) Try absolute bases as fallbacks (only if relative path failed completely)
         for (const base of fallbackBases) {
           try {
             const controller = new AbortController()
             const localTimeout = setTimeout(() => controller.abort(), 180000)
-            const res = await fetch(`${base}${path}`, { ...init, signal: controller.signal })
+            // For absolute URLs, ensure CORS mode is set
+            const absoluteInit = { ...init, signal: controller.signal, mode: 'cors' as RequestMode }
+            const res = await fetch(`${base}${path}`, absoluteInit)
             clearTimeout(localTimeout)
             if (res.ok) return res
+            // Store last non-ok response
+            lastResponse = res
+            // If we got a client error, return it immediately
+            if (res.status >= 400 && res.status < 500) {
+              return res
+            }
           } catch (e) {
             lastErr = e
+            if (e instanceof DOMException && e.name === 'AbortError') {
+              lastErr = new Error('Request timed out after 180 seconds')
+            }
           }
         }
-        if (lastErr) throw lastErr
-        throw new Error('Network request failed')
+        
+        // If we have a response (even if not ok), return it so the caller can handle it
+        if (lastResponse) {
+          return lastResponse
+        }
+        
+        // Only throw if all attempts failed completely
+        if (lastErr instanceof Error) {
+          throw lastErr
+        }
+        throw new Error(lastErr ? `Network request failed: ${String(lastErr)}` : 'Network request failed - backend may be unavailable')
       }
 
       if (uploadedImage) {
@@ -349,9 +390,8 @@ export default function EnhancedPosterGeneratorWithBranding() {
           headers: {
             Accept: 'application/json',
             ...authHeaders,
-          },
+          } as HeadersInit,
           body: formData,
-          mode: 'cors',
         })
       } else {
         // Generate poster from text only
@@ -361,12 +401,11 @@ export default function EnhancedPosterGeneratorWithBranding() {
             'Content-Type': 'application/json',
             Accept: 'application/json',
             ...authHeaders,
-          },
+          } as HeadersInit,
           body: JSON.stringify({
             prompt: prompt,
             aspect_ratio: aspectRatio,
           }),
-          mode: 'cors',
         })
       }
 
@@ -374,14 +413,79 @@ export default function EnhancedPosterGeneratorWithBranding() {
       
       if (!response.ok) {
         let message = `HTTP ${response.status}`
+        let errorData: any = null
+        
         try {
-          const errorData = await response.json()
-          message = errorData?.error || message
+          errorData = await response.json()
+          message = errorData?.error || errorData?.message || message
+          
+          // Handle specific Gemini API errors
+          if (errorData?.error) {
+            const errorStr = String(errorData.error)
+            
+            // Check for leaked API key error
+            if (errorStr.includes('leaked') || errorStr.includes('API key was reported')) {
+              message = 'The API key has been reported as leaked. Please contact the administrator to update the Gemini API key in the backend configuration.'
+            }
+            // Check for permission denied errors
+            else if (errorStr.includes('PERMISSION_DENIED') || errorStr.includes('403')) {
+              if (errorStr.includes('API key')) {
+                message = 'API key error: The Gemini API key is invalid or has been revoked. Please contact the administrator.'
+              } else {
+                message = 'Permission denied: You do not have access to this service. Please contact the administrator.'
+              }
+            }
+            // Check for quota exceeded
+            else if (errorStr.includes('quota') || errorStr.includes('RESOURCE_EXHAUSTED')) {
+              message = 'API quota exceeded. Please try again later or contact the administrator.'
+            }
+            // Check for invalid API key
+            else if (errorStr.includes('API key not valid') || errorStr.includes('INVALID_ARGUMENT')) {
+              message = 'Invalid API key. Please contact the administrator to configure a valid Gemini API key.'
+            }
+          }
+          
+          // Check if error is a JSON/dict string that needs parsing (handles cases like "403 PERMISSION_DENIED. {'error': {...}}")
+          if (typeof message === 'string' && message.includes('{')) {
+            try {
+              // Try to extract JSON/dict from the message (Python dicts use single quotes, JSON uses double)
+              const dictMatch = message.match(/\{[\s\S]*\}/)
+              if (dictMatch) {
+                let dictStr = dictMatch[0]
+                // Convert Python dict format to JSON (single quotes to double quotes)
+                dictStr = dictStr.replace(/'/g, '"')
+                
+                const parsed = JSON.parse(dictStr)
+                if (parsed.error) {
+                  const errorObj = parsed.error
+                  const errorMsg = typeof errorObj === 'object' ? errorObj.message : String(errorObj)
+                  
+                  if (errorMsg && (errorMsg.includes('leaked') || errorMsg.includes('API key was reported'))) {
+                    message = 'The API key has been reported as leaked. Please contact the administrator to update the Gemini API key in the backend configuration.'
+                  } else if (errorMsg) {
+                    message = errorMsg
+                  }
+                }
+              }
+            } catch (e) {
+              // Not valid JSON/dict, check if message itself contains leaked key info
+              if (message.includes('leaked') || message.includes('API key was reported')) {
+                message = 'The API key has been reported as leaked. Please contact the administrator to update the Gemini API key in the backend configuration.'
+              }
+            }
+          }
         } catch (e) {
           // fallback: response may not be JSON
           const text = await response.text().catch(() => '')
-          if (text) message = text
+          if (text) {
+            message = text
+            // Check for leaked key in text response
+            if (text.includes('leaked') || text.includes('API key was reported')) {
+              message = 'The API key has been reported as leaked. Please contact the administrator to update the Gemini API key in the backend configuration.'
+            }
+          }
         }
+        
         throw new Error(message)
       }
 
@@ -712,13 +816,19 @@ export default function EnhancedPosterGeneratorWithBranding() {
               {result ? (
               <div className="space-y-4">
                 <div className="border rounded-lg overflow-hidden relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
-                  <img 
-                    src={result.image_url.startsWith('http') 
-                      ? result.image_url 
-                      : `${(process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${result.image_url}`} 
-                    alt="Generated Poster" 
-                    className="absolute inset-0 w-full h-full object-contain"
-                  />
+                  {result.image_url ? (
+                    <img 
+                      src={result.image_url.startsWith('http') 
+                        ? result.image_url 
+                        : `${(process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${result.image_url}`} 
+                      alt="Generated Poster" 
+                      className="absolute inset-0 w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                      Image URL not available
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
