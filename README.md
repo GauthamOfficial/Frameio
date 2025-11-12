@@ -68,8 +68,56 @@ Open `facebook-sharing-fix-test.html` in your browser to test the sharing functi
 ### Prerequisites
 - Python 3.8+
 - Node.js 18+
-- MySQL 8.0+
+- MySQL 8.0+ (Required)
 - Git
+
+### MySQL Setup
+
+Before running the application, you need to set up MySQL:
+
+#### Windows:
+1. Download and install MySQL 8.0+ from [MySQL Downloads](https://dev.mysql.com/downloads/installer/)
+2. During installation, set a root password (remember this!)
+3. Start MySQL service: `net start MySQL80`
+
+#### macOS:
+```bash
+# Install via Homebrew
+brew install mysql@8.0
+brew services start mysql@8.0
+
+# Secure your installation
+mysql_secure_installation
+```
+
+#### Linux (Ubuntu/Debian):
+```bash
+# Install MySQL
+sudo apt update
+sudo apt install mysql-server
+
+# Start MySQL service
+sudo systemctl start mysql
+sudo systemctl enable mysql
+
+# Secure your installation
+sudo mysql_secure_installation
+```
+
+#### Create Database:
+```bash
+# Login to MySQL
+mysql -u root -p
+
+# Create database
+CREATE DATABASE frameio_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+# Create user (optional, for better security)
+CREATE USER 'frameio_user'@'localhost' IDENTIFIED BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON frameio_db.* TO 'frameio_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
 
 ### Environment Setup
 
@@ -102,10 +150,14 @@ Open `facebook-sharing-fix-test.html` in your browser to test the sharing functi
    ```
    
    Update the `.env` file with your actual API keys and database credentials:
+   - `DB_NAME` - Database name (default: frameio_db)
+   - `DB_USER` - MySQL username (default: root)
+   - `DB_PASSWORD` - Your MySQL password
+   - `DB_HOST` - Database host (default: localhost)
+   - `DB_PORT` - MySQL port (default: 3306)
    - `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` from Clerk dashboard
-   - `ARCJET_API_KEY` from Arcjet dashboard
-   - `NANOBANANA_API_KEY` from NanoBanana API
-   - `DATABASE_URL` with your MySQL connection string
+   - `ARCJET_KEY` from Arcjet dashboard
+   - `GEMINI_API_KEY` from Google AI Studio [[memory:10031716]]
    - `SECRET_KEY` - generate a secure Django secret key
 
 2. **Set up the database:**
@@ -193,10 +245,13 @@ Frameio/
 ### Backend Dependencies
 - Django 5.2.6
 - Django REST Framework 3.16.1
-- MySQL Client 2.2.7
+- MySQL Client 2.2.7 (MySQL database driver)
+- Google Generative AI SDK
 - Clerk SDK 0.3.7
 - Arcjet 0.0.1
 - Pillow 11.3.0
+- Redis & Django-Redis (caching)
+- Celery (background tasks)
 - Pytest 8.4.2
 - Pytest-Django 4.11.1
 
@@ -223,21 +278,28 @@ Frameio/
 2. Set environment variables in Vercel dashboard
 3. Deploy automatically on push to main branch
 
-### Database (Neon/MySQL Cloud)
-1. Create database instance
-2. Update `DATABASE_URL` in environment variables
-3. Run migrations in production
+### Database (MySQL Cloud - PlanetScale/AWS RDS/DigitalOcean)
+1. Create MySQL 8.0+ database instance
+2. Update database credentials in environment variables:
+   - `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`
+3. Ensure MySQL connection allows remote connections
+4. Run migrations: `python manage.py migrate`
 
 ## 🔐 Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DATABASE_URL` | MySQL connection string | Yes |
+| `DB_NAME` | MySQL database name | Yes |
+| `DB_USER` | MySQL username | Yes |
+| `DB_PASSWORD` | MySQL password | Yes |
+| `DB_HOST` | MySQL host (localhost/cloud) | Yes |
+| `DB_PORT` | MySQL port (default: 3306) | Yes |
 | `SECRET_KEY` | Django secret key | Yes |
 | `CLERK_PUBLISHABLE_KEY` | Clerk public key | Yes |
 | `CLERK_SECRET_KEY` | Clerk secret key | Yes |
-| `ARCJET_API_KEY` | Arcjet API key | Yes |
-| `NANOBANANA_API_KEY` | NanoBanana API key | Yes |
+| `ARCJET_KEY` | Arcjet API key | Yes |
+| `GEMINI_API_KEY` | Google Gemini API key | Yes |
+| `REDIS_URL` | Redis connection URL | Optional |
 
 ## 📝 API Documentation
 
