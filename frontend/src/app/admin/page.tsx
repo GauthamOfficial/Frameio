@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
 import { StatsCard } from '@/components/admin/StatsCard';
 import { AnalyticsChart } from '@/components/admin/AnalyticsChart';
@@ -123,37 +123,53 @@ function AdminLoginForm() {
 }
 
 function AdminDashboard() {
-  // Mock data - Replace with real data from your API
-  const stats = {
-    totalUsers: 1247,
-    totalPosts: 8934,
-    activeCompanies: 156,
-    averageEngagement: '8.2%',
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalPosts: 0,
+    activeCompanies: 0,
+    averageEngagement: '0%',
+  });
+
+  // Load real data on mount
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch real user count
+      const usersResponse = await fetch('/api/admin/users', {
+        credentials: 'include',
+      });
+      
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json();
+        const userCount = usersData.count || (Array.isArray(usersData) ? usersData.length : 0);
+        
+        setStats(prev => ({
+          ...prev,
+          totalUsers: userCount,
+        }));
+      }
+      
+      // TODO: Add more API calls for other stats when endpoints are available
+      // - Total posts: GET /api/admin/posts or similar
+      // - Active companies: GET /api/admin/companies or similar
+      // - Average engagement: GET /api/admin/analytics or similar
+      
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const aspectRatioData = [
-    { label: '1:1 Square', value: 450 },
-    { label: '16:9 Landscape', value: 320 },
-    { label: '9:16 Portrait', value: 280 },
-    { label: '4:5 Instagram', value: 210 },
-    { label: '2:3 Pinterest', value: 150 },
-  ];
-
-  const topCompanies = [
-    { label: 'Fashion Textiles Co.', value: 234 },
-    { label: 'Modern Fabrics Ltd.', value: 198 },
-    { label: 'Elite Designs Inc.', value: 176 },
-    { label: 'Textile Masters', value: 145 },
-    { label: 'Fabric Innovations', value: 132 },
-  ];
-
-  const recentActivity = [
-    { user: 'John Doe', action: 'Generated AI poster', time: '2 minutes ago' },
-    { user: 'Jane Smith', action: 'Created new branding kit', time: '15 minutes ago' },
-    { user: 'Mike Johnson', action: 'Updated company profile', time: '1 hour ago' },
-    { user: 'Sarah Williams', action: 'Downloaded 5 designs', time: '2 hours ago' },
-    { user: 'Tom Brown', action: 'Invited team member', time: '3 hours ago' },
-  ];
+  const aspectRatioData: { label: string; value: number }[] = [];
+  const topCompanies: { label: string; value: number }[] = [];
+  const recentActivity: { user: string; action: string; time: string }[] = [];
 
   return (
     <div className="space-y-6">
@@ -166,49 +182,98 @@ function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total Users"
-          value={stats.totalUsers.toLocaleString()}
-          description="+12% from last month"
-          icon={Users}
-          trend={{ value: '12%', isPositive: true }}
-        />
-        <StatsCard
-          title="AI Posts Generated"
-          value={stats.totalPosts.toLocaleString()}
-          description="+23% from last month"
-          icon={Image}
-          trend={{ value: '23%', isPositive: true }}
-        />
-        <StatsCard
-          title="Active Companies"
-          value={stats.activeCompanies}
-          description="+8 new this month"
-          icon={Building2}
-          trend={{ value: '5.4%', isPositive: true }}
-        />
-        <StatsCard
-          title="Avg. Engagement"
-          value={stats.averageEngagement}
-          description="+2.1% from last week"
-          icon={TrendingUp}
-          trend={{ value: '2.1%', isPositive: true }}
-        />
-      </div>
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatsCard
+            title="Total Users"
+            value={stats.totalUsers.toLocaleString()}
+            description="From database"
+            icon={Users}
+          />
+          <StatsCard
+            title="AI Posts Generated"
+            value={stats.totalPosts.toLocaleString()}
+            description="Data not available"
+            icon={Image}
+          />
+          <StatsCard
+            title="Active Companies"
+            value={stats.activeCompanies}
+            description="Data not available"
+            icon={Building2}
+          />
+          <StatsCard
+            title="Avg. Engagement"
+            value={stats.averageEngagement}
+            description="Data not available"
+            icon={TrendingUp}
+          />
+        </div>
+      )}
 
       {/* Charts Row */}
       <div className="grid gap-4 md:grid-cols-2">
-        <AnalyticsChart
-          title="Most Used Aspect Ratios"
-          description="Popular poster dimensions"
-          data={aspectRatioData}
-        />
-        <AnalyticsChart
-          title="Most Active Textile Companies"
-          description="By posts generated"
-          data={topCompanies}
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Most Used Aspect Ratios</CardTitle>
+            <CardDescription>Popular poster dimensions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {aspectRatioData.length === 0 ? (
+              <div className="flex items-center justify-center h-64 text-gray-400">
+                <div className="text-center">
+                  <Activity className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <p>No analytics data available</p>
+                  <p className="text-sm mt-1">Data will appear once posts are generated</p>
+                </div>
+              </div>
+            ) : (
+              <AnalyticsChart
+                title="Most Used Aspect Ratios"
+                description="Popular poster dimensions"
+                data={aspectRatioData}
+              />
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Most Active Textile Companies</CardTitle>
+            <CardDescription>By posts generated</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {topCompanies.length === 0 ? (
+              <div className="flex items-center justify-center h-64 text-gray-400">
+                <div className="text-center">
+                  <Building2 className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <p>No company data available</p>
+                  <p className="text-sm mt-1">Data will appear once companies are active</p>
+                </div>
+              </div>
+            ) : (
+              <AnalyticsChart
+                title="Most Active Textile Companies"
+                description="By posts generated"
+                data={topCompanies}
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent Activity */}
@@ -223,28 +288,38 @@ function AdminDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {recentActivity.map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                    {activity.user.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{activity.user}</p>
-                    <p className="text-sm text-muted-foreground">{activity.action}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  {activity.time}
-                </div>
+          {recentActivity.length === 0 ? (
+            <div className="flex items-center justify-center h-48 text-gray-400">
+              <div className="text-center">
+                <Clock className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                <p>No recent activity</p>
+                <p className="text-sm mt-1">User activity will be displayed here</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentActivity.map((activity, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                      {activity.user.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{activity.user}</p>
+                      <p className="text-sm text-muted-foreground">{activity.action}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    {activity.time}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

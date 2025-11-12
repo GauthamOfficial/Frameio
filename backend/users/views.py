@@ -20,7 +20,8 @@ from .serializers import (
 )
 from .permissions import (
     IsOrganizationMember, IsOrganizationAdmin, IsOrganizationManager,
-    CanManageUsers, get_user_organization_permissions
+    CanManageUsers, get_user_organization_permissions, IsAdminRequest,
+    IsAuthenticatedOrAdmin, IsOrganizationMemberOrAdmin, CanManageUsersOrAdmin
 )
 from organizations.models import OrganizationMember, OrganizationInvitation
 
@@ -30,9 +31,10 @@ logger = logging.getLogger(__name__)
 class UserViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing users within an organization.
+    Supports both normal authenticated requests and admin panel requests.
     """
     queryset = User.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsOrganizationMember, CanManageUsers]
+    permission_classes = [IsAuthenticatedOrAdmin, IsOrganizationMemberOrAdmin, CanManageUsersOrAdmin]
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action."""
@@ -43,7 +45,12 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserSerializer
     
     def get_queryset(self):
-        """Filter users based on current organization."""
+        """Filter users based on current organization, or return all users for admin requests."""
+        # If this is an admin request, return all users
+        if getattr(self.request, '_admin_request', False):
+            return User.objects.all()
+        
+        # Otherwise, filter by organization
         organization = getattr(self.request, 'organization', None)
         if organization:
             # Return users who are members of the current organization
@@ -56,6 +63,11 @@ class UserViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         """Get user details."""
         user = self.get_object()
+        
+        # Admin requests can access any user
+        if getattr(request, '_admin_request', False):
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
         
         # Check if user is in the same organization
         organization = getattr(request, 'organization', None)
@@ -77,20 +89,55 @@ class UserViewSet(viewsets.ModelViewSet):
         """Update user profile."""
         user = self.get_object()
         
-        # Users can only update their own profile unless they're admin
-        if user != request.user:
-            membership = getattr(request, 'organization_membership', None)
-            if not membership or membership.role != 'admin':
-                return Response(
-                    {'error': 'Permission denied'},
-                    status=status.HTTP_403_FORBIDDEN
-                )
+        # Admin requests can update any user
+        if not getattr(request, '_admin_request', False):
+            # Users can only update their own profile unless they're admin
+            if user != request.user:
+                membership = getattr(request, 'organization_membership', None)
+                if not membership or membership.role != 'admin':
+                    return Response(
+                        {'error': 'Permission denied'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
         
         serializer = self.get_serializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Delete user."""
+        user = self.get_object()
+        
+        logger.info(f"Delete request for user {user.id} ({user.email})")
+        logger.info(f"Is admin request: {getattr(request, '_admin_request', False)}")
+        
+        # Admin requests can delete any user
+        if not getattr(request, '_admin_request', False):
+            # Regular users cannot delete users (only admins)
+            membership = getattr(request, 'organization_membership', None)
+            if not membership or membership.role != 'admin':
+                logger.warning(f"Delete denied: insufficient permissions")
+                return Response(
+                    {'error': 'Permission denied - Admin access required'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
+        try:
+            user_email = user.email
+            user.delete()
+            logger.info(f"User {user_email} deleted successfully")
+            return Response(
+                {'message': f'User {user_email} deleted successfully'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        except Exception as e:
+            logger.error(f"Error deleting user: {str(e)}")
+            return Response(
+                {'error': f'Failed to delete user: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @action(detail=True, methods=['post'])
     def update_role(self, request, pk=None):

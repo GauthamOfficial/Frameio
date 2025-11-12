@@ -5,6 +5,7 @@ from rest_framework import permissions
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from organizations.models import OrganizationMember
+import os
 
 
 def get_organization_from_request(request):
@@ -265,6 +266,103 @@ def get_user_organization_permissions(user, organization):
         return permissions
     except OrganizationMember.DoesNotExist:
         return None
+
+
+class IsAdminRequest(permissions.BasePermission):
+    """
+    Permission class to allow admin panel requests via X-Admin-Request header.
+    This bypasses normal authentication for admin operations.
+    """
+    
+    def has_permission(self, request, view):
+        # Check for admin request header
+        admin_header = request.META.get('HTTP_X_ADMIN_REQUEST', '').lower()
+        admin_username = request.META.get('HTTP_X_ADMIN_USERNAME', '')
+        
+        if admin_header == 'true' and admin_username:
+            # Verify admin username matches configured admin
+            expected_admin = os.getenv('ADMIN_USERNAME', 'tsg_admin')
+            if admin_username == expected_admin:
+                # Set a flag on the request to indicate this is an admin request
+                request._admin_request = True
+                return True
+        
+        # Fall back to normal authentication
+        return False
+
+
+class IsAuthenticatedOrAdmin(permissions.BasePermission):
+    """
+    Permission class that allows either authenticated users OR admin requests.
+    """
+    
+    def has_permission(self, request, view):
+        # Check if it's an admin request first
+        admin_header = request.META.get('HTTP_X_ADMIN_REQUEST', '').lower()
+        admin_username = request.META.get('HTTP_X_ADMIN_USERNAME', '')
+        
+        if admin_header == 'true' and admin_username:
+            expected_admin = os.getenv('ADMIN_USERNAME', 'tsg_admin')
+            if admin_username == expected_admin:
+                request._admin_request = True
+                return True
+        
+        # Otherwise, require authentication
+        return request.user and request.user.is_authenticated
+
+
+class IsOrganizationMemberOrAdmin(permissions.BasePermission):
+    """
+    Permission class that allows organization members OR admin requests.
+    """
+    
+    def has_permission(self, request, view):
+        # Check if it's an admin request first
+        if getattr(request, '_admin_request', False):
+            return True
+        
+        # Otherwise, check organization membership
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        organization = get_organization_from_request(request)
+        if not organization:
+            return False
+        
+        return OrganizationMember.objects.filter(
+            user=request.user,
+            organization=organization,
+            is_active=True
+        ).exists()
+
+
+class CanManageUsersOrAdmin(permissions.BasePermission):
+    """
+    Permission class that allows users with manage permissions OR admin requests.
+    """
+    
+    def has_permission(self, request, view):
+        # Check if it's an admin request first
+        if getattr(request, '_admin_request', False):
+            return True
+        
+        # Otherwise, check normal permissions
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        organization = get_organization_from_request(request)
+        if not organization:
+            return False
+        
+        try:
+            membership = OrganizationMember.objects.get(
+                user=request.user,
+                organization=organization,
+                is_active=True
+            )
+            return membership.can_invite_users or membership.role == 'admin'
+        except OrganizationMember.DoesNotExist:
+            return False
 
 
 def create_role_permissions():

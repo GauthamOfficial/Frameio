@@ -25,9 +25,11 @@ const nextConfig: NextConfig = {
         source: '/api/ai/:path*',
         destination: 'http://localhost:8000/api/ai/:path*',
       },
+      // Note: /api/admin/* routes are handled by Next.js API routes, not Django
+      // Only forward non-admin API routes to Django
       {
-        source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
+        source: '/api/((?!admin).*)',
+        destination: 'http://localhost:8000/api/$1',
       },
       {
         source: '/health',
