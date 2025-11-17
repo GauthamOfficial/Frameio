@@ -99,21 +99,37 @@ WSGI_APPLICATION = "frameio_backend.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv('DB_NAME', 'frameio_db'),
-        "USER": os.getenv('DB_USER', 'root'),
-        "PASSWORD": os.getenv('DB_PASSWORD', ''),
-        "HOST": os.getenv('DB_HOST', 'localhost'),
-        "PORT": os.getenv('DB_PORT', '3306'),
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-            "isolation_level": "read committed",
-        },
+# MySQL configuration (default)
+# Only use SQLite if explicitly requested via USE_SQLITE_FALLBACK=True
+USE_SQLITE_FALLBACK = os.getenv('USE_SQLITE_FALLBACK', 'False').lower() == 'true'
+
+if USE_SQLITE_FALLBACK:
+    # SQLite fallback (only if explicitly requested)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+    if DEBUG:
+        print("⚠ Using SQLite fallback (USE_SQLITE_FALLBACK=True)")
+else:
+    # MySQL configuration (default and recommended)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv('DB_NAME', 'frameio_db'),
+            "USER": os.getenv('DB_USER', 'root'),
+            "PASSWORD": os.getenv('DB_PASSWORD', ''),
+            "HOST": os.getenv('DB_HOST', 'localhost'),
+            "PORT": os.getenv('DB_PORT', '3306'),
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+                "isolation_level": "read committed",
+            },
+        }
+    }
 
 
 # Password validation

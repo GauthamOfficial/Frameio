@@ -21,7 +21,7 @@
 ### ✅ 2. Database Configuration with Tenant Isolation
 
 **Implemented:**
-- SQLite database for development (with PostgreSQL support)
+- MySQL database with utf8mb4 character set for full Unicode support
 - Custom User model with UUID primary keys
 - Organization model with tenant isolation
 - OrganizationMember model for role management

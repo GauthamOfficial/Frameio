@@ -36,10 +36,10 @@ python3 restore_env.py
 | `SECRET_KEY` | Django secret key | `django-insecure-...` |
 | `DEBUG` | Debug mode | `True` |
 | `DB_NAME` | Database name | `frameio_db` |
-| `DB_USER` | Database user | `postgres` |
-| `DB_PASSWORD` | Database password | `password` |
+| `DB_USER` | Database user | `root` |
+| `DB_PASSWORD` | Database password | `your_mysql_password` |
 | `DB_HOST` | Database host | `localhost` |
-| `DB_PORT` | Database port | `5432` |
+| `DB_PORT` | Database port | `3306` |
 
 ### 🔐 Authentication (Clerk)
 
@@ -81,24 +81,27 @@ python3 restore_env.py
 
 ### 1. Database Setup
 
-**Option A: PostgreSQL (Recommended)**
+**MySQL Database Configuration**
 ```bash
-# Install PostgreSQL
+# Install MySQL (if not already installed)
+# Windows: Download from https://dev.mysql.com/downloads/installer/
+# macOS: brew install mysql@8.0
+# Linux: sudo apt install mysql-server
+
 # Create database
-createdb frameio_db
+mysql -u root -p
+CREATE DATABASE frameio_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+EXIT;
 
 # Update .env with your credentials
 DB_NAME=frameio_db
-DB_USER=your_username
-DB_PASSWORD=your_password
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_HOST=localhost
+DB_PORT=3306
 ```
 
-**Option B: SQLite (Development)**
-```bash
-# Comment out PostgreSQL settings in .env
-# Uncomment SQLite settings
-DATABASE_URL=sqlite:///db.sqlite3
-```
+For detailed MySQL setup instructions, see [MYSQL_SETUP_README.md](MYSQL_SETUP_README.md) or [START_HERE_MYSQL.md](START_HERE_MYSQL.md).
 
 ### 2. Clerk Authentication Setup
 
@@ -185,9 +188,12 @@ python manage.py test ai_services
 ### Common Issues
 
 **1. Database Connection Error**
-- Check if PostgreSQL is running
+- Check if MySQL is running
+  - Windows: `net start MySQL80`
+  - macOS: `brew services list`
+  - Linux: `sudo systemctl status mysql`
 - Verify database credentials in `.env`
-- Ensure database exists
+- Ensure database exists: `mysql -u root -p -e "SHOW DATABASES;"`
 
 **2. Clerk Authentication Error**
 - Verify Clerk keys are correct
