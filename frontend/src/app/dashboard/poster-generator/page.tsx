@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { LoadingSpinner } from '@/components/common'
 
@@ -14,5 +15,13 @@ const PosterGenerator = dynamic(() => import('@/components/lazy/enhanced-poster-
 })
 
 export default function PosterGeneratorPage() {
-  return <PosterGenerator />
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner size="lg" text="Loading AI-Powered Poster Generator with Business Branding..." />
+      </div>
+    }>
+      <PosterGenerator />
+    </Suspense>
+  )
 }

@@ -64,7 +64,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https: http://localhost:8000 http://127.0.0.1:8000",
               "font-src 'self' data:",
-              "connect-src 'self' https://clerk.com https://*.clerk.com https://sound-mule-24.clerk.accounts.dev http://localhost:8000 ws://localhost:3000",
+              "connect-src 'self' https://clerk.com https://*.clerk.com https://sound-mule-24.clerk.accounts.dev http://localhost:8000 http://127.0.0.1:8000 ws://localhost:3000",
               "frame-src 'self' https://clerk.com https://*.clerk.com",
             ].join('; '),
           },

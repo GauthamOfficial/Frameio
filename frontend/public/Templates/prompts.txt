@@ -1,0 +1,553 @@
+[
+  {
+    "id": "special-days-mothers-day",
+    "title": "Mother's Day",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "With Offer",
+    "image": "Mother's Day.jpg",
+    "caption": "Use the uploaded outfit as the main focus. If it appears flat, incomplete, or not being worn, virtually present it on a suitable mannequin or culturally fitting female model matching its context, maintaining true drape, color, and texture as in the uploaded photo. Mother's Day vibe: warm, appreciative, elegant; no clip-art. Collage cues: torn-paper, vintage stamp/label, fine geometric lines; tones auto-match garment. Soft, inviting light; material looks premium. Show one offer: \"{{offer_text}}\". Generate 1 short appreciative Mother's Day caption. Realistic, grounded, professional finish."
+  },
+  {
+    "id": "special-days-fathers-day",
+    "title": "Father's Day",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "With Offer",
+    "image": "Father's Day.jpg",
+    "caption": "Use the uploaded outfit as the main focus. If it appears flat, incomplete, or not being worn, virtually present it on a suitable mannequin or culturally fitting male model matching its context, maintaining true drape, color, and texture as in the uploaded photo. Father's Day vibe: strong, warm, appreciative; no clip-art. Collage cues: torn-paper, vintage stamp/label, fine geometric lines; tones auto-match garment. Soft, inviting light; material looks premium. Show one offer: \"{{offer_text}}\". Generate 1 short appreciative Father's Day caption. Realistic, grounded, professional finish."
+  },
+  {
+    "id": "special-days-friendship-day",
+    "title": "Friendship Day",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Men", "Women", "Kids"],
+    "offer": "With Offer",
+    "image": "Friendship Day.png",
+    "caption": "Use the uploaded outfit as the main focus. If it appears flat, incomplete, or not being worn, virtually present it on a suitable mannequin or model (male/female/child as per the outfit), maintaining true drape, color, and texture as in the uploaded photo. Friendship Day vibe: joyful, casual, warm; no clip-art. Collage cues: playful sketch lines, mini stars/dots, tape tab; tones auto-match garment. Bright, natural light; textile stays crisp. Show one offer: \"{{offer_text}}\". Generate 1 short celebratory Friendship Day caption. Realistic, lively, professional finish."
+  },
+  {
+    "id": "special-days-valentines-single",
+    "title": "Valentine's Day - Single",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Men", "Women"],
+    "offer": "With Offer",
+    "image": "Valentine's Day - Single.png",
+    "caption": "Use the uploaded outfit as the main focus. If it appears flat, incomplete, or not being worn, virtually present it on a suitable mannequin or model (female/male as per outfit), maintaining true drape, color, and texture as in the uploaded photo. Valentine's Day vibe: romantic, modern, chic; no clip-art. Dynamic grid/story layout; clean backdrop with soft accents or abstract heart lines; tones auto-match garment. Editorial lighting; highlight fabric texture and key details. Show one offer: \"{{offer_text}}\". Generate 1 short romantic fashion caption + gentle CTA. High-end, social-ready, realistic finish."
+  },
+  {
+    "id": "special-days-valentines-couple",
+    "title": "Valentine's Day - Couple",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Men", "Women"],
+    "offer": "With Offer",
+    "image": "Valentine's Day - Couple.png",
+    "caption": "Use the uploaded outfit(s) as the main focus. If they appear flat, incomplete, or not being worn, virtually present them on a coordinated couple mannequin or pair of culturally fitting male and female models, maintaining true drape, fit, color, and texture exactly as in the uploaded photo. Valentine's Day vibe: romantic, modern, chic; no clip-art. Dynamic grid/story layout; clean backdrop with soft accents or abstract heart lines; tones auto-match the couple's outfit palette. Editorial lighting; highlight fabric detail, coordination, and style harmony between both outfits. Show one offer message: \"{{offer_text}}\". Generate one short romantic fashion caption + gentle CTA celebrating love and style together. High-end, social-ready, realistic finish."
+  },
+  {
+    "id": "festival-diwali-women-offer",
+    "title": "Diwali - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "Diwali - Women's Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable mannequin or female model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo. Don't overate. Create a diwali festive-yet-refined atmosphere that reflects illumination, joy, and gifting. The viewer should sense Diwali through soft radiance, reflections, and celebration energy, not through obvious clip-art. Maintain balance between brightness and fabric texture so the textile sheen or embroidery catches light naturally. Include one sale message: 'Up to 50% Off'. Generate 1 short diwali related marketing captions that combine textile aesthetics with celebration. The poster must look realistic, elegant, and professionally lit."
+  },
+  {
+    "id": "festival-diwali-men-offer",
+    "title": "Diwali - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "Diwali - Men's Collection.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as traditional kurta, veshti, or festive shirt - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create a Diwali festive-yet-refined atmosphere that conveys illumination, celebration, and joy. The viewer should sense Diwali through soft light, subtle reflections, and elegant warmth - not through clip-art or heavy symbols. Maintain balance between brightness and fabric texture so that the natural sheen of cotton, silk, or linen is enhanced realistically. Include one clear sale message: 'Up to 50% Off'. Generate one short Diwali-related marketing caption that fuses masculine fashion and festive spirit. The poster must look realistic, confident, and professionally lit, preserving the authenticity of the textile."
+  },
+  {
+    "id": "festival-diwali-girl-kid-offer",
+    "title": "Diwali - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Diwali - Girl Kid Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Diwali festive-yet-refined atmosphere that reflects family celebration, warmth, and happiness. The viewer should feel the Diwali spirit through soft glow, reflections, and subtle festive ambience - without using cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, rich, and premium. Include one clear sale message: 'Up to 50% Off'. Generate one short Diwali-related marketing caption that blends joyful childhood energy with festive charm (e.g., 'Little Festive Star', 'Tiny Glow', 'Celebrate with Joy'). The poster must look realistic, graceful, and professionally lit, capturing the true quality of the fabric."
+  },
+  {
+    "id": "festival-diwali-boy-kid-offer",
+    "title": "Diwali - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Diwali - Boy Kid Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Diwali festive-yet-refined atmosphere that reflects family celebration, warmth, and happiness. The viewer should feel the Diwali spirit through soft glow, reflections, and subtle festive ambience - without using cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, rich, and premium. Include one clear sale message: 'Up to 50% Off'. Generate one short Diwali-related marketing caption that blends joyful childhood energy with festive charm (e.g., 'Little Festive Star', 'Tiny Glow', 'Celebrate with Joy'). The poster must look realistic, graceful, and professionally lit, capturing the true quality of the fabric."
+  },
+  {
+    "id": "festival-thaipongal-women-offer",
+    "title": "Thaipongal - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "Thaipongal - Women's Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable mannequin or female model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo. Don't overate. Create a Thaipongal festive-yet-refined atmosphere that reflects tradition, harvest joy, and gratitude. The viewer should sense Thaipongal through natural warmth, sunlight tones, and cultural celebration - not through obvious clip-art. Maintain balance between brightness and fabric texture so the textile sheen or embroidery catches light naturally. Include one sale message: 'Up to 50% Off'. Generate 1 short Thaipongal-related marketing caption that combines textile aesthetics with celebration. The poster must look realistic, elegant, and professionally lit."
+  },
+  {
+    "id": "festival-thaipongal-men-offer",
+    "title": "Thaipongal - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "Thaipongal - Men's Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as traditional veshti, shirt, or kurta - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create a Thaipongal festive-yet-refined atmosphere that conveys tradition, warmth, and cultural joy. The viewer should sense Thaipongal through gentle sunlight, natural tones, and festive positivity - not through clip-art or heavy symbols. Maintain balance between brightness and fabric texture so that the natural sheen of cotton, silk, or linen is enhanced realistically. Include one clear sale message: 'Up to 50% Off'. Generate one short Thaipongal-related marketing caption that fuses masculine fashion and festive spirit. The poster must look realistic, confident, and professionally lit, preserving the authenticity of the textile."
+  },
+  {
+    "id": "festival-thaipongal-girl-kid-offer",
+    "title": "Thaipongal - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Thaipongal - Girl Kid Collection.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Thaipongal festive-yet-refined atmosphere that reflects family celebration, cultural tradition, and happiness. The viewer should feel the Thaipongal spirit through warm sunlight tones, harvest vibes, and subtle festive ambience - without using cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, rich, and premium. Include one clear sale message: 'Up to 50% Off'. Generate one short Thaipongal-related marketing caption that blends joyful childhood energy with cultural charm (e.g., 'Little Harvest Star', 'Festive Bloom', 'Celebrate Tradition'). The poster must look realistic, graceful, and professionally lit, capturing the true quality of the fabric."
+  },
+  {
+    "id": "festival-thaipongal-boy-kid-offer",
+    "title": "Thaipongal - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Thaipongal - Boy Kid Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Thaipongal festive-yet-refined atmosphere that reflects family celebration, cultural tradition, and happiness. The viewer should feel the Thaipongal spirit through warm sunlight tones, harvest vibes, and subtle festive ambience - without using cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, rich, and premium. Include one clear sale message: 'Up to 50% Off'. Generate one short Thaipongal-related marketing caption that blends joyful childhood energy with cultural charm (e.g., 'Little Harvest Star', 'Festive Bloom', 'Celebrate Tradition'). The poster must look realistic, graceful, and professionally lit, capturing the true quality of the fabric."
+  },
+  {
+    "id": "festival-christmas-women-offer",
+    "title": "Christmas - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "Christmas - Women's Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable mannequin or female model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo; don't overrate. Create a Christmas festive-yet-refined atmosphere that conveys warmth, togetherness, and cozy celebration. The viewer should feel the Christmas spirit through soft lighting, subtle glow, and joyful ambience - not through cartoonish or obvious holiday icons. Maintain balance between brightness and textile texture so the sheen, weave, or embroidery looks naturally premium. Include one sale message: 'Up to 50% Off'. Generate one short Christmas-related marketing caption that connects fashion elegance with festive charm. The poster must look realistic, elegant, and professionally lit."
+  },
+  {
+    "id": "festival-christmas-men-offer",
+    "title": "Christmas - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "Christmas - Men's Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as a festive shirt, blazer, or kurta - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create a Christmas festive-yet-refined atmosphere that reflects warmth, style, and celebration. The viewer should sense Christmas through gentle highlights, cozy tones, and refined festive energy - not through clip-art or heavy icons. Maintain balance between brightness and textile texture so the material's quality and finish stand out realistically. Include one clear sale message: 'Up to 50% Off'. Generate one short Christmas-related marketing caption that fuses men's fashion with the festive mood. The poster must look realistic, confident, and professionally lit."
+  },
+  {
+    "id": "festival-christmas-girl-kid-offer",
+    "title": "Christmas - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Christmas - Girl Kid Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Christmas festive-yet-refined atmosphere that reflects family warmth, happiness, and gentle celebration. The viewer should feel Christmas through cozy tones, soft light, and subtle holiday spirit - without cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the outfit looks soft, rich, and premium. Include one clear sale message: 'Up to 50% Off'. Generate one short Christmas-related marketing caption that blends joyful childhood energy with festive charm (e.g., 'Little Holiday Star', 'Joy in Style', 'Festive Glow'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-christmas-boy-kid-offer",
+    "title": "Christmas - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Christmas - Boy Kid Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Christmas festive-yet-refined atmosphere that reflects family warmth, joy, and festive excitement. The viewer should feel Christmas through cozy lighting and subtle seasonal glow - without using cartoon or clip-art elements. Maintain balance between brightness and textile texture so the fabric appears soft, rich, and elegant. Include one clear sale message: 'Up to 50% Off'. Generate one short Christmas-related marketing caption that merges childhood spirit with festive charm (e.g., 'Joyful Style', 'Tiny Holiday Glow', 'Merry & Bright'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-eid-women-offer",
+    "title": "Eid - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "Eid - Women's Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable female mannequin or model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo; don't overrate. Create an Eid festive-yet-refined atmosphere that reflects grace, gratitude, and elegance. The viewer should feel Eid through serenity, soft highlights, and luxurious mood - not through obvious symbols or clip-art. Maintain balance between illumination and textile texture so embroidery, lace, or satin finish shines naturally. Include one sale message: 'Up to 50% Off'. Generate one short Eid-related marketing caption combining elegance and festive beauty. The poster must look realistic, elegant, and professionally lit."
+  },
+  {
+    "id": "festival-eid-men-offer",
+    "title": "Eid - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "Eid - Men's Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as kurta, thobe, or festive shirt - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create an Eid festive-yet-refined atmosphere that conveys gratitude, sophistication, and festive joy. The viewer should sense Eid through calm lighting, balanced tones, and cultural richness - not through clip-art or overt motifs. Maintain balance between brightness and fabric texture so the natural finish and weave appear premium. Include one clear sale message: 'Up to 50% Off'. Generate one short Eid-related marketing caption blending men's fashion with celebration. The poster must look realistic, confident, and professionally lit."
+  },
+  {
+    "id": "festival-eid-girl-kid-offer",
+    "title": "Eid - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Eid - Girl Kid Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create an Eid festive-yet-refined atmosphere that reflects joy, gratitude, and family celebration. The viewer should feel the Eid mood through soft light, elegance, and harmony - without cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, detailed, and premium. Include one clear sale message: 'Up to 50% Off'. Generate one short Eid-related marketing caption merging innocence and celebration (e.g., 'Little Eid Grace', 'Tiny Blessings', 'Festive Glow'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-eid-boy-kid-offer",
+    "title": "Eid - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Eid - Boy Kid Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create an Eid festive-yet-refined atmosphere that reflects family joy, elegance, and cultural beauty. The viewer should sense Eid through gentle light, celebration harmony, and refined visual warmth - without using clip-art or symbolic icons. Maintain balance between brightness and textile texture so the fabric looks soft and premium. Include one clear sale message: 'Up to 50% Off'. Generate one short Eid-related marketing caption blending childhood innocence and festive celebration (e.g., 'Little Eid Star', 'Tiny Blessing', 'Joyful Grace'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-newyear-women-offer",
+    "title": "New Year - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "New Year - Women's Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable mannequin or female model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo; don't overrate. Create a New Year festive-yet-refined atmosphere that reflects freshness, excitement, and a sense of new beginnings. The viewer should feel the New Year energy through refined sparkle, optimism, and clean modern lighting - not through clip-art or fireworks icons. Maintain balance between brightness and textile texture so the garment's sheen or pattern is highlighted elegantly. Include one sale message: 'Up to 50% Off'. Generate one short New Year-related marketing caption that combines modern style and celebration. The poster must look realistic, elegant, and professionally lit."
+  },
+  {
+    "id": "festival-newyear-men-offer",
+    "title": "New Year - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "New Year - Men's Collection.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as shirt, blazer, or festive kurta - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create a New Year festive-yet-refined atmosphere that conveys confidence, freshness, and sophistication. The viewer should sense the New Year celebration through balanced lighting and energetic elegance - not through clip-art or fireworks. Maintain balance between brightness and fabric texture so the outfit looks premium and contemporary. Include one clear sale message: 'Up to 50% Off'. Generate one short New Year-related marketing caption that reflects modern men's fashion and optimism. The poster must look realistic, confident, and professionally lit."
+  },
+  {
+    "id": "festival-newyear-girl-kid-offer",
+    "title": "New Year - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "New Year - Girl Kid Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a New Year festive-yet-refined atmosphere that reflects happiness, freshness, and celebration. The viewer should feel the New Year joy through soft light, cheerful tone, and refined elegance - without cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the outfit appears rich and high quality. Include one clear sale message: 'Up to 50% Off'. Generate one short New Year-related marketing caption merging childhood joy with celebration (e.g., 'New Year Glow', 'Tiny Spark', 'Celebrate Fresh'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-newyear-boy-kid-offer",
+    "title": "New Year - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "New Year - Boy Kid Collection.png",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a New Year festive-yet-refined atmosphere that conveys positivity, freshness, and joyful spirit. The viewer should feel the New Year celebration through clean modern lighting and subtle festive accents - without clip-art or fireworks. Maintain perfect balance between brightness and textile texture so the outfit looks smooth, detailed, and premium. Include one clear sale message: 'Up to 50% Off'. Generate one short New Year-related marketing caption combining childhood liveliness with celebration (e.g., 'Little New Start', 'Fresh Year Joy', 'Bright Beginning'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-diwali-women-no-offer",
+    "title": "Diwali - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "Diwali Women.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable mannequin or female model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo. Don't overate. Create a diwali festive-yet-refined atmosphere that reflects illumination, joy, and gifting. The viewer should sense Diwali through soft radiance, reflections, and celebration energy, not through obvious clip-art. Maintain balance between brightness and fabric texture so the textile sheen or embroidery catches light naturally. Generate 1 short diwali related marketing captions that combine textile aesthetics with celebration. The poster must look realistic, elegant, and professionally lit."
+  },
+  {
+    "id": "festival-diwali-men-no-offer",
+    "title": "Diwali - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "D man.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as traditional kurta, veshti, or festive shirt - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create a Diwali festive-yet-refined atmosphere that conveys illumination, celebration, and joy. The viewer should sense Diwali through soft light, subtle reflections, and elegant warmth - not through clip-art or heavy symbols. Maintain balance between brightness and fabric texture so that the natural sheen of cotton, silk, or linen is enhanced realistically. Generate one short Diwali-related marketing caption that fuses masculine fashion and festive spirit. The poster must look realistic, confident, and professionally lit, preserving the authenticity of the textile."
+  },
+  {
+    "id": "festival-diwali-girl-kid-no-offer",
+    "title": "Diwali - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "D girl.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Diwali festive-yet-refined atmosphere that reflects family celebration, warmth, and happiness. The viewer should feel the Diwali spirit through soft glow, reflections, and subtle festive ambience - without using cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, rich, and premium. Generate one short Diwali-related marketing caption that blends joyful childhood energy with festive charm (e.g., 'Little Festive Star', 'Tiny Glow', 'Celebrate with Joy'). The poster must look realistic, graceful, and professionally lit, capturing the true quality of the fabric."
+  },
+  {
+    "id": "festival-diwali-boy-kid-no-offer",
+    "title": "Diwali - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "boy.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Diwali festive-yet-refined atmosphere that reflects family celebration, warmth, and happiness. The viewer should feel the Diwali spirit through soft glow, reflections, and subtle festive ambience - without using cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, rich, and premium. Generate one short Diwali-related marketing caption that blends joyful childhood energy with festive charm (e.g., 'Little Festive Star', 'Tiny Glow', 'Celebrate with Joy'). The poster must look realistic, graceful, and professionally lit, capturing the true quality of the fabric."
+  },
+  {
+    "id": "festival-thaipongal-women-no-offer",
+    "title": "Thaipongal - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "gril_t.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable mannequin or female model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo. Don't overate. Create a Thaipongal festive-yet-refined atmosphere that reflects tradition, harvest joy, and gratitude. The viewer should sense Thaipongal through natural warmth, sunlight tones, and cultural celebration - not through obvious clip-art. Maintain balance between brightness and fabric texture so the textile sheen or embroidery catches light naturally. Generate 1 short Thaipongal-related marketing caption that combines textile aesthetics with celebration. The poster must look realistic, elegant, and professionally lit."
+  },
+  {
+    "id": "festival-thaipongal-men-no-offer",
+    "title": "Thaipongal - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "thai.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as traditional veshti, shirt, or kurta - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create a Thaipongal festive-yet-refined atmosphere that conveys tradition, warmth, and cultural joy. The viewer should sense Thaipongal through gentle sunlight, natural tones, and festive positivity - not through clip-art or heavy symbols. Maintain balance between brightness and fabric texture so that the natural sheen of cotton, silk, or linen is enhanced realistically. Generate one short Thaipongal-related marketing caption that fuses masculine fashion and festive spirit. The poster must look realistic, confident, and professionally lit, preserving the authenticity of the textile."
+  },
+  {
+    "id": "festival-thaipongal-girl-kid-no-offer",
+    "title": "Thaipongal - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "kid_gril.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Thaipongal festive-yet-refined atmosphere that reflects family celebration, cultural tradition, and happiness. The viewer should feel the Thaipongal spirit through warm sunlight tones, harvest vibes, and subtle festive ambience - without using cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, rich, and premium. Generate one short Thaipongal-related marketing caption that blends joyful childhood energy with cultural charm (e.g., 'Little Harvest Star', 'Festive Bloom', 'Celebrate Tradition'). The poster must look realistic, graceful, and professionally lit, capturing the true quality of the fabric."
+  },
+  {
+    "id": "festival-thaipongal-boy-kid-no-offer",
+    "title": "Thaipongal - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "pongal.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Thaipongal festive-yet-refined atmosphere that reflects family celebration, cultural tradition, and happiness. The viewer should feel the Thaipongal spirit through warm sunlight tones, harvest vibes, and subtle festive ambience - without using cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, rich, and premium. Generate one short Thaipongal-related marketing caption that blends joyful childhood energy with cultural charm (e.g., 'Little Harvest Star', 'Festive Bloom', 'Celebrate Tradition'). The poster must look realistic, graceful, and professionally lit, capturing the true quality of the fabric."
+  },
+  {
+    "id": "festival-christmas-women-no-offer",
+    "title": "Christmas - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "chr_w.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable mannequin or female model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo; don't overrate. Create a Christmas festive-yet-refined atmosphere that conveys warmth, togetherness, and cozy celebration. The viewer should feel the Christmas spirit through soft lighting, subtle glow, and joyful ambience - not through cartoonish or obvious holiday icons. Maintain balance between brightness and textile texture so the sheen, weave, or embroidery looks naturally premium. Generate one short Christmas-related marketing caption that connects fashion elegance with festive charm. The poster must look realistic, elegant, and professionally lit."
+  },
+  {
+    "id": "festival-christmas-men-no-offer",
+    "title": "Christmas - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "chr-wo.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as a festive shirt, blazer, or kurta - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create a Christmas festive-yet-refined atmosphere that reflects warmth, style, and celebration. The viewer should sense Christmas through gentle highlights, cozy tones, and refined festive energy - not through clip-art or heavy icons. Maintain balance between brightness and textile texture so the material's quality and finish stand out realistically. Generate one short Christmas-related marketing caption ."
+  },
+  {
+    "id": "festival-christmas-girl-kid-no-offer",
+    "title": "Christmas - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "girl-kids.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Christmas festive-yet-refined atmosphere that reflects family warmth, happiness, and gentle celebration. The viewer should feel Christmas through cozy tones, soft light, and subtle holiday spirit - without cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the outfit looks soft, rich, and premium. Generate one short Christmas-related marketing caption that blends joyful childhood energy with festive charm (e.g., 'Little Holiday Star', 'Joy in Style', 'Festive Glow'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-christmas-boy-kid-no-offer",
+    "title": "Christmas - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "Xmax-boy.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a Christmas festive-yet-refined atmosphere that reflects family warmth, joy, and festive excitement. The viewer should feel Christmas through cozy lighting and subtle seasonal glow - without using cartoon or clip-art elements. Maintain balance between brightness and textile texture so the fabric appears soft, rich, and elegant. Generate one short Christmas-related marketing caption that merges childhood spirit with festive charm (e.g., 'Joyful Style', 'Tiny Holiday Glow', 'Merry & Bright'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-eid-women-no-offer",
+    "title": "Eid - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "eid with out _g.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable female mannequin or model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo; don't overrate. Create an Eid festive-yet-refined atmosphere that reflects grace, gratitude, and elegance. The viewer should feel Eid through serenity, soft highlights, and luxurious mood - not through obvious symbols or clip-art. Maintain balance between illumination and textile texture so embroidery, lace, or satin finish shines naturally. "
+  },
+  {
+    "id": "festival-eid-men-no-offer",
+    "title": "Eid - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "B_eid.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as kurta, thobe, or festive shirt - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create an Eid festive-yet-refined atmosphere that conveys gratitude, sophistication, and festive joy. The viewer should sense Eid through calm lighting, balanced tones, and cultural richness - not through clip-art or overt motifs. Maintain balance between brightness and fabric texture so the natural finish and weave appear premium. Generate one short Eid-related marketing caption blending men's fashion with celebration. The poster must look realistic, confident, and professionally lit."
+  },
+  {
+    "id": "festival-eid-girl-kid-no-offer",
+    "title": "Eid - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "without_G.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create an Eid festive-yet-refined atmosphere that reflects joy, gratitude, and family celebration. The viewer should feel the Eid mood through soft light, elegance, and harmony - without cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the clothing looks soft, detailed, and premium. Generate one short Eid-related marketing caption merging innocence and celebration (e.g., 'Little Eid Grace', 'Tiny Blessings', 'Festive Glow'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-eid-boy-kid-no-offer",
+    "title": "Eid - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "boy_spring.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create an Eid festive-yet-refined atmosphere that reflects family joy, elegance, and cultural beauty. The viewer should sense Eid through gentle light, celebration harmony, and refined visual warmth - without using clip-art or symbolic icons. Maintain balance between brightness and textile texture so the fabric looks soft and premium. Generate one short Eid-related marketing caption blending childhood innocence and festive celebration (e.g., 'Little Eid Star', 'Tiny Blessing', 'Joyful Grace'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-newyear-women-no-offer",
+    "title": "New Year - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "women.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable mannequin or female model matching its cultural context, maintaining true fabric drape and pattern. Drape is like the uploaded photo; don't overrate. Create a New Year festive-yet-refined atmosphere that reflects freshness, excitement, and a sense of new beginnings. The viewer should feel the New Year energy through refined sparkle, optimism, and clean modern lighting - not through clip-art or fireworks icons. Maintain balance between brightness and textile texture so the garment's sheen or pattern is highlighted elegantly. Generate one short New Year-related marketing caption "
+  },
+  {
+    "id": "festival-newyear-men-no-offer",
+    "title": "New Year - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "men_new.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on a suitable male model or mannequin matching its cultural context - such as shirt, blazer, or festive kurta - maintaining true fabric drape, folds, and texture exactly as seen in the uploaded photo. Do not exaggerate or over-stylize. Create a New Year festive-yet-refined atmosphere that conveys confidence, freshness, and sophistication. The viewer should sense the New Year celebration through balanced lighting and energetic elegance - not through clip-art or fireworks. Maintain balance between brightness and fabric texture so the outfit looks premium and contemporary. Generate one short New Year-related marketing caption that reflects modern men's fashion and optimism. The poster must look realistic, confident, and professionally lit."
+  },
+  {
+    "id": "festival-newyear-girl-kid-no-offer",
+    "title": "New Year - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "new_kids.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate girl child model or mannequin matching its cultural context and size, keeping proportions natural and posture joyful yet elegant. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a New Year festive-yet-refined atmosphere that reflects happiness, freshness, and celebration. The viewer should feel the New Year joy through soft light, cheerful tone, and refined elegance - without cartoon or clip-art elements. Maintain perfect balance between brightness and textile texture so the outfit appears rich and high quality. Generate one short New Year-related marketing caption merging childhood joy with celebration (e.g., 'New Year Glow', 'Tiny Spark', 'Celebrate Fresh'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "festival-newyear-boy-kid-no-offer",
+    "title": "New Year - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "new.jpg",
+    "caption": "You are generating a premium textile fashion poster for a retail brand. The outfit appears messy or incomplete. Virtually present it on an age-appropriate boy child model or mannequin matching its cultural context and size, keeping proportions natural and posture cheerful yet graceful. Maintain the same fabric drape, pattern, and embroidery as visible in the uploaded photo. Do not exaggerate or over-animate. Create a New Year festive-yet-refined atmosphere that conveys positivity, freshness, and joyful spirit. The viewer should feel the New Year celebration through clean modern lighting and subtle festive accents - without clip-art or fireworks. Maintain perfect balance between brightness and textile texture so the outfit looks smooth, detailed, and premium. Generate one short New Year-related marketing caption combining childhood liveliness with celebration (e.g., 'Little New Start', 'Fresh Year Joy', 'Bright Beginning'). The poster must look realistic, graceful, and professionally lit."
+  },
+  {
+    "id": "newarrivals-partywear-men-offer",
+    "title": "Party Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Men"],
+    "offer": "Flat 25% OFF",
+    "image": "Party Wear - Men's off.jpg",
+    "caption": "You are generating a premium textile fashion poster for a men's party wear collection. Virtually present the outfit on a well-dressed male model, ensuring proper tailoring and fabric drape. The drape is like the uploaded photo. Don't overate. Maintain elegant golden lighting with festive yet subtle reflections. Highlight natural sheen without exaggeration. Add one sale message: \"Flat 25% OFF.\" Caption: \"Own the Night in Style.\""
+  },
+  {
+    "id": "newarrivals-partywear-men-no-offer",
+    "title": "Party Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "Party Wear - Men's Collection.jpg",
+    "caption": "You are generating a luxury men's party wear poster. Present the outfit neatly on a confident male model. The drape is like the uploaded photo. Don't overate. Keep soft evening lighting with navy or charcoal background. Balance glow and realism. Caption: \"Celebrate Every Moment in Classic Elegance.\""
+  },
+  {
+    "id": "newarrivals-partywear-women-offer",
+    "title": "Party Wear - Women's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Women"],
+    "offer": "Up to 30% OFF",
+    "image": "Party Wear - Women's Collection.jpg",
+    "caption": "You are generating a festive women's party wear poster for a textile brand. Virtually place the saree or gown on a graceful female model matching its cultural context. The drape is like the uploaded photo. Don't overate. Maintain natural fabric flow and embroidery highlights. Add subtle Diwali-like radiance and reflection. Text: \"Up to 30% OFF.\" Caption: \"Radiate Festive Grace.\""
+  },
+  {
+    "id": "newarrivals-partywear-kids-boy-offer",
+    "title": "Party Wear - Kids Boy Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Kids"],
+    "offer": "Flat 25% OFF - 3 Days Only",
+    "image": "Party Wear - Kids Boy Collection.jpg",
+    "caption": "Create a cheerful promotional poster for a Kids' Party Wear Collection. Use the uploaded product image as the outfit worn by a smiling boy model posing playfully. Background: soft pastel blue with colorful confetti and light sparkles for a fun, festive look. Headline: 'New Party Collection' in bold, playful, white 3D/bubble font. Subtext: 'Flat 25% OFF – 3 Days Only' in bright yellow rounded font below the headline. Badge: text 'Flat 25% OFF for 3 Days' in bold red font. Bright red rounded rectangle  white text 'Shop Now.' Style: fun, colorful, festive, appealing to kids and parents."
+  },
+  {
+    "id": "newarrivals-partywear-kids-girl-offer",
+    "title": "Party Wear - Kids Girl Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Kids"],
+    "offer": "Flat 25% OFF - 3 Days Only",
+    "image": "Party Wear - Kids Girl Collection.jpg",
+    "caption": "Use the uploaded product image as the main product. Create a cheerful promotional poster for a Kids' Party Wear Collection. Background: Soft pastel blue with colorful confetti and light sparkles for a fun, festive look. Text: Headline: \"New Party Collection\" in bold, playful, white font with a slight 3D or bubble style. Subtext: \"Flat 25% OFF – 3 Days Only\" in bright yellow rounded font below the headline. Badge: text \"Flat 25% OFF for 3 Days\" in red bold font. Model: A smiling kid wearing a cute. Style: Fun, colorful, and festive — appealing to kids and parents alike."
+  },
+  {
+    "id": "newarrivals-sportswear-kids-boy",
+    "title": "Sports Wear - Kids Boy Collection",
+    "category": "New Arrivals",
+    "subcategory": "Sports Wear",
+    "audience": ["Kids"],
+    "offer": "FLASH SALE - 20% OFF",
+    "image": "Sports Wear - Kids Boy Collection.jpg",
+    "caption": "Design a cheerful poster for boy Kids' Sports Wear New Arrivals. Feature a young child happily playing football in a bright outdoor park setting with green grass and playground equipment in the background. Use lively, natural lighting to convey energy and fun. Add bold white typography for the headline: \"NEW ARRIVALS SPORTS WEAR\" Subhead line: \"Play Hard. Dress Right.\" \"FLASH SALE - 20% OFF ALL KIDS SPORTS!\" and below it, \"Swipe Up to Explore.\" Keep the layout clean, balanced, and modern. Do not include any company logo or details. (like the uploaded image)."
+  },
+  {
+    "id": "newarrivals-sportswear-kids-girl",
+    "title": "Sports Wear - Kids Girl Collection",
+    "category": "New Arrivals",
+    "subcategory": "Sports Wear",
+    "audience": ["Kids"],
+    "offer": "FLASH SALE - 20% OFF",
+    "image": "Sports Wear - Kids Girl Collection.jpg",
+    "caption": "Create a bright and cheerful social media poster for \"Kids' Sports Wear New Arrivals.\" Use the uploaded dress image worn by a real happy young girl (7–9 years old) energetically playing outdoors.\n\nSet the scene in a sunny park with green grass and colorful playground equipment in the background.\n\nText on poster:\n\nHeadline: NEW ARRIVALS – SPORTS WEAR\n\nTagline: Play Hard. Dress Right.\n\nOffer Text: FLASH SALE – 20% OFF ALL KIDS' SPORTS!\n\nMake the overall design vibrant, joyful, and modern, focusing on fun, energy, and comfort."
+  },
+  {
+    "id": "newarrivals-sportswear-men-offer",
+    "title": "Sports Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Sports Wear",
+    "audience": ["Men"],
+    "offer": "LIMITED TIME OFFER! 20% OFF ALL SETS",
+    "image": "Sports Wear - Men's Collection.jpg",
+    "caption": "Generate an eye-catching fitness apparel advertisement using the uploaded product image as the main focus. The image should feature a person actively wearing the apparel in a natural, outdoor park or path background with soft, flattering lighting. Include a prominent offer poster with high-contrast text. The poster's text should read: 'GET YOUR WORKOUT ON!', 'Ultimate Compression Gear', 'LIMITED TIME OFFER! 20% OFF ALL SETS', and 'FREE SHIPPING' inside a visible colored circle. Clearly display the offer date 'Offer Valid Until [Insert Date]' with high-contrast, bold, eye-catching styling on a transparent glass effect background. The overall tone should be motivational, energetic, and inviting."
+  },
+  {
+    "id": "newarrivals-officialwear-men-offer",
+    "title": "Official Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Official Wear",
+    "audience": ["Men"],
+    "offer": "Flat 20% OFF - This Week Only",
+    "image": "Official Wear - Men's Collection.jpg",
+    "caption": "Create a stylish promotional poster for a Men's Official Shirt Collection. Use the uploaded outfit image as the shirt worn naturally by a real male model (make it look realistic and well-fitted). Background: Modern indoor office or studio setup with soft lighting — shootable and professional. Text: Headline: \"Premium Official Shirt Collection\" in elegant, bold serif font. Subtext: \"Flat 20% OFF – This Week Only\" in smaller, clean sans-serif font. Keep overall tone classy and professional, emphasizing elegance and confidence. I want to offer detail are bold. I want to text are in the poster right side."
+  },
+  {
+    "id": "newarrivals-officialwear-men-no-offer",
+    "title": "Official Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Official Wear",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "Official Wear - Men.jpg",
+    "caption": "Create a stylish promotional poster for a Men's Official Shirt Collection. Use the uploaded outfit image as the shirt worn naturally by a real male model (make it look realistic and well-fitted). Background: Modern indoor office or studio setup with soft lighting — shootable and professional. Text: Headline: \"Premium Official Shirt Collection\" in elegant, bold serif font. Keep overall tone classy and professional, emphasizing elegance and confidence. Want to text are in the poster right side."
+  }
+]
+

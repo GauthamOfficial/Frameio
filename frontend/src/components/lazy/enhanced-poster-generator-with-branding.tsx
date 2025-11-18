@@ -28,9 +28,9 @@ import {
   Instagram,
   Mail
 } from "lucide-react"
-import React, { useState, useRef } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import { useUser, useAuth } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCompanyProfile } from '@/hooks/use-company-profile'
 
 interface GenerationResult {
@@ -57,6 +57,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
   const { user } = useUser()
   const { getToken } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   
   // Error handling
   const [componentError, setComponentError] = useState<string | null>(null)
@@ -79,11 +80,78 @@ export default function EnhancedPosterGeneratorWithBranding() {
   const [aspectRatio, setAspectRatio] = useState("4:5")
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Image upload functionality
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Textarea auto-resize functionality
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  
+  // Auto-resize textarea based on content
+  const adjustTextareaHeight = React.useCallback(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto'
+      // Set height based on scrollHeight, with min and max constraints
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 100), 500)
+      textarea.style.height = `${newHeight}px`
+    }
+  }, [])
+
+  // Read prompt from URL query parameters
+  useEffect(() => {
+    const promptParam = searchParams.get('prompt')
+    if (promptParam) {
+      try {
+        // searchParams.get() already does basic decoding, but may still have encoded characters
+        // Try to decode any remaining encoded characters
+        let decodedPrompt = promptParam
+        
+        // Check if the string contains encoded characters that need decoding
+        if (promptParam.includes('%')) {
+          try {
+            decodedPrompt = decodeURIComponent(promptParam)
+          } catch (decodeError) {
+            // If decodeURIComponent fails, try a safer approach
+            // Decode character by character for problematic sequences
+            decodedPrompt = promptParam.replace(/%[0-9A-F]{2}/gi, (match) => {
+              try {
+                return decodeURIComponent(match)
+              } catch {
+                return match // Keep the original if decoding fails
+              }
+            })
+          }
+        }
+        
+        setPrompt(decodedPrompt)
+        // Clear the URL parameter after reading it
+        router.replace('/dashboard/poster-generator', { scroll: false })
+        // Adjust textarea height after setting prompt from URL
+        setTimeout(() => adjustTextareaHeight(), 100)
+      } catch (error) {
+        // If all else fails, use the parameter as-is
+        console.error('Error processing prompt parameter:', error)
+        setPrompt(promptParam)
+        // Clear the URL parameter even if there was an error
+        router.replace('/dashboard/poster-generator', { scroll: false })
+        // Adjust textarea height even if there was an error
+        setTimeout(() => adjustTextareaHeight(), 100)
+      }
+    }
+  }, [searchParams, router, adjustTextareaHeight])
+  
+  // Adjust textarea height when prompt changes
+  useEffect(() => {
+    // Use setTimeout to ensure DOM is updated
+    const timer = setTimeout(() => {
+      adjustTextareaHeight()
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [prompt, adjustTextareaHeight])
   
   // Caption and hashtag functionality
   const [showCaption, setShowCaption] = useState(false)
@@ -309,29 +377,33 @@ export default function EnhancedPosterGeneratorWithBranding() {
       const fetchWithFallback = async (path: string, init: RequestInit) => {
         let lastErr: unknown = null
 
-        // 1) Try same-origin relative path (leverages Next.js rewrites)
-        try {
+        const attemptFetch = async (url: string) => {
           const controller = new AbortController()
           const localTimeout = setTimeout(() => controller.abort(), 180000)
-          const res = await fetch(path, { ...init, signal: controller.signal })
-          clearTimeout(localTimeout)
-          if (res.ok) return res
+          try {
+            const res = await fetch(url, { ...init, signal: controller.signal })
+            return res
+          } finally {
+            clearTimeout(localTimeout)
+          }
+        }
+
+        // 1) Try same-origin relative path (leverages Next.js rewrites)
+        try {
+          return await attemptFetch(path)
         } catch (e) {
           lastErr = e
         }
 
-        // 2) Try absolute bases as fallbacks
+        // 2) Try absolute bases as fallbacks (network issues only)
         for (const base of fallbackBases) {
           try {
-            const controller = new AbortController()
-            const localTimeout = setTimeout(() => controller.abort(), 180000)
-            const res = await fetch(`${base}${path}`, { ...init, signal: controller.signal })
-            clearTimeout(localTimeout)
-            if (res.ok) return res
+            return await attemptFetch(`${base}${path}`)
           } catch (e) {
             lastErr = e
           }
         }
+
         if (lastErr) throw lastErr
         throw new Error('Network request failed')
       }
@@ -518,13 +590,18 @@ export default function EnhancedPosterGeneratorWithBranding() {
             <div className="space-y-2">
               <Label htmlFor="prompt">Describe your poster</Label>
               <Textarea
+                ref={textareaRef}
                 id="prompt"
                 placeholder="Describe your Post"
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={(e) => {
+                  setPrompt(e.target.value)
+                  // Auto-resize on input
+                  setTimeout(() => adjustTextareaHeight(), 0)
+                }}
                 disabled={isGenerating}
-                rows={4}
-                className="min-h-[100px] resize-y placeholder:opacity-50"
+                className="min-h-[100px] max-h-[500px] resize-none overflow-y-auto placeholder:opacity-50"
+                style={{ height: 'auto' }}
               />
             </div>
 
