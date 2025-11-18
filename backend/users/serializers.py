@@ -297,10 +297,15 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
     def get_logo_url(self, obj):
         """Get logo URL."""
         if obj.logo:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.logo.url)
-            return obj.logo.url
+            try:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.logo.url)
+                # Fallback if request is not in context
+                return obj.logo.url
+            except Exception:
+                # If anything goes wrong, return the relative URL
+                return obj.logo.url if obj.logo else None
         return None
     
     def get_contact_info(self, obj):

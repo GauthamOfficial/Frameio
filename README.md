@@ -156,11 +156,23 @@ EXIT;
    - `DB_HOST` - Database host (default: localhost)
    - `DB_PORT` - MySQL port (default: 3306)
    - `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` from Clerk dashboard
+   - `NEXT_PUBLIC_CLERK_FRONTEND_API` - Your Clerk frontend API URL
    - `ARCJET_KEY` from Arcjet dashboard
    - `GEMINI_API_KEY` from Google AI Studio [[memory:10031716]]
    - `SECRET_KEY` - generate a secure Django secret key
 
-2. **Set up the database:**
+2. **Configure Clerk Authentication with Google OAuth:**
+   
+   For detailed instructions on setting up Clerk with Google OAuth, see [CLERK_GOOGLE_OAUTH_SETUP.md](CLERK_GOOGLE_OAUTH_SETUP.md)
+   
+   Quick steps:
+   - Create a Clerk account at https://clerk.com
+   - Create a new application in Clerk dashboard
+   - Enable Google OAuth in Social Connections
+   - Copy your Clerk API keys to `.env` and `frontend/.env.local`
+   - For production, configure custom Google OAuth credentials
+
+3. **Set up the database:**
    ```bash
    cd backend
    python manage.py migrate

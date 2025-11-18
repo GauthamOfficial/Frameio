@@ -72,8 +72,9 @@ class ClerkAuthentication(BaseAuthentication):
     def authenticate(self, request):
         from django.conf import settings
         
-        # Check if Clerk is configured
-        if not settings.CLERK_SECRET_KEY:
+        # In DEBUG mode, always try to authenticate even without CLERK_SECRET_KEY
+        # In production, require CLERK_SECRET_KEY
+        if not settings.DEBUG and not settings.CLERK_SECRET_KEY:
             # logger.warning("Clerk secret key not configured")  # Disabled - keys are configured
             return None
         
@@ -90,10 +91,15 @@ class ClerkAuthentication(BaseAuthentication):
             # In production, this should use Clerk's backend SDK
             user = self.validate_clerk_token(token)
             if user:
+                logger.info(f"ClerkAuthentication: Successfully authenticated user {user.email}")
                 return (user, None)
+            else:
+                logger.debug(f"ClerkAuthentication: Token validation returned None for token {token[:10]}...")
         except Exception as e:
             logger.error(f"Clerk authentication error: {e}")
-            raise AuthenticationFailed('Invalid authentication token')
+            # In DEBUG mode, don't raise exception, just return None to allow fallback
+            if not settings.DEBUG:
+                raise AuthenticationFailed('Invalid authentication token')
         
         return None
     
@@ -106,16 +112,39 @@ class ClerkAuthentication(BaseAuthentication):
         
         # For development/testing, create a mock validation
         if settings.DEBUG:
-            # For development, accept any token and return the first user
-            # This is a temporary solution for development
-            try:
-                user = User.objects.first()
-                if user:
-                    logger.info(f"Development Clerk auth: Using user {user.email}")
+            # Accept test_clerk_token or any token in development
+            if token == 'test_clerk_token' or token:
+                try:
+                    logger.info(f"Development Clerk auth: Validating token {token[:10]}...")
+                    # Try to get the first user
+                    user = User.objects.first()
+                    if not user:
+                        # If no user exists, create a default development user
+                        logger.warning("No users found, creating default development user")
+                        try:
+                            user = User.objects.create_user(
+                                username='dev_user',
+                                email='dev@example.com',
+                                password='dev_password'
+                            )
+                            logger.info(f"Created default development user: {user.email}")
+                        except Exception as create_error:
+                            logger.error(f"Failed to create default development user: {create_error}")
+                            # Try to get any user that might exist
+                            user = User.objects.first()
+                            if not user:
+                                logger.error("No users exist and cannot create one. Please run: python create_test_user.py")
+                                return None
+                    else:
+                        logger.info(f"Development Clerk auth: Found existing user {user.email}")
+                    
+                    logger.info(f"Development Clerk auth: Successfully authenticated user {user.email} with token {token[:10]}...")
                     return user
-            except Exception as e:
-                logger.error(f"Development Clerk auth error: {e}")
-                return None
+                except Exception as e:
+                    logger.error(f"Development Clerk auth error: {e}", exc_info=True)
+                    import traceback
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+                    return None
         
         # TODO: Implement proper Clerk JWT validation using clerk-backend-python
         # For now, return None to fall back to other authentication methods

@@ -112,60 +112,66 @@ const CompanyProfileSettings: React.FC = () => {
       const authToken = token || 'test_clerk_token'
       console.log('Using token:', authToken ? 'Present' : 'Missing')
       
-      // Test backend connectivity first
+      // Test backend connectivity first (optional - don't block if it fails)
       try {
         console.log('🔍 Testing backend connectivity...')
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+        
         const healthResponse = await fetch(`${API_BASE_URL}/health/`, { 
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          signal: controller.signal
         })
+        clearTimeout(timeoutId)
         console.log('Health check status:', healthResponse.status)
-      } catch (healthError) {
-        console.warn('⚠️ Health check failed:', healthError.message)
+      } catch (healthError: any) {
+        // Don't block if health check fails - continue with profile load
+        if (healthError.name === 'AbortError') {
+          console.warn('⚠️ Health check timed out (non-blocking)')
+        } else {
+          console.warn('⚠️ Health check failed (non-blocking):', healthError.message)
+        }
       }
       
-      const response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        // Add timeout to prevent hanging requests
-        signal: AbortSignal.timeout(10000) // 10 second timeout
-      })
+      // Fetch with proper error handling
+      let response: Response
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+        
+        response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
+        })
+        clearTimeout(timeoutId)
+      } catch (networkError: any) {
+        // Network error (connection failed, timeout, etc.)
+        const errorMsg = networkError instanceof Error ? networkError.message : 'Network error'
+        console.error('❌ Network error:', errorMsg)
+        
+        if (networkError.name === 'AbortError') {
+          showError('Request timed out. Please check your connection and try again.')
+        } else if (errorMsg === 'Failed to fetch' || errorMsg.includes('fetch')) {
+          showError('Cannot connect to server. Please ensure the backend is running on http://localhost:8000')
+        } else {
+          showError('Failed to connect to server. Please check your internet connection and try again.')
+        }
+        setLoading(false)
+        return
+      }
       
       console.log('Response status:', response.status)
       console.log('Response headers:', Object.fromEntries(response.headers.entries()))
 
-      if (response.ok) {
-        const data = await response.json()
-        
-        // Check if response is empty
-        if (!data || Object.keys(data).length === 0) {
-          console.warn('⚠️ Empty response received from server (status OK)')
-          // Don't show error, just proceed with empty form
-        } else {
-          console.log('✅ Profile loaded successfully:', data)
-          setProfile(data)
-          setFormData({
-            company_name: data.company_name || '',
-            whatsapp_number: data.whatsapp_number || '',
-            email: data.email || '',
-            facebook_username: data.facebook_username || '',
-            website: data.website || '',
-            address: data.address || '',
-            description: data.description || '',
-            preferred_logo_position: data.preferred_logo_position || 'top_right'
-          })
-          if (data.logo_url) {
-            setLogoPreview(data.logo_url)
-          }
-          // Load status after successful profile load
-          loadStatus()
-        }
-      } else {
+      // Handle non-OK responses
+      if (!response.ok) {
         // Handle different error responses
         let errorMessage = 'Failed to load profile information'
         try {
@@ -195,12 +201,25 @@ const CompanyProfileSettings: React.FC = () => {
                 console.error('❌ Load error response:', errorData)
                 errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
               } else {
+                // Handle empty error object - provide more helpful message
                 console.warn('⚠️ Load error response: Empty or meaningless error object')
                 console.warn('  Object keys:', Object.keys(errorData))
                 console.warn('  Object values:', Object.values(errorData))
                 console.warn('  Has content:', hasContent)
                 console.warn('  Has error fields:', hasErrorFields)
-                errorMessage = response.statusText || `HTTP ${response.status}`
+                
+                // Provide more specific error messages based on status code
+                if (response.status === 401) {
+                  errorMessage = 'Authentication failed. Please log in again.'
+                } else if (response.status === 403) {
+                  errorMessage = 'Permission denied. You do not have access to this resource.'
+                } else if (response.status === 404) {
+                  errorMessage = 'Profile not found. A new profile will be created when you save.'
+                } else if (response.status === 500) {
+                  errorMessage = 'Server error. Please try again later or contact support.'
+                } else {
+                  errorMessage = response.statusText || `HTTP ${response.status} - Failed to load profile`
+                }
               }
             } else {
               console.warn('⚠️ Load error response: Invalid error data type')
@@ -215,32 +234,77 @@ const CompanyProfileSettings: React.FC = () => {
         
         if (response.status === 401) {
           showError('Please log in again to access your profile')
+        } else if (response.status === 403) {
+          if (errorMessage.includes('permission')) {
+            showError('You do not have permission to access this resource.')
+          } else {
+            showError('Access denied. Please try logging in again.')
+          }
         } else if (response.status === 404) {
-          console.log('ℹ️ No profile found, will create new one')
+          console.log('ℹ️ Profile not found (404) - will create new one')
           // Don't show error for 404, just proceed with empty form
+          setLoading(false)
+          return
         } else {
-          showError(errorMessage)
+          showError(errorMessage || 'Failed to load profile. Please try again later.')
         }
+        
+        setLoading(false)
+        return
       }
-    } catch (error) {
-      console.error('❌ Error loading profile:', error)
-      console.error('Error type:', error.constructor.name)
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
       
-      // Check if it's a network error
-      if (error.name === 'AbortError') {
-        console.error('⏰ Request timeout')
-        showError('Request timed out. Please check your connection and try again.')
-      } else if (error.message === 'Failed to fetch') {
-        console.error('🌐 Network error - Backend server may not be running')
-        showError('Cannot connect to server. Please ensure the backend is running on http://localhost:8000')
-      } else if (error.message.includes('CORS')) {
-        console.error('🚫 CORS error')
-        showError('CORS error. Please check backend CORS configuration.')
-      } else {
-        showError('Failed to load company profile: ' + error.message)
+      // Handle successful response
+      let data: any = {}
+      try {
+        const responseText = await response.text()
+        if (responseText && responseText.trim()) {
+          data = JSON.parse(responseText)
+          // Handle backend response format: {status: 'ok', data: {...}}
+          if (data && typeof data === 'object' && data.status === 'ok' && data.data) {
+            data = data.data
+          }
+        } else {
+          // Empty response - use empty object as fallback
+          data = {}
+          console.warn('⚠️ Empty response body received')
+        }
+      } catch (jsonError) {
+        console.error('❌ Failed to parse JSON response:', jsonError)
+        showError('Server returned invalid data. Please try again later.')
+        setLoading(false)
+        return
       }
+
+      // Process successful response data
+      // Ensure data is always an object (fallback to empty object)
+      const profileData = data && typeof data === 'object' && !Array.isArray(data) ? data : {}
+      
+      console.log('✅ Profile loaded successfully:', profileData)
+      
+      // Set profile data with defaults
+      setProfile(profileData)
+      setFormData({
+        company_name: profileData.company_name || '',
+        whatsapp_number: profileData.whatsapp_number || '',
+        email: profileData.email || '',
+        facebook_username: profileData.facebook_username || '',
+        website: profileData.website || '',
+        address: profileData.address || '',
+        description: profileData.description || '',
+        preferred_logo_position: profileData.preferred_logo_position || 'top_right'
+      })
+      
+      if (profileData.logo_url) {
+        setLogoPreview(profileData.logo_url)
+      }
+      
+      // Load status after successful profile load
+      loadStatus()
+    } catch (error) {
+      // Catch any unexpected errors
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('❌ Unexpected error loading profile:', errorMsg, error)
+      showError('An unexpected error occurred. Please try again later.')
     } finally {
       setLoading(false)
     }
@@ -256,15 +320,18 @@ const CompanyProfileSettings: React.FC = () => {
       console.log('🔍 Loading profile status...')
       console.log('Status endpoint:', API_ENDPOINTS.COMPANY_PROFILES_STATUS)
       
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+      
       const response = await fetch(API_ENDPOINTS.COMPANY_PROFILES_STATUS, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
-        // Add timeout to prevent hanging requests
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+        signal: controller.signal
       })
+      clearTimeout(timeoutId)
 
       console.log('Status response:', response.status)
 
@@ -340,20 +407,30 @@ const CompanyProfileSettings: React.FC = () => {
       console.log('Using token:', authToken ? 'Present' : 'Missing')
       console.log('API Endpoint:', API_ENDPOINTS.COMPANY_PROFILES)
       
-      // Test connectivity first
+      // Test connectivity first (optional - don't block if it fails)
       try {
         console.log('🔍 Testing connectivity...')
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+        
         const testResponse = await fetch(`${API_BASE_URL}/health/`, { 
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          signal: controller.signal
         })
+        clearTimeout(timeoutId)
         console.log('✅ Backend connectivity test:', testResponse.status)
-      } catch (testError) {
-        console.error('❌ Backend connectivity test failed:', testError)
-        showError('Cannot connect to backend server. Please ensure it\'s running on http://localhost:8000')
-        return
+      } catch (testError: any) {
+        // Don't block the save operation if health check fails
+        // It might be a CORS issue or network problem, but the actual API call might still work
+        if (testError.name === 'AbortError') {
+          console.warn('⚠️ Backend connectivity test timed out (non-blocking)')
+        } else {
+          console.warn('⚠️ Backend connectivity test failed (non-blocking):', testError.message)
+        }
+        // Continue with the save attempt - don't return early
       }
       
       let response
@@ -387,15 +464,18 @@ const CompanyProfileSettings: React.FC = () => {
         console.log('📁 Using FormData for file upload')
         console.log('Form data keys:', Array.from(formDataToSend.keys()))
         
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout for file uploads
+        
         response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${authToken}`
           },
           body: formDataToSend,
-          // Add timeout to prevent hanging requests
-          signal: AbortSignal.timeout(15000) // 15 second timeout for file uploads
+          signal: controller.signal
         })
+        clearTimeout(timeoutId)
       } else {
         // No file upload, use JSON
         const jsonData = {
@@ -405,6 +485,9 @@ const CompanyProfileSettings: React.FC = () => {
         console.log('📄 Using JSON for data-only request')
         console.log('JSON data:', jsonData)
         
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout for JSON requests
+        
         response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
           method: 'POST',
           headers: {
@@ -412,34 +495,57 @@ const CompanyProfileSettings: React.FC = () => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(jsonData),
-          // Add timeout to prevent hanging requests
-          signal: AbortSignal.timeout(10000) // 10 second timeout for JSON requests
+          signal: controller.signal
         })
+        clearTimeout(timeoutId)
       }
 
       console.log('Save response status:', response.status)
       console.log('Save response headers:', Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
-        const updatedProfile = await response.json()
-        
-        // Check if response is empty
-        if (!updatedProfile || Object.keys(updatedProfile).length === 0) {
-          console.warn('⚠️ Empty response received from server during save (status OK)')
+        try {
+          const updatedProfile = await response.json()
+          
+          // Check if response is empty
+          if (!updatedProfile || Object.keys(updatedProfile).length === 0) {
+            console.warn('⚠️ Empty response received from server during save (status OK)')
+            console.log('ℹ️ Assuming save was successful, reloading profile...')
+            showSuccess('Company profile updated successfully!')
+            // Reload profile to get updated data
+            await loadProfile()
+          } else {
+            console.log('✅ Profile saved successfully:', updatedProfile)
+            setProfile(updatedProfile)
+            setFormData({
+              company_name: updatedProfile.company_name || '',
+              whatsapp_number: updatedProfile.whatsapp_number || '',
+              email: updatedProfile.email || '',
+              facebook_username: updatedProfile.facebook_username || '',
+              website: updatedProfile.website || '',
+              address: updatedProfile.address || '',
+              description: updatedProfile.description || '',
+              preferred_logo_position: updatedProfile.preferred_logo_position || 'top_right'
+            })
+            if (updatedProfile.logo_url) {
+              setLogoPreview(updatedProfile.logo_url)
+            }
+            setLogoFile(null) // Clear the file after successful save
+            showSuccess('Company profile updated successfully!')
+            loadStatus()
+          }
+        } catch (jsonError) {
+          // If response is OK but not JSON, assume success
+          console.warn('⚠️ Response OK but not JSON, assuming success:', jsonError)
           showSuccess('Company profile updated successfully!')
-          // Reload profile to get updated data
-          loadProfile()
-        } else {
-          console.log('✅ Profile saved successfully:', updatedProfile)
-          setProfile(updatedProfile)
-          showSuccess('Company profile updated successfully!')
-          loadStatus()
+          await loadProfile()
         }
       } else {
         // Handle different response types
         let errorMessage = 'Failed to update profile'
+        let errorData: any = null
         try {
-          const errorData = await response.json()
+          errorData = await response.json()
           
           // Check if response is empty or contains no useful error information
           if (!errorData || Object.keys(errorData).length === 0) {
@@ -467,20 +573,42 @@ const CompanyProfileSettings: React.FC = () => {
                 console.log('Error data keys:', Object.keys(errorData))
                 console.log('Error data values:', Object.values(errorData))
                 
-                errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
+                // Handle different error formats
+                if (errorData.detail && typeof errorData.detail === 'object') {
+                  // If detail is an object (field errors), format them
+                  const fieldErrors = Object.entries(errorData.detail)
+                    .map(([field, error]) => `${field}: ${Array.isArray(error) ? error[0] : error}`)
+                    .join(', ')
+                  errorMessage = errorData.message || fieldErrors || errorMessage
+                } else {
+                  errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
+                }
                 
                 console.error('❌ Save error response:')
                 console.error('  Status:', response.status)
                 console.error('  Error object:', JSON.stringify(errorData, null, 2))
                 console.error('  Error message:', errorMessage)
               } else {
+                // Handle empty error object - provide more helpful message
                 console.warn('⚠️ Save error response: Empty or meaningless error object')
                 console.warn('  Status:', response.status)
                 console.warn('  Object keys:', Object.keys(errorData))
                 console.warn('  Object values:', Object.values(errorData))
                 console.warn('  Has content:', hasContent)
                 console.warn('  Has error fields:', hasErrorFields)
-                errorMessage = response.statusText || `HTTP ${response.status}`
+                
+                // Provide more specific error messages based on status code
+                if (response.status === 401) {
+                  errorMessage = 'Authentication failed. Please log in again.'
+                } else if (response.status === 403) {
+                  errorMessage = 'Permission denied. You do not have access to save this profile.'
+                } else if (response.status === 400) {
+                  errorMessage = 'Invalid data provided. Please check your input and try again.'
+                } else if (response.status === 500) {
+                  errorMessage = 'Server error. Please try again later or contact support.'
+                } else {
+                  errorMessage = response.statusText || `HTTP ${response.status} - Failed to save profile`
+                }
               }
             } else {
               console.warn('⚠️ Save error response: Invalid error data type')
@@ -498,23 +626,48 @@ const CompanyProfileSettings: React.FC = () => {
         
         if (response.status === 401) {
           showError('Please log in again to save your profile')
+        } else if (response.status === 403) {
+          // 403 Forbidden - permission denied
+          try {
+            const errorDetail = errorData?.detail || errorData?.error || errorMessage
+            if (errorDetail && errorDetail.includes('Authentication')) {
+              showError('Authentication failed. Please refresh the page and try again.')
+            } else {
+              showError('Permission denied. You do not have access to save this profile. Please contact support if this persists.')
+            }
+            console.error('403 Permission Denied:', {
+              error: errorData?.error,
+              detail: errorData?.detail,
+              message: errorData?.message,
+              fullResponse: errorData
+            })
+          } catch (e) {
+            showError('Permission denied. Please try again.')
+            console.error('403 Permission Denied (error parsing):', e)
+          }
         } else if (response.status === 413) {
           showError('File too large. Please choose a smaller logo image.')
         } else if (response.status === 400) {
           // For 400 errors, show more specific error message
           if (errorMessage.includes('company_name') || errorMessage.includes('name')) {
             showError('Please enter a valid company name.')
-          } else if (errorMessage.includes('website') && errorMessage.includes('URL')) {
+          } else if (errorMessage.includes('website') && (errorMessage.includes('URL') || errorMessage.includes('url'))) {
             showError('Please enter a valid website URL (e.g., https://example.com)')
-          } else if (errorMessage.includes('facebook') && errorMessage.includes('URL')) {
+          } else if (errorMessage.includes('facebook') && (errorMessage.includes('URL') || errorMessage.includes('url'))) {
             showError('Please enter a valid Facebook URL (e.g., https://facebook.com/yourpage)')
+          } else if (errorMessage.includes('whatsapp') || errorMessage.includes('WhatsApp')) {
+            showError('Please enter a valid WhatsApp number (at least 10 digits).')
+          } else if (errorMessage.includes('email') && errorMessage.includes('valid')) {
+            showError('Please enter a valid email address.')
           } else if (errorMessage.includes('logo') || errorMessage.includes('image')) {
             showError('Please select a valid logo image.')
+          } else if (errorMessage && errorMessage !== 'Failed to update profile') {
+            showError(errorMessage)
           } else {
-            showError(`Invalid data: ${errorMessage}`)
+            showError('Invalid data provided. Please check your input and try again.')
           }
         } else {
-          showError(errorMessage)
+          showError(errorMessage || 'An unexpected error occurred. Please try again.')
         }
       }
     } catch (error) {

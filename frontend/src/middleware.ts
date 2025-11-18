@@ -40,13 +40,22 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     }
   }
 
-  // Apply Clerk authentication for non-admin routes
-  if (!isPublicRoute(req)) {
-    const { userId } = await auth();
-    if (!userId) {
-      return new Response("Unauthorized", { status: 401 });
-    }
+  // Allow public routes to pass through
+  if (isPublicRoute(req)) {
+    return NextResponse.next();
   }
+
+  // Protect all other routes with Clerk authentication
+  const authResult = await auth();
+  
+  if (!authResult.userId) {
+    // Redirect to sign-in if not authenticated
+    const signInUrl = new URL('/sign-in', req.url);
+    signInUrl.searchParams.set('redirect_url', pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  return NextResponse.next();
 });
 
 export const config = {

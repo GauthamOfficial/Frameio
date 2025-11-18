@@ -41,11 +41,19 @@ class TenantMiddleware(MiddlewareMixin):
             '/admin/',
             '/api/auth/',
             '/api/health/',
+            '/api/users/company-profiles/',  # Company profiles don't require organization
             '/static/',
             '/media/',
         ]
         
+        # Check if path matches any skip pattern
         if any(request.path.startswith(path) for path in skip_paths):
+            logger.info(f"TenantMiddleware: Skipping tenant resolution for {request.path}")
+            return None
+        
+        # Also skip if it's a company-profiles endpoint (check for exact match or prefix)
+        if '/company-profiles' in request.path:
+            logger.info(f"TenantMiddleware: Skipping tenant resolution for CompanyProfile endpoint: {request.path}")
             return None
         
         # Check if organization is already set by authentication
@@ -71,13 +79,22 @@ class TenantMiddleware(MiddlewareMixin):
                         logger.info(f"Auto-selected organization '{membership.organization.slug}' for user {request.user.id}")
                     else:
                         # If still no organization: for unsafe methods, block; for safe (GET/HEAD/OPTIONS), allow without org
+                        # BUT skip this check for company-profiles endpoints
                         if request.method not in ['GET', 'HEAD', 'OPTIONS'] and request.path.startswith('/api/'):
+                            # Allow company-profiles endpoints without organization
+                            if '/company-profiles' in request.path:
+                                logger.info(f"TenantMiddleware: Allowing company-profiles request without organization: {request.path}")
+                                return None
                             return JsonResponse({
                                 'error': 'Organization not found or access denied'
                             }, status=403)
                 except Exception as e:
                     logger.warning(f"Auto-select organization failed: {e}")
                     if request.method not in ['GET', 'HEAD', 'OPTIONS'] and request.path.startswith('/api/'):
+                        # Allow company-profiles endpoints without organization
+                        if '/company-profiles' in request.path:
+                            logger.info(f"TenantMiddleware: Allowing company-profiles request after error: {request.path}")
+                            return None
                         return JsonResponse({'error': 'Organization context error'}, status=403)
             else:
                 # Unauthenticated request: do not force organization; let auth/csrf handle
@@ -154,6 +171,13 @@ class TenantMiddleware(MiddlewareMixin):
         """
         Check if user has access to the organization.
         """
+        from django.conf import settings
+        
+        # Skip all permission checks in DEBUG mode
+        if settings.DEBUG:
+            logger.info(f"TenantMiddleware: Skipping organization permission check in DEBUG mode")
+            return None
+        
         if not hasattr(request, 'organization') or not request.organization:
             return None
         
