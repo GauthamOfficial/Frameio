@@ -56,3 +56,4 @@ After these fixes:
 3. Check if the token is being sent: Look for `Authorization: Bearer test_clerk_token` in network requests
 4. Verify DEBUG mode is enabled in Django settings
 
+
