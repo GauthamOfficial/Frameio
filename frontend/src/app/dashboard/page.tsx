@@ -1,14 +1,15 @@
 "use client"
 
 import { OverviewCards } from "@/components/dashboard/overview-cards"
+import { SavedPosters } from "@/components/dashboard/saved-posters"
+import { BrandingKitHistory } from "@/components/dashboard/branding-kit-history"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useOrganization } from "@/contexts/organization-context"
 import { useApp } from "@/contexts/app-context"
 import { DashboardErrorBoundary } from "@/components/common/error-boundary"
-import { useToastHelpers } from "@/components/common"
-import { Plus, TrendingUp, Calendar, Image, User, Settings, Wand2, Sparkles } from "lucide-react"
+import { Plus, TrendingUp, Calendar, Image, User, Settings, Palette } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function DashboardPage() {
@@ -29,6 +30,7 @@ export default function DashboardPage() {
   const getQuickActions = () => {
     const actions = [
       { name: "Generate AI Poster", href: "/dashboard/poster-generator", icon: Image },
+      { name: "Brandkit", href: "/dashboard/branding-kit", icon: Palette },
       { name: "Schedule Post", href: "/dashboard/scheduler", icon: Calendar },
       { name: "View Analytics", href: "/dashboard/analytics", icon: TrendingUp },
     ]
@@ -87,61 +89,19 @@ export default function DashboardPage() {
         {/* Overview Cards */}
         <OverviewCards />
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Activity */}
-          <Card className="lg:col-span-2 textile-hover textile-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <TrendingUp className="mr-2 h-5 w-5 text-chart-1" />
-                Recent Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4 p-3 rounded-lg bg-muted/50">
-                  <div className="w-10 h-10 bg-chart-1 rounded-lg flex items-center justify-center">
-                    <Image className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">New poster generated for Diwali Collection</p>
-                    <p className="text-xs text-muted-foreground">2 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 p-3 rounded-lg bg-muted/50">
-                  <div className="w-10 h-10 bg-chart-2 rounded-lg flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">3 posts scheduled for this week</p>
-                    <p className="text-xs text-muted-foreground">4 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 p-3 rounded-lg bg-muted/50">
-                  <div className="w-10 h-10 bg-chart-3 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Engagement rate increased by 15%</p>
-                    <p className="text-xs text-muted-foreground">1 day ago</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="textile-hover textile-shadow">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+        {/* Quick Actions */}
+        <Card className="textile-hover textile-shadow">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
               {getQuickActions().map((action, index) => {
                 const Icon = action.icon
                 return (
                   <Button 
                     key={index}
-                    className="w-full justify-start" 
+                    className="flex-1 min-w-[150px] justify-start" 
                     variant="outline"
                     onClick={() => handleQuickAction(action.href)}
                   >
@@ -150,29 +110,15 @@ export default function DashboardPage() {
                   </Button>
                 )
               })}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Posts */}
-        <Card className="textile-hover textile-shadow">
-          <CardHeader>
-            <CardTitle>Recent Posts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                <Image className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                <Image className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                <Image className="h-8 w-8 text-muted-foreground" />
-              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Saved Posters - All Generated Posters */}
+        <SavedPosters limit={undefined} />
+
+        {/* Branding Kit History */}
+        <BrandingKitHistory limit={undefined} />
       </div>
     </DashboardErrorBoundary>
   )

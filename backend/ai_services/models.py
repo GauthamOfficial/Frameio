@@ -225,3 +225,85 @@ class AIGenerationHistory(models.Model):
 
 # Import scheduling models
 from .scheduling_models import ScheduledPost
+
+
+class GeneratedPoster(models.Model):
+    """Model to store generated posters with captions and metadata"""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='generated_posters', null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='generated_posters', null=True, blank=True)
+    
+    # Poster details
+    image_url = models.URLField(help_text="URL of the generated poster image")
+    image_path = models.CharField(max_length=500, blank=True, help_text="Storage path of the image")
+    caption = models.TextField(help_text="Short caption for the poster")
+    full_caption = models.TextField(blank=True, help_text="Full caption with hashtags")
+    prompt = models.TextField(help_text="Original prompt used to generate the poster")
+    
+    # Metadata
+    aspect_ratio = models.CharField(max_length=20, default='1:1', help_text="Aspect ratio of the poster")
+    width = models.IntegerField(null=True, blank=True)
+    height = models.IntegerField(null=True, blank=True)
+    hashtags = models.JSONField(default=list, blank=True, help_text="List of hashtags")
+    emoji = models.CharField(max_length=50, blank=True)
+    call_to_action = models.TextField(blank=True)
+    
+    # Branding information
+    branding_applied = models.BooleanField(default=False)
+    logo_added = models.BooleanField(default=False)
+    contact_info_added = models.BooleanField(default=False)
+    branding_metadata = models.JSONField(default=dict, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['organization', 'created_at']),
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Poster - {self.prompt[:50]}... ({self.created_at.strftime('%Y-%m-%d')})"
+
+
+class GeneratedBrandingKit(models.Model):
+    """Model to store generated branding kits with logo and color palette"""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='generated_branding_kits', null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='generated_branding_kits', null=True, blank=True)
+    
+    # Branding kit details
+    prompt = models.TextField(help_text="Original prompt used to generate the branding kit")
+    style = models.CharField(max_length=50, default='modern', help_text="Style used for generation")
+    
+    # Logo data (stored as base64 or URL)
+    logo_data = models.TextField(blank=True, help_text="Base64 encoded logo image")
+    logo_format = models.CharField(max_length=10, default='png', help_text="Logo image format")
+    logo_url = models.URLField(blank=True, null=True, help_text="URL of the logo if stored externally")
+    
+    # Color palette data
+    color_palette_data = models.TextField(blank=True, help_text="Base64 encoded color palette image")
+    color_palette_format = models.CharField(max_length=10, default='png', help_text="Color palette image format")
+    color_palette_url = models.URLField(blank=True, null=True, help_text="URL of the color palette if stored externally")
+    colors = models.JSONField(default=list, blank=True, help_text="List of hex color codes")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['organization', 'created_at']),
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Branding Kit - {self.prompt[:50]}... ({self.created_at.strftime('%Y-%m-%d')})"

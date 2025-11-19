@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Wand2, Eye, Download, RefreshCw } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 interface BrandingKitData {
   logo?: {
@@ -27,6 +28,27 @@ export default function BrandingKitPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [brandingData, setBrandingData] = useState<BrandingKitData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { getToken } = useAuth()
+  
+  // Textarea auto-resize functionality
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  
+  // Auto-resize textarea based on content
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto'
+      // Set height based on scrollHeight, with min and max constraints
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 100), 500)
+      textarea.style.height = `${newHeight}px`
+    }
+  }, [])
+  
+  // Adjust height when prompt changes
+  useEffect(() => {
+    adjustTextareaHeight()
+  }, [prompt, adjustTextareaHeight])
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return
@@ -35,11 +57,22 @@ export default function BrandingKitPage() {
     setError(null)
     
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/ai/branding-kit/generate/', {
+      const token = await getToken()
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+      const baseUrl = apiBase.replace(/\/$/, '')
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${baseUrl}/api/ai/branding-kit/generate/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
+        credentials: 'include',
         body: JSON.stringify({
           prompt: prompt.trim(),
           style: 'modern'
@@ -54,6 +87,10 @@ export default function BrandingKitPage() {
       
       if (result.success) {
         setBrandingData(result.data.branding_kit)
+        // Trigger a custom event to refresh the dashboard history
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('branding-kit-generated'))
+        }
       } else {
         setError(result.error || 'Failed to generate branding kit')
       }
@@ -201,13 +238,18 @@ This branding kit was generated using AI and is ready for use in your marketing 
             <div className="space-y-2">
               <Label htmlFor="brand-prompt">Describe your brand vision</Label>
               <Textarea
+                ref={textareaRef}
                 id="brand-prompt"
                 placeholder="describe your logo idea"
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={(e) => {
+                  setPrompt(e.target.value)
+                  // Auto-resize on input
+                  setTimeout(() => adjustTextareaHeight(), 0)
+                }}
                 disabled={isGenerating}
-                rows={4}
-                className="min-h-[100px] resize-y placeholder:opacity-50"
+                className="min-h-[100px] max-h-[500px] resize-none overflow-y-auto placeholder:opacity-50"
+                style={{ height: 'auto' }}
               />
             </div>
 
@@ -217,7 +259,10 @@ This branding kit was generated using AI and is ready for use in your marketing 
               <div className="grid grid-cols-4 gap-3">
                 <button
                   type="button"
-                  onClick={() => setPrompt("Create a professional and elegant logo for a fashion textile brand.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred colors]\nDesign Elements: [Specify main visual]\n\nThe logo should reflect a premium, modern, and stylish aesthetic suitable for a fashion and textile brand. Use smooth typography and minimalist detailing to make it versatile for social media, tags, and packaging.\n\nProvide the logo on a clean white or soft gradient background, centered and ready for branding use.")}
+                  onClick={() => {
+                    setPrompt("Create a professional and elegant logo for a fashion textile brand.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred colors]\nDesign Elements: [Specify main visual]\n\nThe logo should reflect a premium, modern, and stylish aesthetic suitable for a fashion and textile brand. Use smooth typography and minimalist detailing to make it versatile for social media, tags, and packaging.\n\nProvide the logo on a clean white or soft gradient background, centered and ready for branding use.")
+                    setTimeout(() => adjustTextareaHeight(), 0)
+                  }}
                   className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >
@@ -234,7 +279,10 @@ This branding kit was generated using AI and is ready for use in your marketing 
                 
                 <button
                   type="button"
-                  onClick={() => setPrompt("Create a playful yet professional logo for a kids' textile brand.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred bright or pastel colors]\nDesign Elements: [Specify main visuals]\n\nThe logo should reflect a cute, friendly, and premium aesthetic suitable for a children's clothing and textile brand. Use soft, rounded typography and minimal yet fun details to appeal to both kids and parents.\n\nProvide the logo on a clean white or soft gradient pastel background, centered and ready for branding use.")}
+                  onClick={() => {
+                    setPrompt("Create a playful yet professional logo for a kids' textile brand.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred bright or pastel colors]\nDesign Elements: [Specify main visuals]\n\nThe logo should reflect a cute, friendly, and premium aesthetic suitable for a children's clothing and textile brand. Use soft, rounded typography and minimal yet fun details to appeal to both kids and parents.\n\nProvide the logo on a clean white or soft gradient pastel background, centered and ready for branding use.")
+                    setTimeout(() => adjustTextareaHeight(), 0)
+                  }}
                   className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >
@@ -251,7 +299,10 @@ This branding kit was generated using AI and is ready for use in your marketing 
                 
                 <button
                   type="button"
-                  onClick={() => setPrompt("Create a bold and professional logo for a wholesale textile company.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred bright or pastel colors]\nDesign Elements: [Specify main visuals]\n\nThe logo should reflect trust, scale, and quality, representing a reliable wholesale textile business. Use clean typography, geometric balance, and minimal detailing to ensure it looks strong on signage, invoices, and packaging.\n\nProvide the logo on a white or light gradient professional background, centered and ready for branding use.")}
+                  onClick={() => {
+                    setPrompt("Create a bold and professional logo for a wholesale textile company.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred bright or pastel colors]\nDesign Elements: [Specify main visuals]\n\nThe logo should reflect trust, scale, and quality, representing a reliable wholesale textile business. Use clean typography, geometric balance, and minimal detailing to ensure it looks strong on signage, invoices, and packaging.\n\nProvide the logo on a white or light gradient professional background, centered and ready for branding use.")
+                    setTimeout(() => adjustTextareaHeight(), 0)
+                  }}
                   className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >
@@ -268,7 +319,10 @@ This branding kit was generated using AI and is ready for use in your marketing 
                 
                 <button
                   type="button"
-                  onClick={() => setPrompt("Create a modern and professional logo for an online textile e-commerce platform.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred colors]\nDesign Elements: [Specify main visual]\n\nThe logo should reflect a premium, trustworthy, and digital-friendly aesthetic, representing an e-commerce textile platform. Use smooth, modern typography and minimalist detailing that looks perfect on a website, app icon, and social media.\n\nProvide the logo on a clean white or soft gradient background, centered and ready for digital branding use.")}
+                  onClick={() => {
+                    setPrompt("Create a modern and professional logo for an online textile e-commerce platform.\n\nBrand Name: [Your Company Name]\nColor Palette: [Choose your preferred colors]\nDesign Elements: [Specify main visual]\n\nThe logo should reflect a premium, trustworthy, and digital-friendly aesthetic, representing an e-commerce textile platform. Use smooth, modern typography and minimalist detailing that looks perfect on a website, app icon, and social media.\n\nProvide the logo on a clean white or soft gradient background, centered and ready for digital branding use.")
+                    setTimeout(() => adjustTextareaHeight(), 0)
+                  }}
                   className="p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm"
                   disabled={isGenerating}
                 >

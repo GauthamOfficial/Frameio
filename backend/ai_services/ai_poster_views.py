@@ -14,6 +14,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
 from .ai_poster_service import AIPosterService
+from .models import GeneratedPoster
 
 logger = logging.getLogger(__name__)
 
@@ -129,9 +130,50 @@ def generate_poster(request):
         result = ai_poster_service.generate_from_prompt(prompt, aspect_ratio, user)
         
         if result.get('status') == 'success':
-                return Response({
+            # Get organization from user if available
+            organization = None
+            if user and hasattr(user, 'organization'):
+                organization = user.organization
+            elif user:
+                # Try to get organization from user's company profile
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and hasattr(company_profile, 'organization'):
+                        organization = company_profile.organization
+                except Exception as e:
+                    logger.warning(f"Could not get organization: {e}")
+            
+            # Save the generated poster to database
+            try:
+                poster = GeneratedPoster.objects.create(
+                    organization=organization,
+                    user=user,
+                    image_url=result.get('image_url', ''),
+                    image_path=result.get('image_path', ''),
+                    caption=result.get('caption', ''),
+                    full_caption=result.get('full_caption', ''),
+                    prompt=prompt,
+                    aspect_ratio=result.get('aspect_ratio_final', aspect_ratio),
+                    width=result.get('width'),
+                    height=result.get('height'),
+                    hashtags=result.get('hashtags', []),
+                    emoji=result.get('emoji', ''),
+                    call_to_action=result.get('call_to_action', ''),
+                    branding_applied=result.get('branding_applied', False),
+                    logo_added=result.get('logo_added', False),
+                    contact_info_added=result.get('contact_info_added', False),
+                    branding_metadata=result.get('branding_metadata', {})
+                )
+                logger.info(f"Poster saved to database with ID: {poster.id}")
+            except Exception as e:
+                logger.error(f"Failed to save poster to database: {str(e)}")
+                # Continue even if save fails
+            
+            return Response({
                 "success": True,
                 "message": "Poster generated successfully",
+                "poster_id": str(poster.id) if 'poster' in locals() else None,
                 "image_path": result.get('image_path'),
                 "image_url": result.get('image_url'),
                 "filename": result.get('filename'),
@@ -147,8 +189,8 @@ def generate_poster(request):
                 "call_to_action": result.get('call_to_action', ''),
                 "branding_applied": result.get('branding_applied', False),
                 "logo_added": result.get('logo_added', False),
-                    "contact_info_added": result.get('contact_info_added', False),
-                    "branding_metadata": result.get('branding_metadata', {})
+                "contact_info_added": result.get('contact_info_added', False),
+                "branding_metadata": result.get('branding_metadata', {})
             }, status=status.HTTP_200_OK)
         else:
             error_message = result.get('message', 'Failed to generate poster')
@@ -304,9 +346,50 @@ def edit_poster(request):
             logger.info(f"generate_with_image returned: {result.get('status')}")
             
             if result.get('status') == 'success':
+                # Get organization from user if available
+                organization = None
+                if user and hasattr(user, 'organization'):
+                    organization = user.organization
+                elif user:
+                    try:
+                        from users.models import CompanyProfile
+                        company_profile = getattr(user, 'company_profile', None)
+                        if company_profile and hasattr(company_profile, 'organization'):
+                            organization = company_profile.organization
+                    except Exception as e:
+                        logger.warning(f"Could not get organization: {e}")
+                
+                # Save the edited poster to database
+                poster = None
+                try:
+                    poster = GeneratedPoster.objects.create(
+                        organization=organization,
+                        user=user,
+                        image_url=result.get('image_url', ''),
+                        image_path=result.get('image_path', ''),
+                        caption=result.get('caption', ''),
+                        full_caption=result.get('full_caption', ''),
+                        prompt=prompt,
+                        aspect_ratio=result.get('aspect_ratio_final', aspect_ratio),
+                        width=result.get('width'),
+                        height=result.get('height'),
+                        hashtags=result.get('hashtags', []),
+                        emoji=result.get('emoji', ''),
+                        call_to_action=result.get('call_to_action', ''),
+                        branding_applied=result.get('branding_applied', False),
+                        logo_added=result.get('logo_added', False),
+                        contact_info_added=result.get('contact_info_added', False),
+                        branding_metadata=result.get('branding_metadata', {})
+                    )
+                    logger.info(f"Edited poster saved to database with ID: {poster.id}")
+                except Exception as e:
+                    logger.error(f"Failed to save edited poster to database: {str(e)}")
+                    # Continue even if save fails
+                
                 response = Response({
                     "success": True,
                     "message": "Poster edited successfully",
+                    "poster_id": str(poster.id) if poster else None,
                     "image_path": result.get('image_path'),
                     "image_url": result.get('image_url'),
                     "filename": result.get('filename'),
@@ -501,9 +584,51 @@ def composite_poster(request):
             result = ai_poster_service.generate_composite(prompt, temp_paths, aspect_ratio)
             
             if result.get('status') == 'success':
+                # Get user and organization for saving
+                user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+                organization = None
+                if user and hasattr(user, 'organization'):
+                    organization = user.organization
+                elif user:
+                    try:
+                        from users.models import CompanyProfile
+                        company_profile = getattr(user, 'company_profile', None)
+                        if company_profile and hasattr(company_profile, 'organization'):
+                            organization = company_profile.organization
+                    except Exception as e:
+                        logger.warning(f"Could not get organization: {e}")
+                
+                # Save the generated composite poster to database
+                poster = None
+                try:
+                    poster = GeneratedPoster.objects.create(
+                        organization=organization,
+                        user=user,
+                        image_url=result.get('image_url', ''),
+                        image_path=result.get('image_path', ''),
+                        caption=result.get('caption', ''),
+                        full_caption=result.get('full_caption', ''),
+                        prompt=prompt,
+                        aspect_ratio=result.get('aspect_ratio_final', aspect_ratio),
+                        width=result.get('width'),
+                        height=result.get('height'),
+                        hashtags=result.get('hashtags', []),
+                        emoji=result.get('emoji', ''),
+                        call_to_action=result.get('call_to_action', ''),
+                        branding_applied=result.get('branding_applied', False),
+                        logo_added=result.get('logo_added', False),
+                        contact_info_added=result.get('contact_info_added', False),
+                        branding_metadata=result.get('branding_metadata', {})
+                    )
+                    logger.info(f"Composite poster saved to database with ID: {poster.id}")
+                except Exception as e:
+                    logger.error(f"Failed to save composite poster to database: {str(e)}")
+                    # Continue even if save fails
+                
                 return Response({
                     "success": True,
                     "message": "Composite poster generated successfully",
+                    "poster_id": str(poster.id) if poster else None,
                     "image_path": result.get('image_path'),
                     "image_url": result.get('image_url'),
                     "filename": result.get('filename'),
@@ -622,9 +747,51 @@ def add_text_overlay(request):
             result = ai_poster_service.add_text_overlay(full_temp_path, text_prompt, text_style)
             
             if result.get('status') == 'success':
+                # Get user and organization for saving
+                user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+                organization = None
+                if user and hasattr(user, 'organization'):
+                    organization = user.organization
+                elif user:
+                    try:
+                        from users.models import CompanyProfile
+                        company_profile = getattr(user, 'company_profile', None)
+                        if company_profile and hasattr(company_profile, 'organization'):
+                            organization = company_profile.organization
+                    except Exception as e:
+                        logger.warning(f"Could not get organization: {e}")
+                
+                # Save the poster with text overlay to database
+                poster = None
+                try:
+                    poster = GeneratedPoster.objects.create(
+                        organization=organization,
+                        user=user,
+                        image_url=result.get('image_url', ''),
+                        image_path=result.get('image_path', ''),
+                        caption=result.get('caption', ''),
+                        full_caption=result.get('full_caption', ''),
+                        prompt=text_prompt,  # Use text_prompt as the prompt
+                        aspect_ratio=result.get('aspect_ratio', '1:1'),
+                        width=result.get('width'),
+                        height=result.get('height'),
+                        hashtags=result.get('hashtags', []),
+                        emoji=result.get('emoji', ''),
+                        call_to_action=result.get('call_to_action', ''),
+                        branding_applied=result.get('branding_applied', False),
+                        logo_added=result.get('logo_added', False),
+                        contact_info_added=result.get('contact_info_added', False),
+                        branding_metadata=result.get('branding_metadata', {})
+                    )
+                    logger.info(f"Poster with text overlay saved to database with ID: {poster.id}")
+                except Exception as e:
+                    logger.error(f"Failed to save poster with text overlay to database: {str(e)}")
+                    # Continue even if save fails
+                
                 return Response({
                     "success": True,
                     "message": "Text overlay added successfully",
+                    "poster_id": str(poster.id) if poster else None,
                     "image_path": result.get('image_path'),
                     "image_url": result.get('image_url'),
                     "filename": result.get('filename'),
@@ -658,4 +825,171 @@ def add_text_overlay(request):
         return Response({
             "success": False,
             "error": "Internal server error"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def list_posters(request):
+    """
+    GET /api/ai/ai-poster/posters/
+    List all generated posters for the current user/organization
+    
+    Query params:
+    - limit: Number of posters to return (default: 50)
+    - offset: Offset for pagination (default: 0)
+    """
+    try:
+        # Get user from request if authenticated
+        user = None
+        organization = None
+        
+        if request.user and request.user.is_authenticated:
+            user = request.user
+            # Try to get organization from user
+            if hasattr(user, 'organization'):
+                organization = user.organization
+            else:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and hasattr(company_profile, 'organization'):
+                        organization = company_profile.organization
+                except Exception:
+                    pass
+        
+        # Get query parameters
+        limit = int(request.GET.get('limit', 50))
+        offset = int(request.GET.get('offset', 0))
+        
+        # Build queryset
+        queryset = GeneratedPoster.objects.all()
+        
+        # Filter by organization if available
+        if organization:
+            queryset = queryset.filter(organization=organization)
+        elif user:
+            queryset = queryset.filter(user=user)
+        
+        # Order by created_at descending
+        queryset = queryset.order_by('-created_at')
+        
+        # Apply pagination
+        total_count = queryset.count()
+        posters = queryset[offset:offset + limit]
+        
+        # Serialize posters
+        posters_data = []
+        for poster in posters:
+            posters_data.append({
+                'id': str(poster.id),
+                'image_url': poster.image_url,
+                'caption': poster.caption,
+                'full_caption': poster.full_caption,
+                'prompt': poster.prompt,
+                'aspect_ratio': poster.aspect_ratio,
+                'width': poster.width,
+                'height': poster.height,
+                'hashtags': poster.hashtags,
+                'emoji': poster.emoji,
+                'call_to_action': poster.call_to_action,
+                'branding_applied': poster.branding_applied,
+                'logo_added': poster.logo_added,
+                'contact_info_added': poster.contact_info_added,
+                'created_at': poster.created_at.isoformat(),
+                'updated_at': poster.updated_at.isoformat(),
+            })
+        
+        return Response({
+            "success": True,
+            "count": total_count,
+            "results": posters_data,
+            "limit": limit,
+            "offset": offset
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error listing posters: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({
+            "success": False,
+            "error": str(e) if settings.DEBUG else "Internal server error"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_poster_by_id(request, poster_id):
+    """
+    GET /api/ai/ai-poster/posters/{poster_id}/
+    Get a specific poster by ID
+    """
+    try:
+        poster = GeneratedPoster.objects.get(id=poster_id)
+        
+        # Check permissions (user or organization match)
+        user = request.user if request.user.is_authenticated else None
+        organization = None
+        
+        if user:
+            if hasattr(user, 'organization'):
+                organization = user.organization
+            else:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and hasattr(company_profile, 'organization'):
+                        organization = company_profile.organization
+                except Exception:
+                    pass
+        
+        # Check if user has access
+        if organization and poster.organization != organization:
+            return Response({
+                "success": False,
+                "error": "Poster not found or access denied"
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user and poster.user and poster.user != user:
+            if not organization or poster.organization != organization:
+                return Response({
+                    "success": False,
+                    "error": "Poster not found or access denied"
+                }, status=status.HTTP_404_NOT_FOUND)
+        
+        return Response({
+            "success": True,
+            "poster": {
+                'id': str(poster.id),
+                'image_url': poster.image_url,
+                'caption': poster.caption,
+                'full_caption': poster.full_caption,
+                'prompt': poster.prompt,
+                'aspect_ratio': poster.aspect_ratio,
+                'width': poster.width,
+                'height': poster.height,
+                'hashtags': poster.hashtags,
+                'emoji': poster.emoji,
+                'call_to_action': poster.call_to_action,
+                'branding_applied': poster.branding_applied,
+                'logo_added': poster.logo_added,
+                'contact_info_added': poster.contact_info_added,
+                'created_at': poster.created_at.isoformat(),
+                'updated_at': poster.updated_at.isoformat(),
+            }
+        }, status=status.HTTP_200_OK)
+        
+    except GeneratedPoster.DoesNotExist:
+        return Response({
+            "success": False,
+            "error": "Poster not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error getting poster: {str(e)}")
+        return Response({
+            "success": False,
+            "error": str(e) if settings.DEBUG else "Internal server error"
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

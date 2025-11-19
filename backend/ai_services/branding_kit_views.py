@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
 from .branding_kit_service import BrandingKitService
+from .models import GeneratedBrandingKit
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,61 @@ def generate_branding_kit(request):
         result = branding_kit_service.generate_branding_kit(prompt, style)
         
         if result.get('success'):
+            # Get user and organization from request if available
+            user = None
+            organization = None
+            
+            # Check if user is authenticated
+            logger.info(f"Request user: {request.user}, is_authenticated: {getattr(request.user, 'is_authenticated', False)}")
+            
+            if hasattr(request, 'user') and request.user and getattr(request.user, 'is_authenticated', False):
+                user = request.user
+                logger.info(f"Authenticated user: {user.email if hasattr(user, 'email') else user.username}")
+                
+                # Try to get organization from user
+                if hasattr(user, 'organization') and user.organization:
+                    organization = user.organization
+                    logger.info(f"Found organization from user: {organization}")
+                else:
+                    try:
+                        from users.models import CompanyProfile
+                        company_profile = getattr(user, 'company_profile', None)
+                        if company_profile and hasattr(company_profile, 'organization') and company_profile.organization:
+                            organization = company_profile.organization
+                            logger.info(f"Found organization from company profile: {organization}")
+                    except Exception as e:
+                        logger.warning(f"Could not get organization: {e}")
+            else:
+                logger.warning("No authenticated user found - branding kit will be saved without user association")
+            
+            # Save the generated branding kit to database
+            try:
+                branding_kit_data = result.get('branding_kit', {})
+                logo_data = branding_kit_data.get('logo', {})
+                palette_data = branding_kit_data.get('color_palette', {})
+                
+                # Check if logo and palette data exist
+                logo_data_str = logo_data.get('data', '') if logo_data else ''
+                palette_data_str = palette_data.get('data', '') if palette_data else ''
+                
+                logger.info(f"Saving branding kit - Logo data length: {len(logo_data_str)}, Palette data length: {len(palette_data_str)}")
+                
+                branding_kit = GeneratedBrandingKit.objects.create(
+                    organization=organization,
+                    user=user,
+                    prompt=prompt,
+                    style=style,
+                    logo_data=logo_data_str,
+                    logo_format=logo_data.get('format', 'png') if logo_data else 'png',
+                    color_palette_data=palette_data_str,
+                    color_palette_format=palette_data.get('format', 'png') if palette_data else 'png',
+                    colors=result.get('used_colors', [])
+                )
+                logger.info(f"Branding kit saved to database with ID: {branding_kit.id}, User: {user.email if user and hasattr(user, 'email') else 'None'}")
+            except Exception as e:
+                logger.error(f"Failed to save branding kit to database: {str(e)}", exc_info=True)
+                # Continue even if save fails
+            
             return Response({
                 'success': True,
                 'message': 'Branding kit generated successfully',
@@ -206,6 +262,116 @@ def branding_kit_status(request):
         return Response({
             'success': False,
             'error': 'Internal server error'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def list_branding_kits(request):
+    """
+    GET /api/ai/branding-kit/history/
+    List all generated branding kits for the current user/organization
+    
+    Query params:
+    - limit: Number of branding kits to return (default: 50)
+    - offset: Offset for pagination (default: 0)
+    """
+    try:
+        # Get user from request if authenticated
+        user = None
+        organization = None
+        
+        logger.info(f"List branding kits - Request user: {request.user}, is_authenticated: {getattr(request.user, 'is_authenticated', False)}")
+        
+        if hasattr(request, 'user') and request.user and getattr(request.user, 'is_authenticated', False):
+            user = request.user
+            logger.info(f"List branding kits - Authenticated user: {user.email if hasattr(user, 'email') else user.username}")
+            
+            # Try to get organization from user
+            if hasattr(user, 'organization') and user.organization:
+                organization = user.organization
+                logger.info(f"List branding kits - Found organization from user: {organization}")
+            else:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and hasattr(company_profile, 'organization') and company_profile.organization:
+                        organization = company_profile.organization
+                        logger.info(f"List branding kits - Found organization from company profile: {organization}")
+                except Exception as e:
+                    logger.warning(f"Could not get organization: {e}")
+        
+        # Get query parameters
+        limit = int(request.GET.get('limit', 50))
+        offset = int(request.GET.get('offset', 0))
+        
+        logger.info(f"List branding kits - Query params: limit={limit}, offset={offset}")
+        
+        # Build queryset
+        queryset = GeneratedBrandingKit.objects.all()
+        logger.info(f"List branding kits - Total branding kits in DB: {queryset.count()}")
+        
+        # Filter by organization if available
+        if organization:
+            queryset = queryset.filter(organization=organization)
+            logger.info(f"List branding kits - Filtered by organization: {queryset.count()} kits")
+        elif user:
+            queryset = queryset.filter(user=user)
+            logger.info(f"List branding kits - Filtered by user: {queryset.count()} kits")
+        else:
+            # In development, if no user is authenticated, show all kits
+            # In production, this should return empty
+            from django.conf import settings
+            if settings.DEBUG:
+                logger.warning("List branding kits - No authenticated user, showing all kits (DEBUG mode)")
+            else:
+                queryset = queryset.none()
+                logger.warning("List branding kits - No authenticated user, returning empty (PRODUCTION mode)")
+        
+        # Order by created_at descending
+        queryset = queryset.order_by('-created_at')
+        
+        # Apply pagination
+        total_count = queryset.count()
+        branding_kits = queryset[offset:offset + limit]
+        logger.info(f"List branding kits - Returning {len(branding_kits)} kits (total: {total_count})")
+        
+        # Serialize branding kits
+        branding_kits_data = []
+        for kit in branding_kits:
+            branding_kits_data.append({
+                'id': str(kit.id),
+                'prompt': kit.prompt,
+                'style': kit.style,
+                'logo': {
+                    'data': kit.logo_data,
+                    'format': kit.logo_format,
+                    'url': kit.logo_url
+                } if kit.logo_data else None,
+                'color_palette': {
+                    'data': kit.color_palette_data,
+                    'format': kit.color_palette_format,
+                    'url': kit.color_palette_url
+                } if kit.color_palette_data else None,
+                'colors': kit.colors,
+                'created_at': kit.created_at.isoformat(),
+                'updated_at': kit.updated_at.isoformat()
+            })
+        
+        return Response({
+            'success': True,
+            'results': branding_kits_data,
+            'count': total_count,
+            'limit': limit,
+            'offset': offset
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error listing branding kits: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

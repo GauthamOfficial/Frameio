@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/nextjs'
 
 interface User {
@@ -30,6 +30,10 @@ export function useAuth() {
     isAuthenticated: false,
     token: null,
   })
+
+  // Use refs to track previous values and prevent infinite loops
+  const fetchingRef = useRef(false)
+  const lastClerkUserIdRef = useRef<string | null>(null)
 
   // Get token - use Clerk's getToken or fallback to test token in development
   const getToken = useCallback(async (): Promise<string | null> => {
@@ -61,7 +65,14 @@ export function useAuth() {
 
   // Fetch user data
   const fetchUser = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (fetchingRef.current) {
+      return
+    }
+
     try {
+      fetchingRef.current = true
+
       // If Clerk user is available, use it
       if (clerkUser && clerkLoaded) {
         const token = await getToken()
@@ -75,6 +86,7 @@ export function useAuth() {
           isAuthenticated: true,
           token,
         })
+        lastClerkUserIdRef.current = clerkUser.id
         return
       }
       
@@ -122,15 +134,25 @@ export function useAuth() {
         isAuthenticated: false,
         token: null,
       })
+    } finally {
+      fetchingRef.current = false
     }
-  }, [getToken, clerkUser, clerkLoaded])
+  }, [getToken, clerkUser?.id, clerkLoaded])
 
   useEffect(() => {
-    fetchUser()
+    // Only fetch if Clerk user ID changed or if Clerk just loaded
+    const currentClerkUserId = clerkUser?.id || null
+    const userIdChanged = currentClerkUserId !== lastClerkUserIdRef.current
+    
+    if ((userIdChanged || !clerkLoaded) && !fetchingRef.current) {
+      fetchUser()
+    }
     
     // Listen for storage changes (when token is set in another tab/window)
     const handleStorageChange = () => {
-      fetchUser()
+      if (!fetchingRef.current) {
+        fetchUser()
+      }
     }
     
     window.addEventListener('storage', handleStorageChange)
@@ -138,7 +160,8 @@ export function useAuth() {
     return () => {
       window.removeEventListener('storage', handleStorageChange)
     }
-  }, [fetchUser])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clerkLoaded, clerkUser?.id])
 
   const signOut = useCallback(async () => {
     // Sign out from Clerk if available

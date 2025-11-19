@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { useUser, useAuth } from '@clerk/nextjs'
 import { setAuthToken, getAuthToken } from '@/lib/api'
 // Removed circular dependency - toast helpers will be used directly in components
@@ -53,11 +53,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [isGlobalLoading, setIsGlobalLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Use refs to track previous values and prevent infinite loops
+  const initializingRef = useRef(false)
+  const lastUserIdRef = useRef<string | null>(null)
+
   // Initialize auth state
   const initializeAuth = useCallback(async () => {
-    if (!userLoaded) return
+    if (!userLoaded || initializingRef.current) return
+
+    const currentUserId = user?.id || null
+    // Only initialize if user ID changed
+    if (currentUserId === lastUserIdRef.current) {
+      return
+    }
 
     try {
+      initializingRef.current = true
       setIsLoading(true)
       
       if (user) {
@@ -81,6 +92,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           // Store token in localStorage for development
           localStorage.setItem('auth-token', authToken)
         }
+        lastUserIdRef.current = currentUserId
       } else {
         setIsAuthenticated(false)
         setToken(null)
@@ -88,14 +100,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setOrganizationId(null)
         setUserRole(null)
         setPermissions([])
+        lastUserIdRef.current = null
       }
     } catch (err: any) {
       console.error('Auth initialization error:', err)
       setError('Failed to initialize authentication')
     } finally {
       setIsLoading(false)
+      initializingRef.current = false
     }
-  }, [user, userLoaded, getToken])
+  }, [user?.id, userLoaded, getToken])
 
   // Refresh auth state
   const refreshAuth = useCallback(async () => {
@@ -153,7 +167,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Initialize auth on mount and when user changes
   useEffect(() => {
     initializeAuth()
-  }, [initializeAuth])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userLoaded, user?.id])
 
   // Listen for API errors
   useEffect(() => {
