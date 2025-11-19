@@ -9,6 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from .branding_kit_service import BrandingKitService
 from .models import GeneratedBrandingKit
 
@@ -372,6 +373,70 @@ def list_branding_kits(request):
         return Response({
             'success': False,
             'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_branding_kit(request, kit_id):
+    """
+    DELETE /api/ai/branding-kit/{kit_id}/delete/
+    Delete a specific branding kit by ID
+    """
+    try:
+        kit = GeneratedBrandingKit.objects.get(id=kit_id)
+        
+        # Check permissions (user or organization match)
+        user = None
+        organization = None
+        
+        if request.user and request.user.is_authenticated:
+            user = request.user
+            if hasattr(user, 'organization'):
+                organization = user.organization
+            else:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and hasattr(company_profile, 'organization'):
+                        organization = company_profile.organization
+                except Exception:
+                    pass
+        
+        # Check if user has access
+        if organization and kit.organization != organization:
+            return Response({
+                'success': False,
+                'error': 'Branding kit not found or access denied'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user and kit.user and kit.user != user:
+            if not organization or kit.organization != organization:
+                return Response({
+                    'success': False,
+                    'error': 'Branding kit not found or access denied'
+                }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Delete the branding kit record
+        kit.delete()
+        logger.info(f"Deleted branding kit with ID: {kit_id}")
+        
+        return Response({
+            'success': True,
+            'message': 'Branding kit deleted successfully'
+        }, status=status.HTTP_200_OK)
+        
+    except GeneratedBrandingKit.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Branding kit not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error deleting branding kit: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e) if settings.DEBUG else 'Internal server error'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

@@ -45,6 +45,7 @@ urlpatterns = [
     path('ai-poster/poster/<str:poster_id>/', ai_poster_views.get_poster, name='get-poster'),
     path('ai-poster/posters/', ai_poster_views.list_posters, name='list-posters'),
     path('ai-poster/posters/<str:poster_id>/', ai_poster_views.get_poster_by_id, name='get-poster-by-id'),
+    path('ai-poster/posters/<str:poster_id>/delete/', ai_poster_views.delete_poster, name='delete-poster'),
     
     # AI Caption Generation URLs
     path('ai-caption/product_caption/', ai_caption_views.generate_product_caption, name='generate-product-caption'),
@@ -60,4 +61,5 @@ urlpatterns = [
     path('branding-kit/status/', branding_kit_views.branding_kit_status, name='branding-kit-status'),
     path('branding-kit/test-colors/', branding_kit_views.test_color_detection, name='test-color-detection'),
     path('branding-kit/history/', branding_kit_views.list_branding_kits, name='list-branding-kits'),
+    path('branding-kit/<str:kit_id>/delete/', branding_kit_views.delete_branding_kit, name='delete-branding-kit'),
 ]

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Palette, Calendar, Download, Loader2, RefreshCw } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Palette, Calendar, Download, Loader2, RefreshCw, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
 
@@ -33,6 +34,9 @@ interface BrandingKitHistoryProps {
 export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
   const [brandingKits, setBrandingKits] = useState<BrandingKit[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [kitToDelete, setKitToDelete] = useState<BrandingKit | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const { getToken } = useAuth()
   const { showError } = useToastHelpers()
 
@@ -211,6 +215,51 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
     }
   }
 
+  const handleDeleteClick = (kit: BrandingKit) => {
+    setKitToDelete(kit)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!kitToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const token = await getToken()
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+      const baseUrl = apiBase.replace(/\/$/, '')
+      
+      const response = await fetch(`${baseUrl}/api/ai/branding-kit/${kitToDelete.id}/delete/`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to delete branding kit' }))
+        throw new Error(errorData.error || 'Failed to delete branding kit')
+      }
+
+      // Remove the branding kit from the list
+      setBrandingKits(prev => prev.filter(k => k.id !== kitToDelete.id))
+      setDeleteDialogOpen(false)
+      setKitToDelete(null)
+    } catch (error) {
+      console.error('Error deleting branding kit:', error)
+      showError(error instanceof Error ? error.message : 'Failed to delete branding kit')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false)
+    setKitToDelete(null)
+  }
+
   if (loading) {
     return (
       <Card>
@@ -366,12 +415,56 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
                       Palette
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeleteClick(kit)}
+                    className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    title="Delete branding kit"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Delete Branding Kit</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this branding kit? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

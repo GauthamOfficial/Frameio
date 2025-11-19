@@ -726,6 +726,16 @@ export default function EnhancedPosterGeneratorWithBranding() {
                   <div className="text-gray-500 text-xs mt-1">Premium dress shop style</div>
                 </button>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push('/dashboard/templates')}
+                className="w-full mt-2"
+                disabled={isGenerating}
+              >
+                More Templates
+                <ExternalLink className="ml-2 h-4 w-4" />
+              </Button>
             </div>
 
             <div className="space-y-2">

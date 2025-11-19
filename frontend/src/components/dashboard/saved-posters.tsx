@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Image, Calendar, Download, ExternalLink, Loader2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Image, Calendar, Download, ExternalLink, Loader2, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
 
@@ -28,6 +29,9 @@ interface SavedPostersProps {
 export function SavedPosters({ limit }: SavedPostersProps) {
   const [posters, setPosters] = useState<Poster[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [posterToDelete, setPosterToDelete] = useState<Poster | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const { getToken } = useAuth()
   const { showError } = useToastHelpers()
 
@@ -173,13 +177,45 @@ export function SavedPosters({ limit }: SavedPostersProps) {
       
       // Handle different response formats
       if (data.success && data.results) {
-        setPosters(data.results)
+        // Ensure image URLs are absolute
+        const postersWithFixedUrls = data.results.map((poster: Poster) => {
+          if (poster.image_url && !poster.image_url.startsWith('http')) {
+            const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+            const baseUrl = apiBase.replace(/\/$/, '')
+            poster.image_url = poster.image_url.startsWith('/') 
+              ? `${baseUrl}${poster.image_url}`
+              : `${baseUrl}/${poster.image_url}`
+          }
+          return poster
+        })
+        console.log('Posters with fixed URLs:', postersWithFixedUrls.map((p: Poster) => ({ id: p.id, image_url: p.image_url })))
+        setPosters(postersWithFixedUrls)
       } else if (Array.isArray(data)) {
         // If response is directly an array
-        setPosters(data)
+        const postersWithFixedUrls = data.map((poster: Poster) => {
+          if (poster.image_url && !poster.image_url.startsWith('http')) {
+            const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+            const baseUrl = apiBase.replace(/\/$/, '')
+            poster.image_url = poster.image_url.startsWith('/') 
+              ? `${baseUrl}${poster.image_url}`
+              : `${baseUrl}/${poster.image_url}`
+          }
+          return poster
+        })
+        setPosters(postersWithFixedUrls)
       } else if (data.results && Array.isArray(data.results)) {
         // If results exist but success flag might be missing
-        setPosters(data.results)
+        const postersWithFixedUrls = data.results.map((poster: Poster) => {
+          if (poster.image_url && !poster.image_url.startsWith('http')) {
+            const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+            const baseUrl = apiBase.replace(/\/$/, '')
+            poster.image_url = poster.image_url.startsWith('/') 
+              ? `${baseUrl}${poster.image_url}`
+              : `${baseUrl}/${poster.image_url}`
+          }
+          return poster
+        })
+        setPosters(postersWithFixedUrls)
       } else if (data.success === false) {
         // If API explicitly returns success: false, check if there's an error
         if (data.error) {
@@ -256,6 +292,51 @@ export function SavedPosters({ limit }: SavedPostersProps) {
     }
   }
 
+  const handleDeleteClick = (poster: Poster) => {
+    setPosterToDelete(poster)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!posterToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const token = await getToken()
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+      const baseUrl = apiBase.replace(/\/$/, '')
+      
+      const response = await fetch(`${baseUrl}/api/ai/ai-poster/posters/${posterToDelete.id}/delete/`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to delete poster' }))
+        throw new Error(errorData.error || 'Failed to delete poster')
+      }
+
+      // Remove the poster from the list
+      setPosters(prev => prev.filter(p => p.id !== posterToDelete.id))
+      setDeleteDialogOpen(false)
+      setPosterToDelete(null)
+    } catch (error) {
+      console.error('Error deleting poster:', error)
+      showError(error instanceof Error ? error.message : 'Failed to delete poster')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false)
+    setPosterToDelete(null)
+  }
+
   if (loading) {
     return (
       <Card>
@@ -309,16 +390,38 @@ export function SavedPosters({ limit }: SavedPostersProps) {
               className="group relative bg-card rounded-lg overflow-hidden border border-border hover:border-primary hover:shadow-lg transition-all"
             >
               {/* Image Container */}
-              <div className="aspect-square bg-muted overflow-hidden">
-                <img
-                  src={poster.image_url}
-                  alt={poster.caption || poster.prompt || 'Generated poster'}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.src = '/placeholder-image.png'
-                  }}
-                />
+              <div className="aspect-square bg-muted overflow-hidden relative">
+                {poster.image_url ? (
+                  <img
+                    src={poster.image_url}
+                    alt={poster.caption || poster.prompt || 'Generated poster'}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      // Try to fix relative URLs
+                      if (poster.image_url && !poster.image_url.startsWith('http')) {
+                        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+                        const baseUrl = apiBase.replace(/\/$/, '')
+                        const fixedUrl = poster.image_url.startsWith('/') 
+                          ? `${baseUrl}${poster.image_url}`
+                          : `${baseUrl}/${poster.image_url}`
+                        target.src = fixedUrl
+                      } else {
+                        // Fallback to placeholder
+                        target.style.display = 'none'
+                        const placeholder = target.parentElement?.querySelector('.image-placeholder')
+                        if (placeholder) {
+                          (placeholder as HTMLElement).style.display = 'flex'
+                        }
+                      }
+                    }}
+                    loading="lazy"
+                  />
+                ) : null}
+                {/* Placeholder when image fails to load */}
+                <div className="image-placeholder absolute inset-0 flex items-center justify-center bg-muted" style={{ display: poster.image_url ? 'none' : 'flex' }}>
+                  <Image className="h-12 w-12 text-muted-foreground opacity-50" />
+                </div>
               </div>
               
               {/* Info Overlay - Always Visible */}
@@ -376,12 +479,55 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                   >
                     <ExternalLink className="h-3 w-3" />
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeleteClick(poster)}
+                    className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Delete Poster</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this poster? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

@@ -48,7 +48,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
 export function DialogContent({ children, className = '' }: DialogContentProps) {
   return (
     <div
-      className={`bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4 ${className}`}
+      className={`bg-card text-card-foreground rounded-lg shadow-lg p-6 max-w-md w-full mx-4 border border-border ${className}`}
     >
       {children}
     </div>
@@ -60,11 +60,11 @@ export function DialogHeader({ children }: DialogHeaderProps) {
 }
 
 export function DialogTitle({ children }: DialogTitleProps) {
-  return <h2 className="text-lg font-semibold text-gray-900">{children}</h2>;
+  return <h2 className="text-lg font-semibold text-foreground">{children}</h2>;
 }
 
 export function DialogDescription({ children }: DialogDescriptionProps) {
-  return <p className="text-sm text-gray-600 mt-1">{children}</p>;
+  return <p className="text-sm text-muted-foreground mt-1">{children}</p>;
 }
 
 export function DialogFooter({ children }: DialogFooterProps) {

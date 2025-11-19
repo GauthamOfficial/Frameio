@@ -882,9 +882,28 @@ def list_posters(request):
         # Serialize posters
         posters_data = []
         for poster in posters:
+            # Ensure image_url is absolute
+            image_url = poster.image_url
+            if image_url and not image_url.startswith('http'):
+                # Convert relative URL to absolute
+                if image_url.startswith('/'):
+                    # Use request to build absolute URI
+                    try:
+                        image_url = request.build_absolute_uri(image_url)
+                    except Exception:
+                        # Fallback if request.build_absolute_uri fails
+                        from django.conf import settings
+                        base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                        image_url = f"{base_url}{image_url}"
+                else:
+                    # Prepend base URL for relative paths without leading slash
+                    from django.conf import settings
+                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    image_url = f"{base_url}/{image_url}"
+            
             posters_data.append({
                 'id': str(poster.id),
-                'image_url': poster.image_url,
+                'image_url': image_url,
                 'caption': poster.caption,
                 'full_caption': poster.full_caption,
                 'prompt': poster.prompt,
@@ -913,6 +932,79 @@ def list_posters(request):
         logger.error(f"Error listing posters: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
+        return Response({
+            "success": False,
+            "error": str(e) if settings.DEBUG else "Internal server error"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_poster(request, poster_id):
+    """
+    DELETE /api/ai/ai-poster/posters/{poster_id}/
+    Delete a specific poster by ID
+    """
+    try:
+        poster = GeneratedPoster.objects.get(id=poster_id)
+        
+        # Check permissions (user or organization match)
+        user = request.user if request.user.is_authenticated else None
+        organization = None
+        
+        if user:
+            if hasattr(user, 'organization'):
+                organization = user.organization
+            else:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and hasattr(company_profile, 'organization'):
+                        organization = company_profile.organization
+                except Exception:
+                    pass
+        
+        # Check if user has access
+        if organization and poster.organization != organization:
+            return Response({
+                "success": False,
+                "error": "Poster not found or access denied"
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if user and poster.user and poster.user != user:
+            if not organization or poster.organization != organization:
+                return Response({
+                    "success": False,
+                    "error": "Poster not found or access denied"
+                }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Delete associated image file if it exists
+        if poster.image_path:
+            try:
+                from django.core.files.storage import default_storage
+                if default_storage.exists(poster.image_path):
+                    default_storage.delete(poster.image_path)
+                    logger.info(f"Deleted image file: {poster.image_path}")
+            except Exception as e:
+                logger.warning(f"Failed to delete image file {poster.image_path}: {str(e)}")
+        
+        # Delete the poster record
+        poster.delete()
+        logger.info(f"Deleted poster with ID: {poster_id}")
+        
+        return Response({
+            "success": True,
+            "message": "Poster deleted successfully"
+        }, status=status.HTTP_200_OK)
+        
+    except GeneratedPoster.DoesNotExist:
+        return Response({
+            "success": False,
+            "error": "Poster not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error deleting poster: {str(e)}")
         return Response({
             "success": False,
             "error": str(e) if settings.DEBUG else "Internal server error"
