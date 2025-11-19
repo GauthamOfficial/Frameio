@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Image, Calendar, Download, ExternalLink, Loader2, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
+import { useRouter } from "next/navigation"
 
 interface Poster {
   id: string
@@ -32,6 +33,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [posterToDelete, setPosterToDelete] = useState<Poster | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
   const { getToken } = useAuth()
   const { showError } = useToastHelpers()
 
@@ -337,6 +339,10 @@ export function SavedPosters({ limit }: SavedPostersProps) {
     setPosterToDelete(null)
   }
 
+  const handlePosterClick = (poster: Poster) => {
+    router.push(`/dashboard/posters/${poster.id}`)
+  }
+
   if (loading) {
     return (
       <Card>
@@ -389,8 +395,11 @@ export function SavedPosters({ limit }: SavedPostersProps) {
               key={poster.id}
               className="group relative bg-card rounded-lg overflow-hidden border border-border hover:border-primary hover:shadow-lg transition-all"
             >
-              {/* Image Container */}
-              <div className="aspect-square bg-muted overflow-hidden relative">
+              {/* Image Container - Clickable */}
+              <div 
+                className="aspect-square bg-muted overflow-hidden relative cursor-pointer"
+                onClick={() => handlePosterClick(poster)}
+              >
                 {poster.image_url ? (
                   <img
                     src={poster.image_url}
@@ -425,7 +434,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
               </div>
               
               {/* Info Overlay - Always Visible */}
-              <div className="p-4 space-y-3">
+              <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
                 {/* Caption */}
                 <div>
                   <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
@@ -461,7 +470,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-2 border-t border-border">
+                <div className="flex gap-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="sm"
                     variant="outline"

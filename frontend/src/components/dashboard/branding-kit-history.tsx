@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Palette, Calendar, Download, Loader2, RefreshCw, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
+import { useRouter } from "next/navigation"
 
 interface BrandingKit {
   id: string
@@ -37,6 +38,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [kitToDelete, setKitToDelete] = useState<BrandingKit | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
   const { getToken } = useAuth()
   const { showError } = useToastHelpers()
 
@@ -323,8 +325,11 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
               key={kit.id}
               className="group relative bg-card rounded-lg overflow-hidden border border-border hover:border-primary hover:shadow-lg transition-all"
             >
-              {/* Preview Container */}
-              <div className="aspect-square bg-muted overflow-hidden relative">
+              {/* Preview Container - Clickable */}
+              <div 
+                className="aspect-square bg-muted overflow-hidden relative cursor-pointer"
+                onClick={() => router.push(`/dashboard/branding-kits/${kit.id}`)}
+              >
                 {kit.logo ? (
                   <img
                     src={`data:image/${kit.logo.format.toLowerCase()};base64,${kit.logo.data}`}
@@ -364,7 +369,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
               </div>
               
               {/* Info Section */}
-              <div className="p-4 space-y-3">
+              <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
                 {/* Prompt */}
                 <div>
                   <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
@@ -384,7 +389,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-2 border-t border-border">
+                <div className="flex gap-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
                   {kit.logo && (
                     <Button
                       size="sm"

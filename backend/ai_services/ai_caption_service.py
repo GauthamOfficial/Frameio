@@ -5,6 +5,7 @@ Generate captions, descriptions, and content for textile products and images
 import os
 import logging
 import time
+import random
 from typing import Dict, List, Any, Optional
 from django.conf import settings
 
@@ -29,6 +30,8 @@ class AICaptionService:
         """Initialize the AI caption service"""
         self.api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, 'GEMINI_API_KEY', None)
         self.client = None
+        self.max_retries = 3  # Maximum number of retries for API calls
+        self.retry_delay_base = 1  # Base delay in seconds for exponential backoff
         
         if not GENAI_AVAILABLE:
             logger.error("Google GenAI library not available")
@@ -44,6 +47,53 @@ class AICaptionService:
         except Exception as e:
             logger.error(f"Failed to initialize Gemini client: {str(e)}")
             self.client = None
+    
+    def _retry_api_call(self, api_func, *args, **kwargs):
+        """
+        Retry API call with exponential backoff for transient errors
+        
+        Args:
+            api_func: The API function to call
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+            
+        Returns:
+            The result from the API call
+            
+        Raises:
+            Exception: If all retries fail
+        """
+        last_exception = None
+        
+        for attempt in range(self.max_retries):
+            try:
+                return api_func(*args, **kwargs)
+            except Exception as e:
+                last_exception = e
+                error_str = str(e)
+                
+                # Check if it's a retryable error (500, 503, rate limit, etc.)
+                is_retryable = (
+                    '500' in error_str or 
+                    '503' in error_str or 
+                    'INTERNAL' in error_str or
+                    'rate limit' in error_str.lower() or
+                    'quota' in error_str.lower() or
+                    'temporarily unavailable' in error_str.lower()
+                )
+                
+                if not is_retryable or attempt == self.max_retries - 1:
+                    # Not retryable or last attempt
+                    raise
+                
+                # Calculate exponential backoff with jitter
+                delay = self.retry_delay_base * (2 ** attempt) + random.uniform(0, 1)
+                logger.warning(f"Caption API call failed (attempt {attempt + 1}/{self.max_retries}): {error_str}")
+                logger.info(f"Retrying in {delay:.2f} seconds...")
+                time.sleep(delay)
+        
+        # If we get here, all retries failed
+        raise last_exception
     
     def generate_product_caption(self, 
                                 product_name: str, 
@@ -80,15 +130,24 @@ class AICaptionService:
                 include_hashtags, include_emoji, max_length
             )
             
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[prompt],
-                config=types.GenerateContentConfig(
-                    response_modalities=['TEXT'],
-                    temperature=0.7,
-                    max_output_tokens=500
-                ),
-            )
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash",
+                    contents=[prompt],
+                    config=types.GenerateContentConfig(
+                        response_modalities=['TEXT'],
+                        temperature=0.7,
+                        max_output_tokens=500
+                    ),
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"Product caption API call failed: {error_str}")
+                return {
+                    "status": "error",
+                    "message": "Caption generation failed due to API error. Please try again." if ('500' in error_str or 'INTERNAL' in error_str) else f"Caption generation failed: {error_str}"
+                }
             
             # Process response with proper error handling
             generated_text = ""
@@ -168,36 +227,66 @@ class AICaptionService:
                 include_hashtags, include_emoji, call_to_action
             )
             
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[prompt],
-                config=types.GenerateContentConfig(
-                    response_modalities=['TEXT'],
-                    temperature=0.8,
-                    max_output_tokens=2000
-                ),
-            )
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash",
+                    contents=[prompt],
+                    config=types.GenerateContentConfig(
+                        response_modalities=['TEXT'],
+                        temperature=0.8,
+                        max_output_tokens=4000  # Increased to prevent truncation
+                    ),
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"Caption API call failed after retries: {error_str}")
+                return {
+                    "status": "error",
+                    "message": "Caption generation failed due to API error. Please try again." if ('500' in error_str or 'INTERNAL' in error_str) else f"Caption generation failed: {error_str}"
+                }
             
             # Process response with proper error handling
             generated_text = ""
             if response and response.candidates and len(response.candidates) > 0:
                 candidate = response.candidates[0]
+                
+                # Check for finish reason first
+                if candidate.finish_reason:
+                    finish_reason_name = candidate.finish_reason.name if hasattr(candidate.finish_reason, 'name') else str(candidate.finish_reason)
+                    if finish_reason_name == 'MAX_TOKENS':
+                        logger.warning("Response truncated due to MAX_TOKENS limit - retrying with higher limit")
+                        # Retry with higher token limit
+                        try:
+                            response = self._retry_api_call(
+                                self.client.models.generate_content,
+                                model="gemini-2.5-flash",
+                                contents=[prompt],
+                                config=types.GenerateContentConfig(
+                                    response_modalities=['TEXT'],
+                                    temperature=0.8,
+                                    max_output_tokens=8000  # Much higher limit for retry
+                                ),
+                            )
+                            if response and response.candidates and len(response.candidates) > 0:
+                                candidate = response.candidates[0]
+                        except Exception as retry_error:
+                            logger.error(f"Retry failed: {retry_error}")
+                            return {"status": "error", "message": "AI response was too long and retry failed - please try with a shorter prompt"}
+                
                 if candidate.content and candidate.content.parts:
                     for part in candidate.content.parts:
                         if hasattr(part, 'text') and part.text:
                             generated_text += part.text
-                elif candidate.finish_reason and candidate.finish_reason.name == 'MAX_TOKENS':
-                    # Handle case where response was truncated due to token limit
-                    logger.warning("Response truncated due to MAX_TOKENS limit")
-                    return {"status": "error", "message": "Response too long, please try a shorter prompt"}
                 else:
-                    logger.error(f"No content parts in candidate. Content: {candidate.content}")
-                    return {"status": "error", "message": "No content in response"}
+                    logger.error(f"No content parts in candidate. Finish reason: {candidate.finish_reason}")
+                    return {"status": "error", "message": "No content in response from AI"}
             else:
-                return {"status": "error", "message": "No valid response from Gemini"}
+                return {"status": "error", "message": "No valid response from Gemini API"}
             
-            if not generated_text:
-                return {"status": "error", "message": "No caption generated"}
+            if not generated_text or not generated_text.strip():
+                logger.error("Generated text is empty")
+                return {"status": "error", "message": "AI generated empty caption - please try again"}
             
             # Parse and structure the caption
             structured_caption = self._parse_caption_content(
@@ -252,15 +341,24 @@ class AICaptionService:
                 include_hashtags, include_emoji
             )
             
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[prompt],
-                config=types.GenerateContentConfig(
-                    response_modalities=['TEXT'],
-                    temperature=0.6,
-                    max_output_tokens=400
-                ),
-            )
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash",
+                    contents=[prompt],
+                    config=types.GenerateContentConfig(
+                        response_modalities=['TEXT'],
+                        temperature=0.6,
+                        max_output_tokens=400
+                    ),
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"Image caption API call failed: {error_str}")
+                return {
+                    "status": "error",
+                    "message": "Caption generation failed due to API error. Please try again." if ('500' in error_str or 'INTERNAL' in error_str) else f"Caption generation failed: {error_str}"
+                }
             
             # Process response with proper error handling
             generated_text = ""
@@ -302,6 +400,123 @@ class AICaptionService:
             logger.error(f"Error generating image caption: {str(e)}")
             return {"status": "error", "message": str(e)}
     
+    def generate_hashtags(self, 
+                         content: str,
+                         caption_text: str = "",
+                         count: int = 15) -> Dict[str, Any]:
+        """
+        Generate AI-powered hashtags based on content and caption
+        
+        Args:
+            content: Original prompt or product description
+            caption_text: Generated caption text (optional)
+            count: Number of hashtags to generate (default 15)
+            
+        Returns:
+            Dict containing generated hashtags
+        """
+        try:
+            if not self.client:
+                return {"status": "error", "message": "Gemini client not available"}
+            
+            logger.info(f"Generating AI hashtags for content: {content[:50]}...")
+            
+            # Create prompt for hashtag generation
+            hashtag_prompt = f"""Generate {count} highly relevant, specific hashtags for a social media post about: {content}
+
+"""
+            if caption_text:
+                hashtag_prompt += f"The caption is: {caption_text}\n\n"
+            
+            hashtag_prompt += f"""Requirements:
+- Generate {count} specific, relevant hashtags
+- Mix popular and niche hashtags for better reach
+- Include hashtags specific to the product type, style, occasion, and target audience
+- Avoid generic hashtags - be specific to the content
+- Include fashion/textile industry hashtags
+- Consider trending and relevant tags
+- Each hashtag should be relevant and add value
+
+Return ONLY a JSON array of hashtags (with # prefix), like this:
+["#hashtag1", "#hashtag2", "#hashtag3", ...]
+
+Do not include any other text, just the JSON array."""
+            
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash",
+                    contents=[hashtag_prompt],
+                    config=types.GenerateContentConfig(
+                        response_modalities=['TEXT'],
+                        temperature=0.7,
+                        max_output_tokens=500
+                    ),
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"Hashtag generation API call failed: {error_str}")
+                return {
+                    "status": "error",
+                    "message": "Hashtag generation failed due to API error. Please try again." if ('500' in error_str or 'INTERNAL' in error_str) else f"Hashtag generation failed: {error_str}"
+                }
+            
+            # Process response
+            generated_text = ""
+            if response and response.candidates and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            generated_text += part.text
+            
+            if not generated_text:
+                return {"status": "error", "message": "No hashtags generated"}
+            
+            # Parse JSON array
+            try:
+                import json
+                import re
+                # Extract JSON array from response
+                json_match = re.search(r'\[.*?\]', generated_text, re.DOTALL)
+                if json_match:
+                    hashtags = json.loads(json_match.group())
+                    # Ensure all hashtags have # prefix
+                    hashtags = [tag if tag.startswith('#') else f"#{tag}" for tag in hashtags]
+                    hashtags = [tag for tag in hashtags if tag.strip()]  # Remove empty
+                    return {
+                        "status": "success",
+                        "hashtags": hashtags[:count],
+                        "count": len(hashtags[:count])
+                    }
+                else:
+                    # Fallback: extract hashtags from text
+                    hashtag_matches = re.findall(r'#\w+', generated_text)
+                    if hashtag_matches:
+                        return {
+                            "status": "success",
+                            "hashtags": list(set(hashtag_matches))[:count],
+                            "count": len(list(set(hashtag_matches))[:count])
+                        }
+                    else:
+                        return {"status": "error", "message": "Could not parse hashtags from response"}
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.error(f"Error parsing hashtag JSON: {e}")
+                # Try to extract hashtags from text
+                import re
+                hashtag_matches = re.findall(r'#\w+', generated_text)
+                if hashtag_matches:
+                    return {
+                        "status": "success",
+                        "hashtags": list(set(hashtag_matches))[:count],
+                        "count": len(list(set(hashtag_matches))[:count])
+                    }
+                return {"status": "error", "message": f"Failed to parse hashtags: {str(e)}"}
+            
+        except Exception as e:
+            logger.error(f"Error generating hashtags: {str(e)}")
+            return {"status": "error", "message": str(e)}
+    
     def generate_bulk_captions(self, 
                              products: List[Dict[str, Any]],
                              caption_style: str = "consistent",
@@ -326,15 +541,24 @@ class AICaptionService:
             # Create bulk prompt
             prompt = self._create_bulk_caption_prompt(products, caption_style, brand_voice)
             
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[prompt],
-                config=types.GenerateContentConfig(
-                    response_modalities=['TEXT'],
-                    temperature=0.7,
-                    max_output_tokens=2000
-                ),
-            )
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash",
+                    contents=[prompt],
+                    config=types.GenerateContentConfig(
+                        response_modalities=['TEXT'],
+                        temperature=0.7,
+                        max_output_tokens=2000
+                    ),
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"Bulk caption API call failed: {error_str}")
+                return {
+                    "status": "error",
+                    "message": "Bulk caption generation failed due to API error. Please try again." if ('500' in error_str or 'INTERNAL' in error_str) else f"Bulk caption generation failed: {error_str}"
+                }
             
             # Process response with proper error handling
             generated_text = ""
@@ -453,32 +677,42 @@ class AICaptionService:
         
         prompt = f"""Create a {platform} caption for a {post_type} post about: {content}
 
-Requirements:
+CRITICAL REQUIREMENTS:
+- Create a COMPLETE, FULL caption - do not truncate or leave incomplete
 - Engaging and attention-grabbing
 - Use power words like "stunning", "elegant", "breathtaking"
 - Include sensory descriptions
 - Create emotional connection
-- Conversational and relatable tone"""
+- Conversational and relatable tone
+- Write the ENTIRE caption from start to finish - ensure it's complete and polished"""
         
         if include_hashtags:
-            prompt += "\n- Include 5-8 relevant hashtags"
+            prompt += "\n- Generate 10-15 RELEVANT, AI-GENERATED hashtags based on the content (not generic ones)"
+            prompt += "\n- Hashtags should be specific to the product, style, occasion, and target audience"
+            prompt += "\n- Mix popular and niche hashtags for better reach"
         
         if include_emoji:
-            prompt += "\n- Use 1-2 appropriate emojis"
+            prompt += "\n- Use 2-3 appropriate emojis strategically placed"
         
         if call_to_action:
-            prompt += "\n- Include a call-to-action"
+            prompt += "\n- Include a compelling call-to-action at the end"
         
         prompt += """
-        
-        Return as JSON:
-        {
-            "main_text": "Caption text",
-            "full_caption": "Complete caption with hashtags",
-            "hashtags": ["#tag1", "#tag2"],
-            "emoji": "✨",
-            "call_to_action": "CTA text"
-        }"""
+
+IMPORTANT: 
+- The caption MUST be complete and finished - do not cut off mid-sentence
+- Ensure all parts of the caption are fully written
+- The full_caption should include the main text, contact details (if provided), and hashtags
+- main_text should be the primary caption without hashtags
+
+Return as JSON (MUST be valid JSON):
+{{
+    "main_text": "Complete main caption text without hashtags",
+    "full_caption": "Complete full caption including main text, contact info, and hashtags",
+    "hashtags": ["#specific_tag1", "#specific_tag2", "#relevant_tag3", ...],
+    "emoji": "✨",
+    "call_to_action": "Complete CTA text"
+}}"""
         
         return prompt
     
@@ -558,31 +792,74 @@ Requirements:
         # Try to parse as JSON first
         try:
             import json
-            # Look for JSON in the text
+            import re
+            # Look for JSON in the text - try multiple strategies
             json_start = text.find('{')
             json_end = text.rfind('}') + 1
+            
             if json_start != -1 and json_end > json_start:
                 json_text = text[json_start:json_end]
-                parsed_json = json.loads(json_text)
+                
+                # Try to fix common JSON issues
+                # Remove trailing commas before closing braces
+                json_text = re.sub(r',\s*}', '}', json_text)
+                json_text = re.sub(r',\s*]', ']', json_text)
+                
+                try:
+                    parsed_json = json.loads(json_text)
+                except json.JSONDecodeError as e:
+                    # Try to extract partial JSON if complete parsing fails
+                    logger.warning(f"JSON parse error: {e}, attempting to extract partial data")
+                    # Try to extract fields manually using regex
+                    main_match = re.search(r'"main_text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', json_text, re.DOTALL)
+                    full_match = re.search(r'"full_caption"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', json_text, re.DOTALL)
+                    hashtags_match = re.search(r'"hashtags"\s*:\s*\[(.*?)\]', json_text, re.DOTALL)
+                    
+                    main_content = main_match.group(1).replace('\\"', '"').replace('\\n', '\n') if main_match else ''
+                    full_caption = full_match.group(1).replace('\\"', '"').replace('\\n', '\n') if full_match else main_content
+                    hashtags = []
+                    if hashtags_match:
+                        hashtag_text = hashtags_match.group(1)
+                        hashtags = re.findall(r'"([^"]+)"', hashtag_text)
+                        hashtags = [tag if tag.startswith('#') else f"#{tag}" for tag in hashtags]
+                    
+                    if main_content:
+                        return {
+                            'main_text': main_content,
+                            'full_caption': full_caption or main_content,
+                            'hashtags': hashtags,
+                            'call_to_action': '',
+                            'emoji': '',
+                            'word_count': len(main_content.split()),
+                            'character_count': len(main_content),
+                            'has_emoji': any(ord(char) > 127 for char in main_content)
+                        }
+                    else:
+                        raise  # Re-raise to fall through to text parsing
                 
                 # Extract data from JSON
-                main_content = parsed_json.get('main_text', '')
-                full_caption = parsed_json.get('full_caption', main_content)
+                main_content = parsed_json.get('main_text', '').strip()
+                full_caption = parsed_json.get('full_caption', main_content).strip()
                 hashtags = parsed_json.get('hashtags', [])
-                call_to_action = parsed_json.get('call_to_action', '')
-                emoji = parsed_json.get('emoji', '')
+                call_to_action = parsed_json.get('call_to_action', '').strip()
+                emoji = parsed_json.get('emoji', '').strip()
+                
+                # Validate that main_content is not empty
+                if not main_content:
+                    raise ValueError("main_text is empty in JSON response")
                 
                 return {
                     'main_text': main_content,
-                    'full_caption': full_caption,
-                    'hashtags': hashtags,
+                    'full_caption': full_caption or main_content,
+                    'hashtags': hashtags if isinstance(hashtags, list) else [],
                     'call_to_action': call_to_action,
                     'emoji': emoji,
                     'word_count': len(main_content.split()),
                     'character_count': len(main_content),
                     'has_emoji': bool(emoji) or any(ord(char) > 127 for char in main_content)
                 }
-        except (json.JSONDecodeError, KeyError, ValueError):
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            logger.warning(f"JSON parsing failed: {e}, falling back to text parsing")
             # Fall back to text parsing if JSON parsing fails
             pass
         
@@ -604,11 +881,17 @@ Requirements:
                 else:
                     main_content = line
         
-        # If no hashtags found but requested, extract from text
+        # If no hashtags found but requested, generate them using AI
         if include_hashtags and not hashtags:
+            # Try to extract from text first
             import re
             hashtag_matches = re.findall(r'#\w+', text)
-            hashtags = hashtag_matches[:5]  # Limit to 5 hashtags
+            if hashtag_matches:
+                hashtags = list(set(hashtag_matches))  # Remove duplicates
+            else:
+                # If still no hashtags, we'll need to generate them separately
+                # This will be handled by the calling function
+                logger.warning("No hashtags found in generated text - will need AI generation")
         
         return {
             'main_text': main_content,

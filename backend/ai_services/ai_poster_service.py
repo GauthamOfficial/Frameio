@@ -6,6 +6,7 @@ import os
 import logging
 import time
 import uuid
+import random
 from typing import Dict, List, Any, Optional
 from io import BytesIO
 from PIL import Image
@@ -138,6 +139,53 @@ class AIPosterService:
             unique.append(c)
         return unique
 
+    def _retry_api_call(self, api_func, *args, **kwargs):
+        """
+        Retry API call with exponential backoff for transient errors
+        
+        Args:
+            api_func: The API function to call
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+            
+        Returns:
+            The result from the API call
+            
+        Raises:
+            Exception: If all retries fail
+        """
+        last_exception = None
+        
+        for attempt in range(self.max_retries):
+            try:
+                return api_func(*args, **kwargs)
+            except Exception as e:
+                last_exception = e
+                error_str = str(e)
+                
+                # Check if it's a retryable error (500, 503, rate limit, etc.)
+                is_retryable = (
+                    '500' in error_str or 
+                    '503' in error_str or 
+                    'INTERNAL' in error_str or
+                    'rate limit' in error_str.lower() or
+                    'quota' in error_str.lower() or
+                    'temporarily unavailable' in error_str.lower()
+                )
+                
+                if not is_retryable or attempt == self.max_retries - 1:
+                    # Not retryable or last attempt
+                    raise
+                
+                # Calculate exponential backoff with jitter
+                delay = self.retry_delay_base * (2 ** attempt) + random.uniform(0, 1)
+                logger.warning(f"API call failed (attempt {attempt + 1}/{self.max_retries}): {error_str}")
+                logger.info(f"Retrying in {delay:.2f} seconds...")
+                time.sleep(delay)
+        
+        # If we get here, all retries failed
+        raise last_exception
+    
     @staticmethod
     def _parse_aspect_ratio(aspect_ratio: str) -> Optional[float]:
         """Parse aspect ratio like '16:9' or '1:1' or '4:5' into a float width/height.
@@ -265,8 +313,17 @@ class AIPosterService:
         """Initialize the AI poster service"""
         self.api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, 'GEMINI_API_KEY', None)
         self.client = None
+        # Initialize caption service - it will use the same API key from environment/settings
         self.caption_service = AICaptionService()
+        # Verify caption service is initialized
+        if not self.caption_service.client:
+            logger.warning("Caption service client not initialized - captions may not work")
+            logger.warning(f"Caption service API key exists: {bool(self.caption_service.api_key)}")
+        else:
+            logger.info("Caption service initialized successfully")
         self.brand_overlay_service = BrandOverlayService()
+        self.max_retries = 3  # Maximum number of retries for API calls
+        self.retry_delay_base = 1  # Base delay in seconds for exponential backoff
         
         if not GENAI_AVAILABLE:
             logger.error("Google GenAI library not available")
@@ -381,11 +438,34 @@ class AIPosterService:
                     config_kwargs["image_config"] = image_config
                 else:
                     logger.info("Image generation: image_config not available; relying on prompt directive for aspect ratio")
-                response = self.client.models.generate_content(
-                    model="gemini-2.5-flash-image",
-                    contents=[current_prompt],
-                    config=types.GenerateContentConfig(**config_kwargs),
-                )
+                
+                try:
+                    response = self._retry_api_call(
+                        self.client.models.generate_content,
+                        model="gemini-2.5-flash-image",
+                        contents=[current_prompt],
+                        config=types.GenerateContentConfig(**config_kwargs),
+                    )
+                except Exception as api_error:
+                    error_str = str(api_error)
+                    logger.error(f"API call failed after retries: {error_str}")
+                    
+                    # Check for specific error types
+                    if '500' in error_str or 'INTERNAL' in error_str:
+                        if attempt < len(prompts_to_try) - 1:
+                            logger.info(f"Retrying with different prompt variation...")
+                            time.sleep(2)  # Wait before trying next prompt
+                            continue
+                        return {
+                            "status": "error",
+                            "message": "Google API is experiencing temporary issues. Please try again in a few moments. If the problem persists, please check your API quota and configuration."
+                        }
+                    else:
+                        # For other errors, return immediately
+                        return {
+                            "status": "error",
+                            "message": f"Image generation failed: {error_str}"
+                        }
             
                 # Process response and save image
                 if not response.candidates or len(response.candidates) == 0:
@@ -435,11 +515,16 @@ class AIPosterService:
                                     retry_kwargs = dict(config_kwargs)
                                     if dim_config is not None:
                                         retry_kwargs["image_config"] = dim_config
-                                    response_retry = self.client.models.generate_content(
-                                        model="gemini-2.5-flash-image",
-                                        contents=[stricter_prompt],
-                                        config=types.GenerateContentConfig(**retry_kwargs),
-                                    )
+                                    try:
+                                        response_retry = self._retry_api_call(
+                                            self.client.models.generate_content,
+                                            model="gemini-2.5-flash-image",
+                                            contents=[stricter_prompt],
+                                            config=types.GenerateContentConfig(**retry_kwargs),
+                                        )
+                                    except Exception as retry_error:
+                                        logger.warning(f"Retry attempt failed: {retry_error}")
+                                        continue
                                     for retry_part in response_retry.candidates[0].content.parts:
                                         if getattr(retry_part, 'inline_data', None) is not None:
                                             retry_img = Image.open(BytesIO(retry_part.inline_data.data))
@@ -483,7 +568,16 @@ class AIPosterService:
                             logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}; size={final_w}x{final_h}")
                             
                             # Generate caption and hashtags for the poster
+                            logger.info("Starting caption generation...")
                             caption_result = self.generate_caption_and_hashtags(prompt, image_url, user)
+                            logger.info(f"Caption generation result status: {caption_result.get('status')}")
+                            
+                            # Check if caption generation failed
+                            if caption_result.get("status") == "error":
+                                error_msg = caption_result.get("message", "Unknown error")
+                                logger.error(f"Caption generation failed: {error_msg}")
+                                # Still continue with poster generation, but log the error
+                                # The frontend can handle empty captions
                             
                             # Add brand overlay if user has company profile
                             final_result = {
@@ -499,6 +593,7 @@ class AIPosterService:
                                 "hashtags": caption_result.get("hashtags", []),
                                 "emoji": caption_result.get("emoji", ""),
                                 "call_to_action": caption_result.get("call_to_action", ""),
+                                "caption_error": caption_result.get("message") if caption_result.get("status") == "error" else None,
                                 "branding_applied": False
                             }
                             
@@ -685,11 +780,21 @@ class AIPosterService:
                 config_kwargs["image_config"] = image_config
             else:
                 logger.info("Image generation: image_config not available; relying on prompt directive for aspect ratio")
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash-image",
-                contents=[image_part, base_prompt],
-                config=types.GenerateContentConfig(**config_kwargs),
-            )
+            
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash-image",
+                    contents=[image_part, base_prompt],
+                    config=types.GenerateContentConfig(**config_kwargs),
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"API call failed after retries: {error_str}")
+                return {
+                    "status": "error",
+                    "message": "Google API is experiencing temporary issues. Please try again in a few moments." if ('500' in error_str or 'INTERNAL' in error_str) else f"Image generation failed: {error_str}"
+                }
             
             # Process response and save image
             if not response.candidates or len(response.candidates) == 0:
@@ -719,11 +824,16 @@ class AIPosterService:
                             retry_kwargs = dict(config_kwargs)
                             if dim_config is not None:
                                 retry_kwargs["image_config"] = dim_config
-                            response_retry = self.client.models.generate_content(
-                                model="gemini-2.5-flash-image",
-                                contents=[image_part, stricter_prompt],
-                                config=types.GenerateContentConfig(**retry_kwargs),
-                            )
+                            try:
+                                response_retry = self._retry_api_call(
+                                    self.client.models.generate_content,
+                                    model="gemini-2.5-flash-image",
+                                    contents=[image_part, stricter_prompt],
+                                    config=types.GenerateContentConfig(**retry_kwargs),
+                                )
+                            except Exception as retry_error:
+                                logger.warning(f"Aspect ratio retry failed: {retry_error}")
+                                continue
                             if not response_retry.candidates or len(response_retry.candidates) == 0:
                                 continue
                             if not response_retry.candidates[0].content or not response_retry.candidates[0].content.parts:
@@ -766,7 +876,14 @@ class AIPosterService:
                     logger.info(f"Edited poster generated successfully: {saved_path}; size={final_w}x{final_h}")
                     
                     # Generate caption and hashtags for the poster
+                    logger.info("Starting caption generation for edited poster...")
                     caption_result = self.generate_caption_and_hashtags(prompt, image_url, user)
+                    logger.info(f"Caption generation result status: {caption_result.get('status')}")
+                    
+                    # Check if caption generation failed
+                    if caption_result.get("status") == "error":
+                        error_msg = caption_result.get("message", "Unknown error")
+                        logger.error(f"Caption generation failed: {error_msg}")
                     
                     # Add brand overlay if user has company profile
                     final_result = {
@@ -877,6 +994,12 @@ class AIPosterService:
             - Fill the reserved areas with background elements, patterns, or colors - do not leave them blank
             - Make the design cohesive while keeping logo and contact areas text-free but visually rich
             - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
+            
+            GRADIENT OVERLAY REQUIREMENT:
+            - Add a black gradient overlay to the bottom 10% of the image
+            - The gradient should transition smoothly from transparent (at the top of the bottom 10% area) to fully black (at the bottom edge)
+            - This gradient overlay should be applied to every poster without exception
+            - Ensure the gradient blends seamlessly with the underlying image content
             """
             
             # Create enhanced prompt with smart branding area guidance and AR directive
@@ -924,13 +1047,27 @@ class AIPosterService:
                 config_kwargs["image_config"] = image_config
             else:
                 logger.info("Image generation: image_config not available; relying on prompt directive for aspect ratio")
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash-image",
-                contents=contents,
-                config=types.GenerateContentConfig(**config_kwargs),
-            )
+            
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash-image",
+                    contents=contents,
+                    config=types.GenerateContentConfig(**config_kwargs),
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"API call failed after retries: {error_str}")
+                return {
+                    "status": "error",
+                    "message": "Google API is experiencing temporary issues. Please try again in a few moments." if ('500' in error_str or 'INTERNAL' in error_str) else f"Image generation failed: {error_str}"
+                }
             
             # Process response and save image
+            if not response.candidates or len(response.candidates) == 0:
+                logger.error("No candidates returned from Gemini model for composite")
+                return {"status": "error", "message": "No candidates returned from model"}
+            
             for part in response.candidates[0].content.parts:
                 if part.inline_data is not None:
                     composite_image = Image.open(BytesIO(part.inline_data.data))
@@ -949,11 +1086,18 @@ class AIPosterService:
                             retry_kwargs = dict(config_kwargs)
                             if dim_config is not None:
                                 retry_kwargs["image_config"] = dim_config
-                            response_retry = self.client.models.generate_content(
-                                model="gemini-2.5-flash-image",
-                                contents=contents[:-1] + [stricter_prompt],
-                                config=types.GenerateContentConfig(**retry_kwargs),
-                            )
+                            try:
+                                response_retry = self._retry_api_call(
+                                    self.client.models.generate_content,
+                                    model="gemini-2.5-flash-image",
+                                    contents=contents[:-1] + [stricter_prompt],
+                                    config=types.GenerateContentConfig(**retry_kwargs),
+                                )
+                            except Exception as retry_error:
+                                logger.warning(f"Composite aspect ratio retry failed: {retry_error}")
+                                continue
+                            if not response_retry.candidates or len(response_retry.candidates) == 0:
+                                continue
                             for retry_part in response_retry.candidates[0].content.parts:
                                 if getattr(retry_part, 'inline_data', None) is not None:
                                     retry_img = Image.open(BytesIO(retry_part.inline_data.data))
@@ -998,11 +1142,18 @@ class AIPosterService:
                         if dim_config is not None:
                             retry_kwargs["image_config"] = dim_config
                             logger.info("Retry (composite) with dimension-based image_config")
-                        response_retry = self.client.models.generate_content(
-                            model="gemini-2.5-flash-image",
-                            contents=contents[:-1] + [stricter_prompt],
-                            config=types.GenerateContentConfig(**retry_kwargs),
-                        )
+                        try:
+                            response_retry = self._retry_api_call(
+                                self.client.models.generate_content,
+                                model="gemini-2.5-flash-image",
+                                contents=contents[:-1] + [stricter_prompt],
+                                config=types.GenerateContentConfig(**retry_kwargs),
+                            )
+                        except Exception as retry_error:
+                            logger.warning(f"Composite dimension retry failed: {retry_error}")
+                            continue
+                        if not response_retry.candidates or len(response_retry.candidates) == 0:
+                            continue
                         for retry_part in response_retry.candidates[0].content.parts:
                             if getattr(retry_part, 'inline_data', None) is not None:
                                 retry_img = Image.open(BytesIO(retry_part.inline_data.data))
@@ -1113,6 +1264,12 @@ class AIPosterService:
             - Maintain all textual content within the middle 65% of the canvas
             - Ensure text is readable and doesn't overlap with the top-right or bottom areas
             - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
+            
+            GRADIENT OVERLAY REQUIREMENT:
+            - Add a black gradient overlay to the bottom 10% of the image
+            - The gradient should transition smoothly from transparent (at the top of the bottom 10% area) to fully black (at the bottom edge)
+            - This gradient overlay should be applied to every poster without exception
+            - Ensure the gradient blends seamlessly with the underlying image content
             """
             
             # Configure image generation (version-safe). Text overlay remains square.
@@ -1122,13 +1279,27 @@ class AIPosterService:
             config_kwargs = {"response_modalities": ['Image']}
             if image_config is not None:
                 config_kwargs["image_config"] = image_config
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash-image",
-                contents=[image_part, enhanced_prompt],
-                config=types.GenerateContentConfig(**config_kwargs),
-            )
+            
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash-image",
+                    contents=[image_part, enhanced_prompt],
+                    config=types.GenerateContentConfig(**config_kwargs),
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"API call failed after retries: {error_str}")
+                return {
+                    "status": "error",
+                    "message": "Google API is experiencing temporary issues. Please try again in a few moments." if ('500' in error_str or 'INTERNAL' in error_str) else f"Text overlay failed: {error_str}"
+                }
             
             # Process response and save image
+            if not response.candidates or len(response.candidates) == 0:
+                logger.error("No candidates returned from Gemini model for text overlay")
+                return {"status": "error", "message": "No candidates returned from model"}
+            
             for part in response.candidates[0].content.parts:
                 if part.inline_data is not None:
                     edited_image = Image.open(BytesIO(part.inline_data.data))
@@ -1190,15 +1361,28 @@ class AIPosterService:
             Dict containing caption and hashtags
         """
         try:
+            logger.info(f"=== CAPTION GENERATION DEBUG ===")
             logger.info(f"Caption service available: {self.caption_service.client is not None}")
-            logger.info(f"Caption service API key: {bool(self.caption_service.api_key)}")
+            logger.info(f"Caption service API key exists: {bool(self.caption_service.api_key)}")
+            logger.info(f"Caption service API key length: {len(self.caption_service.api_key) if self.caption_service.api_key else 0}")
             
             if not self.caption_service.client:
-                logger.error("Caption service client not available")
-                return {"status": "error", "message": "Caption service not available"}
+                logger.error("Caption service client not available - checking initialization...")
+                # Try to reinitialize the caption service
+                try:
+                    from .ai_caption_service import AICaptionService
+                    self.caption_service = AICaptionService()
+                    logger.info(f"Reinitialized caption service. Client available: {self.caption_service.client is not None}")
+                    if not self.caption_service.client:
+                        logger.error("Caption service client still not available after reinitialization")
+                        return {"status": "error", "message": "Caption service not available - API key may be missing or invalid"}
+                except Exception as init_error:
+                    logger.error(f"Failed to reinitialize caption service: {init_error}")
+                    return {"status": "error", "message": f"Caption service initialization failed: {str(init_error)}"}
             
             logger.info(f"Generating caption and hashtags for generated poster...")
             logger.info(f"User provided for caption generation: {user}")
+            logger.info(f"Prompt: {prompt[:100]}...")
             
             # Get user contact details if available
             contact_info = ""
@@ -1226,46 +1410,32 @@ class AIPosterService:
                     logger.warning(f"Error getting contact info: {e}")
             
             # Create enhanced content based on the original prompt for better social media captions
-            enhanced_content = f"""
-            Create an engaging social media caption for a beautiful textile/fashion poster based on this specific description: "{prompt}"
-            
-            Analyze the prompt and create a caption that:
-            - Captures the essence and details mentioned in the original prompt
-            - Highlights the specific features, colors, materials, or style mentioned
-            - Creates emotional connection with the target audience
-            - Mentions the occasion, season, or purpose if specified in the prompt
-            - Emphasizes the unique selling points from the original description
-            - Uses relevant keywords from the prompt naturally
-            - Creates desire and interest based on the specific product described
-            - Be conversational and relatable to the intended use case
-            - Include relevant fashion/beauty keywords that match the prompt
-            - Focus on the visual appeal and craftsmanship mentioned
-            - Highlight the elegance and style specific to the prompt
-            - Create a sense of aspiration based on the original description
-            - Include a compelling call-to-action relevant to the product type
-            """
+            enhanced_content = f"""Create an engaging social media caption for a beautiful textile/fashion poster based on this description: "{prompt}"
+
+Requirements:
+- Capture the essence and details from the prompt
+- Highlight specific features, colors, materials, or style mentioned
+- Create emotional connection with the target audience
+- Be conversational and relatable
+- Include a compelling call-to-action"""
             
             # Add contact details to the content if available
             if contact_info and company_name:
                 enhanced_content += f"""
-                
-                CRITICAL REQUIREMENT: You MUST include the following contact information in the caption:
-                
-                Company: {company_name}
-                
-                Contact Details (each on separate line):
-                {contact_info}
-                
-                IMPORTANT FORMATTING RULES:
-                - Include ALL the contact details exactly as provided above
-                - Each contact method (WhatsApp, Email, Facebook) MUST be on its own separate line
-                - Use the exact emoji icons and formatting shown
-                - Place contact details at the end of the caption after the main content
-                - Add proper spacing before the contact details
-                - Make sure the contact information is clearly visible and readable
-                - Do NOT modify or change the contact details - use them exactly as provided
-                - Ensure each contact detail appears on its own line with proper line breaks
-                """
+
+MANDATORY: You MUST include the following contact information at the end of the caption:
+
+Company: {company_name}
+
+Contact Details (format exactly as shown, each on separate line):
+{contact_info}
+
+CRITICAL FORMATTING:
+- Place contact details at the END of the caption after main content
+- Use EXACT formatting shown above (with emojis)
+- Each contact method on its own line
+- Add spacing before contact section
+- Do NOT modify contact details - use exactly as provided"""
             
             # Generate social media caption with enhanced content
             caption_result = self.caption_service.generate_social_media_caption(
@@ -1279,36 +1449,119 @@ class AIPosterService:
                 call_to_action=True
             )
             
-            logger.info(f"Caption generation result: {caption_result}")
+            logger.info(f"Caption generation result status: {caption_result.get('status')}")
+            logger.info(f"Caption generation result keys: {list(caption_result.keys())}")
             
             if caption_result.get("status") == "success":
                 caption_data = caption_result.get("caption", {})
+                logger.info(f"Caption data type: {type(caption_data)}")
                 logger.info(f"Caption data received: {caption_data}")
+                
+                # Ensure caption_data is a dict
+                if not isinstance(caption_data, dict):
+                    logger.error(f"Caption data is not a dict, it's: {type(caption_data)}")
+                    return {
+                        "status": "error",
+                        "message": f"Invalid caption data format: expected dict, got {type(caption_data)}",
+                        "caption_source": "format_error",
+                        "ai_generated": False
+                    }
 
-                # Ensure we have a non-empty lead caption
+                # Validate and ensure we have a complete caption
                 try:
                     main_text = (caption_data.get("main_text") or "").strip()
                     full_text = (caption_data.get("full_caption") or "").strip()
-                    if not main_text:
-                        # Synthesize a concise default from the prompt
-                        base = prompt.strip().split("\n")[0]
-                        base = base[:140].rstrip() if len(base) > 140 else base
-                        default_caption = (
-                            "Elevate your style with this beautiful creation... A must-have for your wardrobe!"
-                            if not base else base
-                        )
-                        caption_data["main_text"] = default_caption
-                        main_text = default_caption
+                    
+                    # Check if caption is incomplete (ends with incomplete sentence or is too short)
+                    if not main_text or len(main_text) < 20:
+                        logger.error("AI generated incomplete or empty main_text")
+                        return {
+                            "status": "error",
+                            "message": "AI generated incomplete caption. Please try again.",
+                            "caption_source": "ai_incomplete",
+                            "ai_generated": False
+                        }
+                    
+                    # Check if caption appears truncated (ends with incomplete words/sentences)
+                    incomplete_indicators = ['...', '…', '..', '--', '---']
+                    if any(main_text.endswith(ind) for ind in incomplete_indicators):
+                        logger.warning("Caption may be incomplete - ends with ellipsis")
+                    
                     if not full_text:
                         caption_data["full_caption"] = main_text
                         full_text = main_text
+                    
                     # Ensure full_caption starts with the main_text
                     if not full_text.startswith(main_text):
                         caption_data["full_caption"] = f"{main_text}\n\n{full_text}".strip()
                 except Exception as _e:
-                    logger.warning(f"Failed to normalize caption lead text: {_e}")
+                    logger.error(f"Failed to validate caption: {_e}")
+                    return {
+                        "status": "error",
+                        "message": f"Error validating AI caption: {str(_e)}. Please try again.",
+                        "caption_source": "validation_error",
+                        "ai_generated": False
+                    }
 
-                # Ensure contact details are present in both caption and full_caption when available
+                # Extract hashtags from the caption FIRST (before adding contact details)
+                # This ensures contact details go between caption and hashtags
+                import re
+                hashtags = []
+                try:
+                    if "hashtags" in caption_data and caption_data["hashtags"]:
+                        hashtags = caption_data["hashtags"]
+                        # Ensure hashtags are in list format and have # prefix
+                        if isinstance(hashtags, list):
+                            hashtags = [tag if isinstance(tag, str) and tag.startswith('#') else f"#{tag}" if isinstance(tag, str) else str(tag) for tag in hashtags if tag]
+                        else:
+                            hashtags = []
+                    else:
+                        # Extract hashtags from full caption as backup
+                        full_caption_text = caption_data.get("full_caption", "")
+                        if full_caption_text:
+                            hashtag_matches = re.findall(r'#\w+', full_caption_text)
+                            hashtags = list(set(hashtag_matches))  # Remove duplicates
+                    
+                    # Remove hashtags from caption text so we can add contact details between caption and hashtags
+                    if hashtags:
+                        # Remove hashtags from main_text and full_caption using regex for safer removal
+                        main_text_clean = caption_data.get("main_text", "")
+                        full_caption_clean = caption_data.get("full_caption", main_text_clean)
+                        
+                        # Use regex to remove hashtags (more precise than string replace)
+                        try:
+                            hashtag_pattern = '|'.join(re.escape(tag) for tag in hashtags if tag)
+                            if hashtag_pattern:
+                                # Remove hashtags with surrounding whitespace
+                                main_text_clean = re.sub(r'\s*' + hashtag_pattern + r'\s*', ' ', main_text_clean, flags=re.IGNORECASE)
+                                full_caption_clean = re.sub(r'\s*' + hashtag_pattern + r'\s*', ' ', full_caption_clean, flags=re.IGNORECASE)
+                        except Exception as pattern_error:
+                            logger.warning(f"Error creating hashtag pattern: {pattern_error}")
+                            # Fallback to simple string replacement
+                            for tag in hashtags:
+                                if tag:
+                                    main_text_clean = main_text_clean.replace(tag, " ").strip()
+                                    full_caption_clean = full_caption_clean.replace(tag, " ").strip()
+                        
+                        # Clean up extra spaces and newlines
+                        main_text_clean = re.sub(r'\s+', ' ', main_text_clean).strip()
+                        full_caption_clean = re.sub(r'\n\s*\n+', '\n\n', full_caption_clean).strip()
+                        
+                        # Only update if we have valid text
+                        if main_text_clean:
+                            caption_data["main_text"] = main_text_clean
+                        if full_caption_clean:
+                            caption_data["full_caption"] = full_caption_clean
+                except Exception as hashtag_error:
+                    logger.warning(f"Error processing hashtags: {hashtag_error}")
+                    # Continue without removing hashtags if there's an error
+                    # Ensure hashtags is still a list even if processing failed
+                    if not isinstance(hashtags, list):
+                        hashtags = []
+                    import traceback
+                    logger.debug(f"Hashtag processing traceback: {traceback.format_exc()}")
+
+                # Add contact details between caption and hashtags
                 try:
                     if contact_info and company_name:
                         original_main = caption_data.get("main_text", "") or ""
@@ -1324,7 +1577,6 @@ class AIPosterService:
                         else:
                             # Post-process existing contact details to ensure proper formatting
                             # Replace any single-line contact details with properly formatted ones
-                            import re
                             contact_pattern = r'(📱 WhatsApp: [^\n]+)(?:\s+)(✉️ Email: [^\n]+)(?:\s+)(📘 Facebook: [^\n]+)'
                             if re.search(contact_pattern, original_full):
                                 # Replace with properly formatted version using the already formatted contact_info
@@ -1333,49 +1585,28 @@ class AIPosterService:
                                 caption_data["main_text"] = re.sub(contact_pattern, formatted_contacts, original_main)
                 except Exception as _e:
                     logger.warning(f"Failed to append contact details to caption text: {_e}")
-
-                # Extract hashtags from the caption
-                hashtags = []
-                if "hashtags" in caption_data:
-                    hashtags = caption_data["hashtags"]
-                elif "full_caption" in caption_data:
-                    # Extract hashtags from full caption
-                    import re
-                    hashtag_matches = re.findall(r'#\w+', caption_data["full_caption"])
-                    hashtags = list(set(hashtag_matches))  # Remove duplicates
                 
-                # Generate additional hashtags based on the original prompt
-                prompt_hashtags = []
-                prompt_lower = prompt.lower()
-                
-                # Extract relevant hashtags based on prompt content
-                if any(word in prompt_lower for word in ['silk', 'saree', 'sari']):
-                    prompt_hashtags.extend(["#silk", "#saree", "#traditional", "#elegant"])
-                if any(word in prompt_lower for word in ['cotton', 'kurta', 'shirt']):
-                    prompt_hashtags.extend(["#cotton", "#kurta", "#comfortable", "#casual"])
-                if any(word in prompt_lower for word in ['wool', 'shawl', 'warm']):
-                    prompt_hashtags.extend(["#wool", "#shawl", "#warm", "#cozy"])
-                if any(word in prompt_lower for word in ['embroidered', 'embroidery']):
-                    prompt_hashtags.extend(["#embroidered", "#handcrafted", "#artisan"])
-                if any(word in prompt_lower for word in ['printed', 'print']):
-                    prompt_hashtags.extend(["#printed", "#pattern", "#design"])
-                if any(word in prompt_lower for word in ['summer', 'summer']):
-                    prompt_hashtags.extend(["#summer", "#light", "#breathable"])
-                if any(word in prompt_lower for word in ['winter', 'warm']):
-                    prompt_hashtags.extend(["#winter", "#warm", "#cozy"])
-                if any(word in prompt_lower for word in ['office', 'formal', 'professional']):
-                    prompt_hashtags.extend(["#office", "#formal", "#professional"])
-                if any(word in prompt_lower for word in ['party', 'celebration', 'festival']):
-                    prompt_hashtags.extend(["#party", "#celebration", "#festival"])
-                
-                # Add general textile hashtags
-                textile_hashtags = [
-                    "#textile", "#fashion", "#design", "#style", "#trendy",
-                    "#handmade", "#artisan", "#craft", "#beautiful", "#elegant"
-                ]
-                
-                # Combine hashtags and remove duplicates
-                all_hashtags = list(set(hashtags + prompt_hashtags + textile_hashtags))
+                # If no hashtags or insufficient hashtags, generate using AI
+                if not hashtags or len(hashtags) < 10:
+                    logger.info("Generating additional AI hashtags...")
+                    caption_text = caption_data.get("full_caption", caption_data.get("main_text", ""))
+                    hashtag_result = self.caption_service.generate_hashtags(
+                        content=prompt,
+                        caption_text=caption_text,
+                        count=15
+                    )
+                    
+                    if hashtag_result.get("status") == "success":
+                        ai_hashtags = hashtag_result.get("hashtags", [])
+                        # Combine with existing hashtags and remove duplicates
+                        all_hashtags = list(set(hashtags + ai_hashtags))
+                        logger.info(f"Generated {len(ai_hashtags)} AI hashtags")
+                    else:
+                        logger.warning(f"AI hashtag generation failed: {hashtag_result.get('message')}")
+                        # Use existing hashtags or empty list
+                        all_hashtags = hashtags if hashtags else []
+                else:
+                    all_hashtags = hashtags
                 
                 logger.info(f"Caption and hashtags generated successfully")
                 final_caption_result = {
@@ -1391,73 +1622,23 @@ class AIPosterService:
                 logger.info(f"Final caption result: {final_caption_result}")
                 return final_caption_result
             else:
-                logger.warning(f"Caption generation failed: {caption_result.get('message', 'Unknown error')}")
-                # Create more meaningful fallback captions
-                fallback_captions = [
-                    "✨ Discover the elegance of this stunning textile design... Perfect for making a statement! ✨",
-                    "🌟 Elevate your style with this beautiful creation... A must-have for your wardrobe! 🌟",
-                    "💫 Fall in love with this gorgeous design... Timeless beauty meets modern elegance! 💫",
-                    "🌸 Embrace the beauty of this elegant piece... Where tradition meets contemporary fashion! 🌸",
-                    "✨ Step into elegance with this breathtaking design... Perfect for any special occasion! ✨",
-                    "🌟 Make a statement with this gorgeous textile... Timeless style that never goes out of fashion! 🌟"
-                ]
-                
-                import random
-                selected_caption = random.choice(fallback_captions)
-                
-                # Add contact details to fallback caption if available
-                base_full = f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸"
-                if contact_info and company_name:
-                    contact_block = f"\n\n📞 Contact us for inquiries:\n{contact_info}"
-                    full_caption = f"{base_full}{contact_block}"
-                    caption_with_contact = f"{selected_caption}{contact_block}"
-                else:
-                    full_caption = base_full
-                    caption_with_contact = selected_caption
-
+                error_message = caption_result.get('message', 'Unknown error')
+                logger.error(f"AI caption generation failed: {error_message}")
+                # Return error instead of fallback - user requested no fallback captions
                 return {
-                    "status": "success",
-                    "caption": caption_with_contact,
-                    "full_caption": full_caption,
-                    "hashtags": ["#fashion", "#style", "#elegant", "#beautiful", "#textile", "#design", "#trendy", "#outfit", "#fashionista", "#styleinspo", "#ootd", "#fashionblogger", "#stylegoals", "#fashionlover", "#styletips"],
-                    "emoji": "✨",
-                    "call_to_action": "✨ Shop now and elevate your style! ✨",
-                    "caption_source": "fallback",
+                    "status": "error",
+                    "message": f"AI caption generation failed: {error_message}. Please try again or check your API configuration.",
+                    "caption_source": "ai_failed",
                     "ai_generated": False
                 }
                 
         except Exception as e:
             logger.error(f"Error generating caption and hashtags: {str(e)}")
-            # Create meaningful fallback even for exceptions
-            fallback_captions = [
-                "✨ Discover the elegance of this stunning textile design... Perfect for making a statement! ✨",
-                "🌟 Elevate your style with this beautiful creation... A must-have for your wardrobe! 🌟",
-                "💫 Fall in love with this gorgeous design... Timeless beauty meets modern elegance! 💫",
-                "🌸 Embrace the beauty of this elegant piece... Where tradition meets contemporary fashion! 🌸",
-                "✨ Step into elegance with this breathtaking design... Perfect for any special occasion! ✨"
-            ]
-            
-            import random
-            selected_caption = random.choice(fallback_captions)
-            
-            # Add contact details to exception fallback caption if available
-            base_full = f"{selected_caption}\n\n✨ Perfect for special occasions, festivals, or everyday elegance ✨\n\n💫 Handcrafted with love and attention to detail 💫\n\n🌸 Available now - don't miss out on this beauty! 🌸"
-            if contact_info and company_name:
-                contact_block = f"\n\n📞 Contact us for inquiries:\n{contact_info}"
-                full_caption = f"{base_full}{contact_block}"
-                caption_with_contact = f"{selected_caption}{contact_block}"
-            else:
-                full_caption = base_full
-                caption_with_contact = selected_caption
-
+            # Return error instead of fallback - user requested no fallback captions
             return {
-                "status": "success",
-                "caption": caption_with_contact,
-                "full_caption": full_caption,
-                "hashtags": ["#fashion", "#style", "#elegant", "#beautiful", "#textile", "#design", "#trendy", "#outfit", "#fashionista", "#styleinspo", "#ootd", "#fashionblogger", "#stylegoals", "#fashionlover", "#styletips"],
-                "emoji": "✨",
-                "call_to_action": "✨ Shop now and elevate your style! ✨",
-                "caption_source": "fallback",
+                "status": "error",
+                "message": f"Error generating AI caption: {str(e)}. Please try again or check your API configuration.",
+                "caption_source": "error",
                 "ai_generated": False
             }
     

@@ -61,5 +61,6 @@ urlpatterns = [
     path('branding-kit/status/', branding_kit_views.branding_kit_status, name='branding-kit-status'),
     path('branding-kit/test-colors/', branding_kit_views.test_color_detection, name='test-color-detection'),
     path('branding-kit/history/', branding_kit_views.list_branding_kits, name='list-branding-kits'),
+    path('branding-kit/<str:kit_id>/', branding_kit_views.get_branding_kit, name='get-branding-kit'),
     path('branding-kit/<str:kit_id>/delete/', branding_kit_views.delete_branding_kit, name='delete-branding-kit'),
 ]
