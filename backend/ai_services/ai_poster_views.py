@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
+from django.db.models import Q
 from .ai_poster_service import AIPosterService
 from .models import GeneratedPoster
 
@@ -866,10 +867,16 @@ def list_posters(request):
         # Build queryset
         queryset = GeneratedPoster.objects.all()
         
-        # Filter by organization if available
-        if organization:
+        # Filter by organization and/or user
+        # Use OR condition to match items that belong to either the organization OR the user
+        if organization and user:
+            # If both organization and user are available, show items that match either
+            queryset = queryset.filter(Q(organization=organization) | Q(user=user))
+        elif organization:
+            # If only organization is available, filter by organization
             queryset = queryset.filter(organization=organization)
         elif user:
+            # If only user is available, filter by user
             queryset = queryset.filter(user=user)
         
         # Order by created_at descending

@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from django.db.models import Q
 from .branding_kit_service import BrandingKitService
 from .models import GeneratedBrandingKit
 
@@ -313,11 +314,18 @@ def list_branding_kits(request):
         queryset = GeneratedBrandingKit.objects.all()
         logger.info(f"List branding kits - Total branding kits in DB: {queryset.count()}")
         
-        # Filter by organization if available
-        if organization:
+        # Filter by organization and/or user
+        # Use OR condition to match items that belong to either the organization OR the user
+        if organization and user:
+            # If both organization and user are available, show items that match either
+            queryset = queryset.filter(Q(organization=organization) | Q(user=user))
+            logger.info(f"List branding kits - Filtered by organization OR user: {queryset.count()} kits")
+        elif organization:
+            # If only organization is available, filter by organization
             queryset = queryset.filter(organization=organization)
             logger.info(f"List branding kits - Filtered by organization: {queryset.count()} kits")
         elif user:
+            # If only user is available, filter by user
             queryset = queryset.filter(user=user)
             logger.info(f"List branding kits - Filtered by user: {queryset.count()} kits")
         else:

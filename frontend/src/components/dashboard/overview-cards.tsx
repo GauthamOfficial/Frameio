@@ -32,44 +32,67 @@ export function OverviewCards() {
       const token = await getToken()
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
       
+      // Ensure URL doesn't have double slashes
+      const baseUrl = apiBase.replace(/\/$/, '')
+      
       // Fetch generated posters count
-      const postersResponse = await fetch(`${apiBase}/api/ai/ai-poster/posters/?limit=1`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        credentials: 'include'
-      })
+      try {
+        const postersResponse = await fetch(`${baseUrl}/api/ai/ai-poster/posters/?limit=1`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          credentials: 'include'
+        })
 
-      if (postersResponse.ok) {
-        const postersData = await postersResponse.json()
-        if (postersData.success) {
-          setStats(prev => ({
-            ...prev,
-            generatedPosts: postersData.count || 0
-          }))
+        if (postersResponse.ok) {
+          try {
+            const postersData = await postersResponse.json()
+            if (postersData.success) {
+              setStats(prev => ({
+                ...prev,
+                generatedPosts: postersData.count || 0
+              }))
+            }
+          } catch (parseError) {
+            console.warn('Failed to parse posters response:', parseError)
+          }
         }
+      } catch (postersError) {
+        // Handle network errors for posters fetch gracefully
+        console.warn('Failed to fetch posters count:', postersError)
+        // Don't throw - continue to try other stats
       }
 
       // Fetch branding kits count
-      const brandingKitsResponse = await fetch(`${apiBase}/api/ai/branding-kit/history/?limit=1`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        credentials: 'include'
-      })
+      try {
+        const brandingKitsResponse = await fetch(`${baseUrl}/api/ai/branding-kit/history/?limit=1`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          credentials: 'include'
+        })
 
-      if (brandingKitsResponse.ok) {
-        const brandingKitsData = await brandingKitsResponse.json()
-        if (brandingKitsData.success) {
-          setStats(prev => ({
-            ...prev,
-            brandkitCreated: brandingKitsData.count || 0
-          }))
+        if (brandingKitsResponse.ok) {
+          try {
+            const brandingKitsData = await brandingKitsResponse.json()
+            if (brandingKitsData.success) {
+              setStats(prev => ({
+                ...prev,
+                brandkitCreated: brandingKitsData.count || 0
+              }))
+            }
+          } catch (parseError) {
+            console.warn('Failed to parse branding kits response:', parseError)
+          }
         }
+      } catch (brandingKitsError) {
+        // Handle network errors for branding kits fetch gracefully
+        console.warn('Failed to fetch branding kits count:', brandingKitsError)
+        // Don't throw - stats will remain at default values
       }
 
       // TODO: Fetch other stats when endpoints are available
@@ -77,7 +100,9 @@ export function OverviewCards() {
       // - Engagement rate: GET /api/analytics/engagement
       
     } catch (error) {
+      // This catch block handles any unexpected errors
       console.error('Error fetching stats:', error)
+      // Stats will remain at default values (0)
     } finally {
       setLoading(false)
     }
