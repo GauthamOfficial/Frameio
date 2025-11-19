@@ -377,10 +377,16 @@ export default function EnhancedPosterGeneratorWithBranding() {
       const fetchWithFallback = async (path: string, init: RequestInit) => {
         let lastErr: unknown = null
 
+        // Ensure path ends with trailing slash for Django compatibility
+        // Remove any existing trailing slash first, then add one to ensure consistency
+        const cleanPath = path.replace(/\/+$/, '')
+        const normalizedPath = `${cleanPath}/`
+
         const attemptFetch = async (url: string) => {
           const controller = new AbortController()
           const localTimeout = setTimeout(() => controller.abort(), 180000)
           try {
+            console.log('Fetching URL:', url) // Debug log
             const res = await fetch(url, { ...init, signal: controller.signal })
             return res
           } finally {
@@ -388,20 +394,31 @@ export default function EnhancedPosterGeneratorWithBranding() {
           }
         }
 
-        // 1) Try same-origin relative path (leverages Next.js rewrites)
-        try {
-          return await attemptFetch(path)
-        } catch (e) {
-          lastErr = e
-        }
-
-        // 2) Try absolute bases as fallbacks (network issues only)
+        // For Django endpoints that require trailing slashes, use absolute URLs directly
+        // to bypass Next.js rewrites which may strip trailing slashes
+        // 1) Try absolute bases first (bypasses Next.js rewrites)
         for (const base of fallbackBases) {
           try {
-            return await attemptFetch(`${base}${path}`)
+            const cleanBase = base.replace(/\/+$/, '')
+            // Ensure path starts with / for proper URL construction
+            const pathWithSlash = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`
+            const absoluteUrl = `${cleanBase}${pathWithSlash}`
+            console.log('Attempting absolute URL:', absoluteUrl) // Debug log
+            return await attemptFetch(absoluteUrl)
           } catch (e) {
             lastErr = e
+            console.error('Absolute URL fetch failed:', e) // Debug log
           }
+        }
+
+        // 2) Fallback to same-origin relative path (leverages Next.js rewrites)
+        // This is less reliable for trailing slashes but kept as fallback
+        try {
+          console.log('Attempting relative path:', normalizedPath) // Debug log
+          return await attemptFetch(normalizedPath)
+        } catch (e) {
+          lastErr = e
+          console.error('Relative path fetch failed:', e) // Debug log
         }
 
         if (lastErr) throw lastErr
@@ -446,14 +463,46 @@ export default function EnhancedPosterGeneratorWithBranding() {
       
       if (!response.ok) {
         let message = `HTTP ${response.status}`
+        
+        // Clone the response so we can read it multiple times
+        const clonedResponse = response.clone()
+        
         try {
+          // First try to parse as JSON
           const errorData = await response.json()
-          message = errorData?.error || message
-        } catch (e) {
-          // fallback: response may not be JSON
-          const text = await response.text().catch(() => '')
-          if (text) message = text
+          console.error('Error response data:', errorData)
+          message = errorData?.error || errorData?.message || errorData?.detail || message
+          // Include more details if available
+          if (errorData?.detail && errorData.detail !== message) {
+            message += `: ${errorData.detail}`
+          }
+        } catch (jsonError) {
+          // If JSON parsing fails, try as text
+          try {
+            const responseText = await clonedResponse.text()
+            console.error('Error response text (raw):', responseText)
+            
+            if (responseText && responseText.trim()) {
+              // Try to parse as JSON one more time from text
+              try {
+                const errorData = JSON.parse(responseText)
+                message = errorData?.error || errorData?.message || errorData?.detail || message
+              } catch (parseError) {
+                // Not JSON, use text as message
+                message = responseText.length > 200 ? responseText.substring(0, 200) + '...' : responseText
+              }
+            } else {
+              // Empty response - provide helpful message
+              message = `HTTP ${response.status}: Server returned empty response. Check backend logs for details.`
+              console.error('Empty error response received')
+            }
+          } catch (textError) {
+            console.error('Failed to read error response:', textError)
+            message = `HTTP ${response.status}: Unable to read error response. Check backend logs.`
+          }
         }
+        
+        console.error('Full error message:', message)
         throw new Error(message)
       }
 

@@ -692,7 +692,16 @@ class AIPosterService:
             )
             
             # Process response and save image
-            for part in response.candidates[0].content.parts:
+            if not response.candidates or len(response.candidates) == 0:
+                logger.error("No candidates returned from Gemini model for image edit")
+                return {"status": "error", "message": "No candidates returned from model"}
+            
+            candidate = response.candidates[0]
+            if not candidate.content or not candidate.content.parts:
+                logger.error("No content parts in Gemini response for image edit")
+                return {"status": "error", "message": "No content parts returned from model"}
+            
+            for part in candidate.content.parts:
                 if part.inline_data is not None:
                     edited_image = Image.open(BytesIO(part.inline_data.data))
 
@@ -715,6 +724,10 @@ class AIPosterService:
                                 contents=[image_part, stricter_prompt],
                                 config=types.GenerateContentConfig(**retry_kwargs),
                             )
+                            if not response_retry.candidates or len(response_retry.candidates) == 0:
+                                continue
+                            if not response_retry.candidates[0].content or not response_retry.candidates[0].content.parts:
+                                continue
                             for retry_part in response_retry.candidates[0].content.parts:
                                 if getattr(retry_part, 'inline_data', None) is not None:
                                     retry_img = Image.open(BytesIO(retry_part.inline_data.data))

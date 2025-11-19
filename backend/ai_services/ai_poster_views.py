@@ -159,11 +159,25 @@ def generate_poster(request):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         logger.error(f"Error in generate_poster endpoint: {str(e)}")
-        return Response({
-            "success": False,
-            "error": "Internal server error"
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.error(f"Traceback: {error_trace}")
+        error_message = str(e) if settings.DEBUG else "Internal server error"
+        try:
+            response = Response({
+                "success": False,
+                "error": error_message
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response['Content-Type'] = 'application/json'
+            return response
+        except Exception as response_error:
+            logger.error(f"Failed to create error response: {str(response_error)}")
+            from django.http import JsonResponse
+            return JsonResponse({
+                "success": False,
+                "error": "Internal server error"
+            }, status=500)
 
 
 @csrf_exempt
@@ -179,6 +193,7 @@ def edit_poster(request):
     - image: Uploaded image file
     - aspect_ratio: Optional (1:1, 16:9, 4:5)
     """
+    saved_path = None
     try:
         prompt = request.data.get('prompt')
         aspect_ratio = request.data.get('aspect_ratio', '1:1')
@@ -206,10 +221,32 @@ def edit_poster(request):
         temp_filename = f"temp_upload_{timestamp}_{image_file.name}"
         temp_path = f"temp_uploads/{temp_filename}"
         
-        saved_path = default_storage.save(temp_path, ContentFile(image_file.read()))
+        try:
+            saved_path = default_storage.save(temp_path, ContentFile(image_file.read()))
+        except Exception as save_error:
+            logger.error(f"Failed to save uploaded image: {str(save_error)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return Response({
+                "success": False,
+                "error": f"Failed to save uploaded image: {str(save_error)}"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         logger.info(f"Editing poster with prompt: {prompt[:50]}...")
         
+        # Check if service is available first
+        if not ai_poster_service.is_available():
+            # Clean up temp file before returning
+            try:
+                default_storage.delete(saved_path)
+            except:
+                pass
+            return Response({
+                "success": False,
+                "error": "AI poster service is not available. Please check configuration."
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        response = None
         try:
             # Get user for branding (same logic as generate_poster)
             user = getattr(request, 'user', None) if hasattr(request, 'user') else None
@@ -262,10 +299,12 @@ def edit_poster(request):
                 logger.info(f"Authenticated user found: {user.username} ({user.email})")
             
             # Generate edited poster using AI service with user for branding
+            logger.info(f"Calling generate_with_image with path: {saved_path}")
             result = ai_poster_service.generate_with_image(prompt, saved_path, aspect_ratio, user)
+            logger.info(f"generate_with_image returned: {result.get('status')}")
             
             if result.get('status') == 'success':
-                return Response({
+                response = Response({
                     "success": True,
                     "message": "Poster edited successfully",
                     "image_path": result.get('image_path'),
@@ -287,24 +326,85 @@ def edit_poster(request):
                     "branding_metadata": result.get('branding_metadata', {})
                 }, status=status.HTTP_200_OK)
             else:
-                return Response({
+                error_message = result.get('message', 'Failed to edit poster')
+                logger.error(f"Poster editing failed: {error_message}")
+                response = Response({
                     "success": False,
-                    "error": result.get('message', 'Failed to edit poster')
+                    "error": error_message
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+        except Exception as inner_e:
+            import traceback
+            error_trace = traceback.format_exc()
+            logger.error(f"Error in edit_poster inner block: {str(inner_e)}")
+            logger.error(f"Traceback: {error_trace}")
+            # Create error response
+            response = Response({
+                "success": False,
+                "error": str(inner_e) if settings.DEBUG else "Internal server error"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
         finally:
             # Clean up temporary file
             try:
-                default_storage.delete(saved_path)
+                if saved_path:
+                    default_storage.delete(saved_path)
             except Exception as e:
                 logger.warning(f"Failed to delete temp file {saved_path}: {str(e)}")
+        
+        # Ensure response is always set
+        if response is None:
+            logger.error("Response was None - creating fallback error response")
+            response = Response({
+                "success": False,
+                "error": "Unexpected error: response was not created"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Force content type
+        response['Content-Type'] = 'application/json'
+        return response
             
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         logger.error(f"Error in edit_poster endpoint: {str(e)}")
-        return Response({
-            "success": False,
-            "error": "Internal server error"
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.error(f"Traceback: {error_trace}")
+        
+        # Clean up temp file if it exists
+        if saved_path:
+            try:
+                default_storage.delete(saved_path)
+            except:
+                pass
+        
+        # Ensure we always return a proper JSON response
+        error_message = str(e) if settings.DEBUG else "Internal server error"
+        logger.error(f"Returning error response: {error_message}")
+        
+        try:
+            response = Response({
+                "success": False,
+                "error": error_message
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Force content type to ensure JSON
+            response['Content-Type'] = 'application/json'
+            return response
+        except Exception as response_error:
+            # If even Response creation fails, log it
+            logger.error(f"Failed to create error response: {str(response_error)}")
+            logger.error(traceback.format_exc())
+            # Try one more time with minimal data
+            try:
+                from django.http import JsonResponse
+                return JsonResponse({
+                    "success": False,
+                    "error": "Internal server error"
+                }, status=500)
+            except:
+                # Last resort - return a simple text response
+                from django.http import HttpResponse
+                return HttpResponse('{"success": false, "error": "Internal server error"}', 
+                                  status=500, content_type='application/json')
 
 
 @csrf_exempt
