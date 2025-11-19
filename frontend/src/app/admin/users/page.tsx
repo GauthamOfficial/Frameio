@@ -54,6 +54,12 @@ export default function AdminUsersPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('[Admin Users] Error response:', errorData);
+        
+        // Provide more helpful error messages
+        if (response.status === 401 || response.status === 403) {
+          throw new Error(errorData.error || errorData.detail || 'Authentication required. Please log in to the admin panel.');
+        }
+        
         throw new Error(errorData.error || errorData.detail || 'Failed to load users');
       }
 

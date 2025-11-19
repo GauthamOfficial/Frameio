@@ -17,8 +17,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const timeRange = searchParams.get('timeRange') || '30d';
+    const days = searchParams.get('days') || '30';
+
     // Forward request to Django backend with admin header
-    const response = await fetch(`${API_BASE_URL}/api/users/`, {
+    // Django route: /api/ + users.urls path = /api/admin/analytics/
+    const djangoUrl = new URL(`${API_BASE_URL}/api/admin/analytics/`);
+    djangoUrl.searchParams.set('timeRange', timeRange);
+    djangoUrl.searchParams.set('days', days);
+
+    const response = await fetch(djangoUrl.toString(), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -27,9 +37,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const data = await response.json().catch(() => []);
+    const data = await response.json();
 
     if (!response.ok) {
+      // If it's a service unavailable error, return it as-is
+      if (response.status === 503) {
+        return NextResponse.json(data, { status: response.status });
+      }
+      
       // If it's an authentication error, provide helpful message
       if (response.status === 401 || response.status === 403) {
         return NextResponse.json(
@@ -41,23 +56,18 @@ export async function GET(request: NextRequest) {
         );
       }
       return NextResponse.json(
-        { error: data.detail || data.message || 'Failed to fetch users' },
+        { error: data.detail || data.message || 'Failed to fetch analytics data' },
         { status: response.status }
       );
     }
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Admin users fetch error:', error);
+    console.error('Admin analytics fetch error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
-
-
-
-
-
 

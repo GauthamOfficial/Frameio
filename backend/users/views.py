@@ -40,10 +40,11 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         Override to allow authenticated users to list themselves without org membership.
         This is needed for the authentication check during sign-in.
+        Also allows admin requests for all actions.
         """
         if self.action == 'list':
-            # For list action, only require authentication
-            return [permissions.IsAuthenticated()]
+            # For list action, allow either authenticated users OR admin requests
+            return [IsAuthenticatedOrAdmin()]
         return super().get_permissions()
     
     def get_serializer_class(self):
