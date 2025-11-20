@@ -568,17 +568,50 @@ class AIPosterService:
                             final_w, final_h = image.size
                             logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}; size={final_w}x{final_h}")
                             
-                            # Upload to Cloudinary for public sharing
+                            # Upload to Cloudinary for public sharing - CRITICAL STEP
+                            logger.info(f"=== STARTING CLOUDINARY UPLOAD ===")
+                            logger.info(f"Image saved to: {saved_path}")
+                            logger.info(f"Verifying file exists before upload...")
+                            
+                            # Verify file exists before uploading
+                            if not default_storage.exists(saved_path):
+                                logger.error(f"CRITICAL: File does not exist at {saved_path} before Cloudinary upload!")
+                            else:
+                                logger.info(f"File exists, proceeding with Cloudinary upload...")
+                            
+                            # CRITICAL: Ensure upload happens BEFORE caption generation
+                            # This ensures public_url is available for HTML page creation
+                            
                             public_url = None
                             try:
+                                logger.info(f"Calling upload_to_cloudinary with path: {saved_path}")
                                 public_url = upload_to_cloudinary(saved_path)
                                 if public_url:
-                                    logger.info(f"Poster uploaded to Cloudinary: {public_url}")
+                                    logger.info(f"SUCCESS: Poster uploaded to Cloudinary: {public_url}")
                                 else:
-                                    logger.warning("Cloudinary upload failed, but continuing with local URL")
+                                    logger.error(f"FAILED: Cloudinary upload returned None")
+                                    logger.error(f"   This means the poster cannot be shared on Facebook immediately!")
+                                    logger.error(f"   Check Cloudinary credentials and network connectivity")
                             except Exception as e:
-                                logger.error(f"Error uploading to Cloudinary: {str(e)}")
-                                # Continue even if Cloudinary upload fails
+                                logger.error(f"EXCEPTION during Cloudinary upload: {str(e)}")
+                                import traceback
+                                traceback.print_exc()
+                                # Continue even if Cloudinary upload fails, but log the error
+                            
+                            logger.info(f"=== END CLOUDINARY UPLOAD ===")
+                            logger.info(f"Final public_url after upload: {public_url}")
+                            
+                            # CRITICAL: If upload failed, try one more time
+                            if not public_url:
+                                logger.warning("First upload attempt failed, retrying...")
+                                try:
+                                    public_url = upload_to_cloudinary(saved_path)
+                                    if public_url:
+                                        logger.info(f"SUCCESS on retry: Poster uploaded to Cloudinary: {public_url}")
+                                    else:
+                                        logger.error(f"FAILED on retry: Cloudinary upload still returned None")
+                                except Exception as retry_error:
+                                    logger.error(f"EXCEPTION on retry: {retry_error}")
                             
                             # Generate caption and hashtags for the poster
                             logger.info("Starting caption generation...")
@@ -620,20 +653,20 @@ class AIPosterService:
                                             filename=f"poster_{int(time.time())}"
                                         )
                                         if shareable_page_url:
-                                            logger.info(f"✅ Shareable HTML page created successfully: {shareable_page_url}")
+                                            logger.info(f"SUCCESS: Shareable HTML page created successfully: {shareable_page_url}")
                                         else:
-                                            logger.error("❌ Failed to upload HTML page to Cloudinary, using image URL directly")
+                                            logger.error("FAILED: Failed to upload HTML page to Cloudinary, using image URL directly")
                                             shareable_page_url = public_url  # Fallback to image URL
                                     else:
-                                        logger.warning("⚠️  No caption available, using image URL directly")
+                                        logger.warning("WARNING: No caption available, using image URL directly")
                                         shareable_page_url = public_url  # Fallback to image URL
                                 except Exception as html_error:
-                                    logger.error(f"❌ Error creating shareable HTML page: {html_error}")
+                                    logger.error(f"ERROR: Error creating shareable HTML page: {html_error}")
                                     import traceback
                                     traceback.print_exc()
                                     shareable_page_url = public_url  # Fallback to image URL
                             else:
-                                logger.error("❌ No public_url available, cannot create HTML page")
+                                logger.error("ERROR: No public_url available, cannot create HTML page")
                             
                             logger.info(f"Final shareable_page_url: {shareable_page_url}")
                             logger.info(f"=== END HTML PAGE CREATION DEBUG ===")
@@ -676,7 +709,7 @@ class AIPosterService:
                                     final_public_url = image_url
                             
                             if not final_public_url:
-                                logger.error("❌ CRITICAL: No public_url available at all! Using image_url as fallback")
+                                logger.error("CRITICAL: No public_url available at all! Using image_url as fallback")
                                 final_public_url = image_url
                             
                             logger.info(f"=== FINAL RESULT DEBUG ===")
@@ -686,11 +719,17 @@ class AIPosterService:
                             logger.info(f"image_url: {image_url}")
                             
                             # Add brand overlay if user has company profile
+                            # CRITICAL: Set public_url in final_result - this is what gets returned to the API
+                            # Ensure public_url is always set (even if empty)
+                            # Also include cloudinary_url as the direct image URL (not HTML page)
+                            cloudinary_image_url = public_url if public_url and not shareable_page_url else (public_url if public_url else '')
+                            
                             final_result = {
                                 "status": "success", 
                                 "image_path": saved_path,
                                 "image_url": image_url,
-                                "public_url": final_public_url,  # Use HTML page URL if available, else image URL
+                                "public_url": final_public_url if final_public_url else '',  # Always set, even if empty (may be HTML page)
+                                "cloudinary_url": cloudinary_image_url,  # Direct Cloudinary image URL (not HTML page)
                                 "filename": filename,
                                 "width": final_w,
                                 "height": final_h,
@@ -704,11 +743,16 @@ class AIPosterService:
                                 "branding_applied": False
                             }
                             
+                            # CRITICAL: Ensure public_url key exists
+                            if 'public_url' not in final_result:
+                                logger.error("CRITICAL: public_url key missing from final_result!")
+                                final_result['public_url'] = ''
+                            
                             # Final verification before returning
                             logger.info(f"Final result public_url: {final_result.get('public_url')}")
                             logger.info(f"Final result keys: {list(final_result.keys())}")
                             if not final_result.get('public_url'):
-                                logger.error("❌ CRITICAL: public_url missing in final_result! Setting to image_url")
+                                logger.error("CRITICAL: public_url missing in final_result! Setting to image_url")
                                 final_result['public_url'] = image_url
                             logger.info(f"=== END FINAL RESULT DEBUG ===")
                             
@@ -799,18 +843,65 @@ class AIPosterService:
                                                 
                                                 final_branded_url = branded_shareable_url or branded_public_url or shareable_page_url or public_url
                                                 logger.info(f"Final branded public_url: {final_branded_url}")
+                                                
+                                                # CRITICAL: Verify final_branded_url is a Cloudinary URL, not a local URL
+                                                if final_branded_url and not final_branded_url.startswith('http'):
+                                                    logger.error(f"CRITICAL: final_branded_url is not a Cloudinary URL: {final_branded_url}")
+                                                    logger.error("Attempting emergency upload of branded poster...")
+                                                    # Try to upload the branded image now
+                                                    try:
+                                                        emergency_branded_url = upload_to_cloudinary(branded_path)
+                                                        if emergency_branded_url:
+                                                            logger.info(f"SUCCESS: Emergency branded upload succeeded: {emergency_branded_url}")
+                                                            final_branded_url = emergency_branded_url
+                                                            # Also create HTML page
+                                                            caption_text = final_result.get("caption", "")
+                                                            full_caption_text = final_result.get("full_caption", caption_text)
+                                                            if caption_text or full_caption_text:
+                                                                html_content = create_shareable_html_page(
+                                                                    emergency_branded_url,
+                                                                    caption_text,
+                                                                    full_caption_text
+                                                                )
+                                                                emergency_html_url = upload_html_to_cloudinary(
+                                                                    html_content,
+                                                                    filename=f"branded_emergency_{int(time.time())}"
+                                                                )
+                                                                if emergency_html_url:
+                                                                    final_branded_url = emergency_html_url
+                                                                    logger.info(f"SUCCESS: Emergency HTML page created: {emergency_html_url}")
+                                                        else:
+                                                            logger.error("ERROR: Emergency branded upload failed")
+                                                    except Exception as emergency_error:
+                                                        logger.error(f"ERROR: Emergency branded upload exception: {emergency_error}")
+                                                
                                                 logger.info(f"=== END BRANDED HTML PAGE CREATION DEBUG ===")
+                                                
+                                                # CRITICAL: Ensure public_url is always set (even if empty)
+                                                final_branded_url = final_branded_url if final_branded_url else ''
+                                                
+                                                # Extract cloudinary_url for branded poster (direct image URL, not HTML page)
+                                                branded_cloudinary_url = branded_public_url if branded_public_url else (public_url if public_url else '')
                                                 
                                                 final_result.update({
                                                     "image_path": branded_path,
                                                     "image_url": brand_result.get("image_url", image_url),
-                                                    "public_url": final_branded_url,  # Use HTML page URL if available
+                                                    "public_url": final_branded_url,  # Use HTML page URL if available, or empty string
+                                                    "cloudinary_url": branded_cloudinary_url,  # Direct Cloudinary image URL (not HTML page)
                                                     "filename": brand_result.get("filename", filename),
                                                     "branding_applied": True,
                                                     "logo_added": brand_result.get("logo_added", False),
                                                     "contact_info_added": brand_result.get("contact_info_added", False),
                                                     "branding_metadata": brand_result.get("branding_metadata", {})
                                                 })
+                                                
+                                                # CRITICAL: Ensure public_url key exists after update
+                                                if 'public_url' not in final_result:
+                                                    logger.error("CRITICAL: public_url key missing after branding update!")
+                                                    final_result['public_url'] = ''
+                                                elif final_result.get('public_url') is None:
+                                                    logger.error("CRITICAL: public_url is None after branding update!")
+                                                    final_result['public_url'] = ''
                                             else:
                                                 logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
                                         else:
@@ -825,16 +916,108 @@ class AIPosterService:
                             else:
                                 logger.warning("No user provided - skipping branding")
                             
-                            # Final check before returning
-                            if not final_result.get('public_url'):
-                                logger.error("❌ CRITICAL ERROR: public_url is missing in final_result before return!")
+                            # Final check before returning - ENSURE public_url is ALWAYS set and is a Cloudinary URL
+                            current_public_url = final_result.get('public_url')
+                            
+                            # Check if public_url is missing OR is a local URL (not Cloudinary)
+                            if not current_public_url or (current_public_url and not current_public_url.startswith('http')):
+                                logger.error("CRITICAL ERROR: public_url is missing or is not a Cloudinary URL!")
+                                logger.error(f"Current public_url: {current_public_url}")
                                 logger.error(f"Available keys: {list(final_result.keys())}")
-                                final_result['public_url'] = final_result.get('image_url', '')
-                                logger.info(f"Set public_url to image_url as last resort: {final_result.get('public_url')}")
+                                logger.error(f"shareable_page_url: {shareable_page_url}")
+                                logger.error(f"public_url (image): {public_url}")
+                                logger.error(f"image_url: {image_url}")
+                                
+                                # Determine which file to upload (branded or original)
+                                file_to_upload = None
+                                if final_result.get('branding_applied') and final_result.get('image_path'):
+                                    file_to_upload = final_result.get('image_path')
+                                    logger.info(f"Using branded image path for emergency upload: {file_to_upload}")
+                                elif saved_path:
+                                    file_to_upload = saved_path
+                                    logger.info(f"Using original image path for emergency upload: {file_to_upload}")
+                                
+                                # Last resort: try to upload again if we have a file path
+                                if file_to_upload and default_storage.exists(file_to_upload):
+                                    logger.warning("WARNING: Attempting emergency Cloudinary upload...")
+                                    try:
+                                        emergency_url = upload_to_cloudinary(file_to_upload)
+                                        if emergency_url:
+                                            logger.info(f"SUCCESS: Emergency upload succeeded: {emergency_url}")
+                                            # Try to create HTML page too
+                                            caption_text = final_result.get("caption", "")
+                                            full_caption_text = final_result.get("full_caption", caption_text)
+                                            if caption_text or full_caption_text:
+                                                html_content = create_shareable_html_page(
+                                                    emergency_url,
+                                                    caption_text,
+                                                    full_caption_text
+                                                )
+                                                emergency_html_url = upload_html_to_cloudinary(
+                                                    html_content,
+                                                    filename=f"emergency_{int(time.time())}"
+                                                )
+                                                if emergency_html_url:
+                                                    final_result['public_url'] = emergency_html_url
+                                                    final_result['cloudinary_url'] = emergency_url  # Direct image URL
+                                                    logger.info(f"SUCCESS: Emergency HTML page created: {emergency_html_url}")
+                                                else:
+                                                    final_result['public_url'] = emergency_url
+                                                    final_result['cloudinary_url'] = emergency_url
+                                            else:
+                                                final_result['public_url'] = emergency_url
+                                                final_result['cloudinary_url'] = emergency_url
+                                        else:
+                                            logger.error("ERROR: Emergency upload also failed")
+                                            logger.error("WARNING: Setting public_url to empty - Facebook sharing will not work")
+                                            final_result['public_url'] = ''
+                                            final_result['cloudinary_url'] = ''
+                                    except Exception as emergency_error:
+                                        logger.error(f"ERROR: Emergency upload exception: {emergency_error}")
+                                        import traceback
+                                        traceback.print_exc()
+                                        final_result['public_url'] = ''
+                                        final_result['cloudinary_url'] = ''
+                                else:
+                                    logger.error(f"ERROR: No file to upload. saved_path: {saved_path}, file_to_upload: {file_to_upload}")
+                                    final_result['public_url'] = ''
+                                    final_result['cloudinary_url'] = ''
+                                
+                                logger.info(f"Final public_url after emergency fix: {final_result.get('public_url')}")
+                            
+                            # CRITICAL: Final verification - ensure public_url and cloudinary_url keys exist and are strings
+                            if 'public_url' not in final_result:
+                                logger.error("CRITICAL: public_url key missing from final_result!")
+                                final_result['public_url'] = ''
+                            elif final_result.get('public_url') is None:
+                                logger.error("CRITICAL: public_url is None in final_result!")
+                                final_result['public_url'] = ''
+                            else:
+                                # Ensure it's a string
+                                final_result['public_url'] = str(final_result.get('public_url', ''))
+                            
+                            # Ensure cloudinary_url is also set (use public_url if it's a direct image URL, not HTML page)
+                            if 'cloudinary_url' not in final_result:
+                                # If public_url is a Cloudinary image URL (not HTML), use it
+                                current_public = final_result.get('public_url', '')
+                                if current_public and current_public.startswith('http') and 'cloudinary' in current_public and not current_public.endswith('.html'):
+                                    final_result['cloudinary_url'] = current_public
+                                else:
+                                    final_result['cloudinary_url'] = ''
+                            elif final_result.get('cloudinary_url') is None:
+                                final_result['cloudinary_url'] = ''
+                            
+                            # Verify public_url is actually set
+                            if not final_result.get('public_url'):
+                                logger.error("CRITICAL: public_url is STILL empty after all attempts!")
+                                logger.error("This will cause Facebook sharing to fail!")
                             
                             logger.info(f"=== RETURNING RESULT ===")
                             logger.info(f"public_url: {final_result.get('public_url')}")
+                            logger.info(f"public_url type: {type(final_result.get('public_url'))}")
+                            logger.info(f"public_url in final_result: {'public_url' in final_result}")
                             logger.info(f"status: {final_result.get('status')}")
+                            logger.info(f"All result keys: {list(final_result.keys())}")
                             return final_result
                         except Exception as img_error:
                             logger.error(f"Error processing image: {str(img_error)}")

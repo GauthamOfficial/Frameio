@@ -259,8 +259,11 @@ def upload_to_cloudinary(image_path: str) -> Optional[str]:
     Returns:
         Public URL of the uploaded image, or None if upload fails
     """
+    logger.info(f"=== CLOUDINARY UPLOAD DEBUG ===")
+    logger.info(f"Attempting to upload: {image_path}")
+    
     if not CLOUDINARY_AVAILABLE:
-        logger.error("Cloudinary is not available. Please install cloudinary package.")
+        logger.error("ERROR: Cloudinary is not available. Please install cloudinary package.")
         return None
     
     # Get Cloudinary credentials from environment
@@ -268,25 +271,39 @@ def upload_to_cloudinary(image_path: str) -> Optional[str]:
     api_key = os.getenv('CLOUDINARY_API_KEY')
     api_secret = os.getenv('CLOUDINARY_API_SECRET')
     
+    logger.info(f"Cloudinary credentials check:")
+    logger.info(f"  cloud_name: {'SET' if cloud_name else 'NOT SET'}")
+    logger.info(f"  api_key: {'SET' if api_key else 'NOT SET'}")
+    logger.info(f"  api_secret: {'SET' if api_secret else 'NOT SET'}")
+    
     if not all([cloud_name, api_key, api_secret]):
-        logger.error("Cloudinary credentials not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.")
+        logger.error("ERROR: Cloudinary credentials not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.")
         return None
     
     # Configure Cloudinary
-    cloudinary.config(
-        cloud_name=cloud_name,
-        api_key=api_key,
-        api_secret=api_secret
-    )
+    try:
+        cloudinary.config(
+            cloud_name=cloud_name,
+            api_key=api_key,
+            api_secret=api_secret
+        )
+        logger.info("Cloudinary configured successfully")
+    except Exception as config_error:
+        logger.error(f"ERROR: Failed to configure Cloudinary: {config_error}")
+        return None
     
     try:
         # Check if image_path is a Django storage path or absolute file path
         from django.core.files.storage import default_storage
         
+        logger.info(f"Checking if file exists in storage: {image_path}")
+        
         # Try to get the actual file path
         if default_storage.exists(image_path):
+            logger.info(f"File exists in Django storage")
             # If it's a storage path, get the actual file
             with default_storage.open(image_path, 'rb') as f:
+                logger.info(f"Opening file for upload...")
                 # Upload to Cloudinary
                 result = cloudinary.uploader.upload(
                     f,
@@ -295,11 +312,17 @@ def upload_to_cloudinary(image_path: str) -> Optional[str]:
                     format="png"
                 )
                 public_url = result.get('secure_url') or result.get('url')
-                logger.info(f"Successfully uploaded image to Cloudinary: {public_url}")
+                if public_url:
+                    logger.info(f"SUCCESS: Successfully uploaded image to Cloudinary: {public_url}")
+                else:
+                    logger.error(f"ERROR: Upload succeeded but no URL returned. Result: {result}")
+                logger.info(f"=== END CLOUDINARY UPLOAD DEBUG ===")
                 return public_url
         elif os.path.exists(image_path):
+            logger.info(f"File exists as absolute path")
             # If it's an absolute file path
             with open(image_path, 'rb') as f:
+                logger.info(f"Opening file for upload...")
                 result = cloudinary.uploader.upload(
                     f,
                     folder="posters",
@@ -307,13 +330,23 @@ def upload_to_cloudinary(image_path: str) -> Optional[str]:
                     format="png"
                 )
                 public_url = result.get('secure_url') or result.get('url')
-                logger.info(f"Successfully uploaded image to Cloudinary: {public_url}")
+                if public_url:
+                    logger.info(f"SUCCESS: Successfully uploaded image to Cloudinary: {public_url}")
+                else:
+                    logger.error(f"ERROR: Upload succeeded but no URL returned. Result: {result}")
+                logger.info(f"=== END CLOUDINARY UPLOAD DEBUG ===")
                 return public_url
         else:
-            logger.error(f"Image file not found: {image_path}")
+            logger.error(f"ERROR: Image file not found: {image_path}")
+            logger.error(f"   Checked Django storage: {default_storage.exists(image_path) if hasattr(default_storage, 'exists') else 'N/A'}")
+            logger.error(f"   Checked absolute path: {os.path.exists(image_path)}")
+            logger.info(f"=== END CLOUDINARY UPLOAD DEBUG ===")
             return None
             
     except Exception as e:
-        logger.error(f"Failed to upload image to Cloudinary: {str(e)}")
+        logger.error(f"ERROR: Failed to upload image to Cloudinary: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        logger.info(f"=== END CLOUDINARY UPLOAD DEBUG ===")
         return None
 

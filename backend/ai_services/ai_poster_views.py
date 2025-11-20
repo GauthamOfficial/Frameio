@@ -189,11 +189,30 @@ def generate_poster(request):
                 # Continue even if save fails
             
             # Ensure public_url is included in response - check multiple sources
-            response_public_url = (
-                result.get('public_url') or 
-                (poster.public_url if 'poster' in locals() and hasattr(poster, 'public_url') else None) or
-                result.get('image_url', '')
-            )
+            # Priority: result.public_url > poster.public_url > result.image_url
+            response_public_url = None
+            
+            # First, try to get from result
+            if result.get('public_url'):
+                response_public_url = result.get('public_url')
+                logger.info(f"Using public_url from result: {response_public_url}")
+            # Then try from poster object
+            elif 'poster' in locals() and hasattr(poster, 'public_url') and poster.public_url:
+                response_public_url = poster.public_url
+                logger.info(f"Using public_url from poster object: {response_public_url}")
+            # Last resort: use image_url (but this won't work for Facebook sharing)
+            else:
+                image_url = result.get('image_url', '')
+                if image_url:
+                    # If image_url is relative, make it absolute
+                    if not image_url.startswith('http'):
+                        response_public_url = f"http://localhost:8000{image_url}"
+                    else:
+                        response_public_url = image_url
+                    logger.warning(f"WARNING: Using image_url as public_url fallback (Facebook sharing may not work): {response_public_url}")
+                else:
+                    logger.error("CRITICAL: No public_url or image_url available!")
+                    response_public_url = ''  # Set to empty string, will be handled by validation below
             
             logger.info(f"=== API RESPONSE DEBUG ===")
             logger.info(f"result.get('public_url'): {result.get('public_url')}")
@@ -202,26 +221,54 @@ def generate_poster(request):
             logger.info(f"Final response_public_url: {response_public_url}")
             logger.info(f"=== END API RESPONSE DEBUG ===")
             
-            if not response_public_url:
-                logger.error("❌ CRITICAL: No public_url or image_url in result, this will cause sharing issues!")
-                # Last resort: try to construct from image_url
-                image_url = result.get('image_url', '')
-                if image_url:
-                    # If image_url is relative, make it absolute
-                    if not image_url.startswith('http'):
-                        response_public_url = f"http://localhost:8000{image_url}"
-                    else:
-                        response_public_url = image_url
-                    logger.info(f"Using image_url as public_url fallback: {response_public_url}")
+            # CRITICAL: Validate that response_public_url is a Cloudinary URL (starts with http)
+            if not response_public_url or not response_public_url.startswith('http'):
+                logger.error("CRITICAL ERROR: response_public_url is not a Cloudinary URL!")
+                logger.error(f"response_public_url value: {response_public_url}")
+                logger.error("This means Facebook sharing will NOT work!")
+                # Try to get from result one more time
+                if result.get('public_url') and result.get('public_url').startswith('http'):
+                    response_public_url = result.get('public_url')
+                    logger.info(f"Using result.public_url as fallback: {response_public_url}")
+                else:
+                    # Set to empty string - frontend will handle this
+                    response_public_url = ''
+                    logger.error("No valid Cloudinary URL found - setting to empty string")
             
-            # Build response dictionary - ALWAYS include public_url
+            # Build response dictionary - ALWAYS include public_url and cloudinary_url
+            # CRITICAL: Ensure public_url is always set, even if empty (frontend will handle validation)
+            final_public_url = response_public_url if response_public_url else ''
+            
+            # CRITICAL: Ensure final_public_url is a string (not None)
+            if final_public_url is None:
+                final_public_url = ''
+            
+            # Extract cloudinary_url from public_url (should be the Cloudinary image URL, not HTML page)
+            # The public_url might be an HTML page URL, but we also need the direct image URL
+            cloudinary_image_url = result.get('cloudinary_url') or final_public_url
+            # If public_url is an HTML page, try to extract the image URL from result
+            if not cloudinary_image_url or (cloudinary_image_url.endswith('.html') and result.get('image_url')):
+                # Check if image_url is already a Cloudinary URL
+                image_url = result.get('image_url', '')
+                if image_url and image_url.startswith('http') and 'cloudinary' in image_url:
+                    cloudinary_image_url = image_url
+                elif final_public_url and final_public_url.startswith('http') and 'cloudinary' in final_public_url:
+                    # If public_url is a Cloudinary URL but not HTML, use it
+                    if not final_public_url.endswith('.html'):
+                        cloudinary_image_url = final_public_url
+            
+            # Format hashtags as string if it's an array
+            hashtags = result.get('hashtags', [])
+            hashtags_str = ' '.join(hashtags) if isinstance(hashtags, list) else str(hashtags) if hashtags else ''
+            
             response_data = {
                 "success": True,
                 "message": "Poster generated successfully",
                 "poster_id": str(poster.id) if 'poster' in locals() else None,
                 "image_path": result.get('image_path'),
                 "image_url": result.get('image_url'),
-                "public_url": response_public_url or result.get('image_url', ''),  # ALWAYS set public_url
+                "public_url": final_public_url,  # ALWAYS set public_url (may be empty if Cloudinary upload failed)
+                "cloudinary_url": cloudinary_image_url,  # Direct Cloudinary image URL for sharing
                 "filename": result.get('filename'),
                 "aspect_ratio": aspect_ratio,
                 "width": result.get('width'),
@@ -230,7 +277,8 @@ def generate_poster(request):
                 "prompt": prompt,
                 "caption": result.get('caption', ''),
                 "full_caption": result.get('full_caption', ''),
-                "hashtags": result.get('hashtags', []),
+                "hashtags": hashtags,  # Keep as array for frontend
+                "hashtags_str": hashtags_str,  # Also provide as string for easy sharing
                 "emoji": result.get('emoji', ''),
                 "call_to_action": result.get('call_to_action', ''),
                 "branding_applied": result.get('branding_applied', False),
@@ -239,29 +287,76 @@ def generate_poster(request):
                 "branding_metadata": result.get('branding_metadata', {})
             }
             
+            # Clean up local file after successful Cloudinary upload (optional but recommended)
+            if cloudinary_image_url and cloudinary_image_url.startswith('http'):
+                try:
+                    local_image_path = result.get('image_path')
+                    if local_image_path and default_storage.exists(local_image_path):
+                        logger.info(f"Deleting local file after successful Cloudinary upload: {local_image_path}")
+                        default_storage.delete(local_image_path)
+                        logger.info(f"Local file deleted successfully")
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to delete local file after upload: {str(cleanup_error)}")
+                    # Don't fail the request if cleanup fails
+            
             # Final verification - ensure public_url is ALWAYS present and valid
             logger.info(f"=== FINAL API RESPONSE ===")
             logger.info(f"Response public_url before check: {response_data.get('public_url')}")
             logger.info(f"Response keys: {list(response_data.keys())}")
             logger.info(f"Response keys count: {len(response_data.keys())}")
             
-            # Ensure public_url exists and is not empty
-            if 'public_url' not in response_data or not response_data.get('public_url'):
-                logger.error("❌ CRITICAL ERROR: public_url is missing or empty in final response!")
-                # Force set it to image_url as last resort
-                fallback_url = response_data.get('image_url', '')
-                if fallback_url and not fallback_url.startswith('http'):
-                    fallback_url = f"http://localhost:8000{fallback_url}"
-                response_data['public_url'] = fallback_url
-                logger.info(f"Set public_url to image_url as fallback: {response_data.get('public_url')}")
-            
-            # Final double-check
+            # CRITICAL: Ensure public_url key exists and is a string (not None)
             if 'public_url' not in response_data:
-                logger.error("❌ CRITICAL: public_url key is completely missing from dict!")
-                response_data['public_url'] = response_data.get('image_url', 'http://localhost:8000/media/default.png')
+                logger.error("CRITICAL ERROR: public_url key is missing from response_data!")
+                response_data['public_url'] = ''
+            elif response_data.get('public_url') is None:
+                logger.error("CRITICAL ERROR: public_url is None in response_data!")
+                response_data['public_url'] = ''
             
+            # Validate public_url is a Cloudinary URL
+            current_public_url = response_data.get('public_url', '')
+            if current_public_url is None:
+                current_public_url = ''
+                response_data['public_url'] = ''
+            
+            if not current_public_url:
+                logger.error("CRITICAL ERROR: public_url is empty in final response!")
+                logger.error("Facebook sharing will NOT work for this poster!")
+                logger.error("Possible causes:")
+                logger.error("  1. Cloudinary credentials not configured (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)")
+                logger.error("  2. Cloudinary upload failed - check logs above for errors")
+                logger.error("  3. Network connectivity issues to Cloudinary")
+                logger.error("Check backend logs for Cloudinary upload errors above.")
+            elif not current_public_url.startswith('http'):
+                logger.error(f"CRITICAL ERROR: public_url is not a Cloudinary URL: {current_public_url}")
+                logger.error("Facebook sharing will NOT work for this poster!")
+                logger.error("Check backend logs for Cloudinary upload errors above.")
+                # Don't change it - frontend will handle the error
+            else:
+                logger.info(f"SUCCESS: public_url is valid Cloudinary URL: {current_public_url}")
+            
+            # Final double-check: ensure public_url is always a string and exists
+            if 'public_url' not in response_data:
+                logger.error("CRITICAL: public_url key missing in final check!")
+                response_data['public_url'] = ''
+            elif response_data.get('public_url') is None:
+                logger.error("CRITICAL: public_url is None in final check!")
+                response_data['public_url'] = ''
+            else:
+                # Ensure it's a string
+                response_data['public_url'] = str(response_data.get('public_url', ''))
+            
+            # Final verification before returning
             logger.info(f"Final response_data['public_url']: {response_data.get('public_url')}")
+            logger.info(f"public_url type: {type(response_data.get('public_url'))}")
             logger.info(f"public_url in response_data: {'public_url' in response_data}")
+            logger.info(f"public_url value: '{response_data.get('public_url')}'")
+            
+            # CRITICAL: One more check - ensure the key exists before serialization
+            if 'public_url' not in response_data:
+                logger.error("CRITICAL ERROR: public_url STILL missing after all checks!")
+                response_data['public_url'] = ''
+            
             logger.info(f"=== END FINAL API RESPONSE ===")
             
             return Response(response_data, status=status.HTTP_200_OK)
