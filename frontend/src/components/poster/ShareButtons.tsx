@@ -17,6 +17,7 @@ import {
 interface PosterData {
   id: string
   image_url: string
+  public_url?: string  // Cloudinary URL for sharing
   caption: string
   full_caption: string
   hashtags: string[]
@@ -56,54 +57,46 @@ export function ShareButtons({ poster, pageUrl }: ShareButtonsProps) {
     
     switch (platform) {
       case 'facebook':
-        try {
-          // Import ngrok utility dynamically to avoid SSR issues
-          const { isAnyTunnelRunning } = await import('@/utils/ngrok')
-          
-          // Check if any tunnel is running for Facebook sharing
-          const tunnelRunning = await isAnyTunnelRunning()
-          
-          if (tunnelRunning) {
-            // Use the provided pageUrl (which should be ngrok URL if available)
-            shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`
-          } else {
-            // Fallback: Copy image URL and caption for manual sharing
-            const imageUrl = poster.image_url.startsWith('http') 
-              ? poster.image_url 
-              : `http://localhost:8000${poster.image_url}`
-            
-            // Create a better formatted Facebook post
-            const facebookText = `${shareText}\n\n🖼️ View the full poster: ${imageUrl}\n\n#AIPoster #Design #Innovation`
-            await copyToClipboard(facebookText, 'facebook')
-            
-            // Show a better formatted alert
-            const alertMessage = `📋 Copied to clipboard!\n\nPaste this into Facebook:\n\n${facebookText}\n\n💡 Tip: You can also download the image and upload it directly to Facebook for better results.`
-            alert(alertMessage)
-            return
-          }
-          
-          window.open(
-            shareLink,
-            'facebook-share-dialog',
-            'width=800,height=600,scrollbars=yes,resizable=yes'
-          )
-          return
-        } catch (error) {
-          console.error('Facebook sharing error:', error)
-          // Fallback to clipboard
-          const imageUrl = poster.image_url.startsWith('http') 
-            ? poster.image_url 
-            : `http://localhost:8000${poster.image_url}`
-          
-          // Create a better formatted Facebook post
-          const facebookText = `${shareText}\n\n🖼️ View the full poster: ${imageUrl}\n\n#AIPoster #Design #Innovation`
-          await copyToClipboard(facebookText, 'facebook')
-          
-          // Show a better formatted alert
-          const alertMessage = `📋 Copied to clipboard!\n\nPaste this into Facebook:\n\n${facebookText}\n\n💡 Tip: You can also download the image and upload it directly to Facebook for better results.`
-          alert(alertMessage)
+        // Use the cloudinary_url (direct image URL) or public_url for sharing
+        const shareableUrl = (poster as any).cloudinary_url || poster.public_url || poster.image_url
+        const captionText = shareText || poster.caption || ''
+        
+        // Format hashtags as string
+        const hashtagsArray = poster.hashtags || []
+        const hashtagsStr = Array.isArray(hashtagsArray) 
+          ? hashtagsArray.join(' ') 
+          : (typeof hashtagsArray === 'string' ? hashtagsArray : '')
+        
+        // Combine caption and hashtags for the quote parameter
+        const fullShareText = captionText 
+          ? (hashtagsStr ? `${captionText}\n\n${hashtagsStr}` : captionText)
+          : hashtagsStr
+        
+        // Ensure the URL is absolute and publicly accessible (must be Cloudinary URL)
+        if (!shareableUrl || !shareableUrl.startsWith('http')) {
+          console.error('❌ ERROR: Cannot share to Facebook - cloudinary_url is missing or not a public URL!')
+          console.error('cloudinary_url:', (poster as any).cloudinary_url)
+          console.error('public_url:', poster.public_url)
+          console.error('image_url:', poster.image_url)
+          alert('Unable to share to Facebook: Poster was not uploaded to Cloudinary. Please check backend logs.')
           return
         }
+        
+        const sharePageUrl = shareableUrl
+        
+        // Facebook sharer with Cloudinary image URL AND quote parameter containing caption + hashtags
+        // The quote parameter will pre-fill the text field with caption and hashtags
+        if (fullShareText) {
+          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}&quote=${encodeURIComponent(fullShareText)}`
+        } else {
+          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`
+        }
+        
+        window.open(
+          shareLink,
+          '_blank'
+        )
+        return
       case 'twitter':
         shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
         break

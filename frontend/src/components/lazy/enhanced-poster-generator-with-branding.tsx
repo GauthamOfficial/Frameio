@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { FacebookSharingModal } from "@/components/FacebookSharingModal"
 import { 
   Wand2, 
   Download, 
@@ -38,6 +37,7 @@ interface GenerationResult {
   message?: string
   image_path?: string
   image_url?: string
+  public_url?: string  // Cloudinary URL for sharing
   filename?: string
   error?: string
   text_added?: string
@@ -156,11 +156,6 @@ export default function EnhancedPosterGeneratorWithBranding() {
   // Caption and hashtag functionality
   const [showCaption, setShowCaption] = useState(false)
   const [copiedItem, setCopiedItem] = useState<string | null>(null)
-  
-  // Facebook sharing modal
-  const [showFacebookModal, setShowFacebookModal] = useState(false)
-  const [facebookContent, setFacebookContent] = useState('')
-  const [facebookImageUrl, setFacebookImageUrl] = useState('')
 
   // Copy and share functions
   const copyToClipboard = async (text: string, type: string) => {
@@ -192,78 +187,80 @@ export default function EnhancedPosterGeneratorWithBranding() {
     // Generate a unique poster ID (in a real app, this would come from the backend)
     const posterId = `poster_${Date.now()}`
     
-    // Import ngrok utility dynamically to avoid SSR issues
-    const { getPosterShareUrl, isAnyTunnelRunning } = await import('@/utils/ngrok')
-    
     const shareText = result.full_caption
     let shareLink = ''
     
     switch (platform) {
-      case 'facebook':
-        try {
-          // Check if any tunnel is running for Facebook sharing
-          const tunnelRunning = await isAnyTunnelRunning()
-          
-          if (tunnelRunning) {
-            // Use ngrok URL for Facebook sharing
-            const posterPageUrl = await getPosterShareUrl(posterId)
-            shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(posterPageUrl)}&quote=${encodeURIComponent(shareText)}`
-          } else {
-            // Fallback: Show modal for better user experience
-            const imageUrl = result.image_url.startsWith('http') 
-              ? result.image_url 
-              : `http://localhost:8000${result.image_url}`
-            
-            // Create a better formatted Facebook post
-            const facebookText = `${shareText}\n\n🖼️ View the full poster: ${imageUrl}\n\n#AIPoster #Design #Innovation`
-            
-            // Set modal content and show modal
-            setFacebookContent(facebookText)
-            setFacebookImageUrl(imageUrl)
-            setShowFacebookModal(true)
-            return
-          }
-          
-          // Open Facebook share dialog in a popup window
-          window.open(
-            shareLink,
-            'facebook-share-dialog',
-            'width=800,height=600,scrollbars=yes,resizable=yes'
-          )
-          return
-        } catch (error) {
-          console.error('Facebook sharing error:', error)
-          // Fallback to modal
-          const imageUrl = result.image_url.startsWith('http') 
-            ? result.image_url 
-            : `http://localhost:8000${result.image_url}`
-          
-          // Create a better formatted Facebook post
-          const facebookText = `${shareText}\n\n🖼️ View the full poster: ${imageUrl}\n\n#AIPoster #Design #Innovation`
-          
-          // Set modal content and show modal
-          setFacebookContent(facebookText)
-          setFacebookImageUrl(imageUrl)
-          setShowFacebookModal(true)
+      case 'facebook': {
+        // Use cloudinary_url (direct image URL) or public_url for sharing
+        const shareableUrl = (result as any).cloudinary_url || (result as any).public_url || result.image_url
+        const captionText = shareText || (result as any).caption || ''
+        
+        // Format hashtags as string
+        const hashtagsArray = (result as any).hashtags || []
+        const hashtagsStr = Array.isArray(hashtagsArray) 
+          ? hashtagsArray.join(' ') 
+          : (typeof hashtagsArray === 'string' ? hashtagsArray : '')
+        
+        // Combine caption and hashtags for the quote parameter
+        const fullShareText = captionText 
+          ? (hashtagsStr ? `${captionText}\n\n${hashtagsStr}` : captionText)
+          : hashtagsStr
+        
+        // CRITICAL: shareableUrl must be a Cloudinary URL (starts with http)
+        // Local URLs won't work for Facebook sharing
+        if (!shareableUrl) {
+          console.error('❌ ERROR: Cannot share to Facebook - cloudinary_url is missing!')
+          console.error('Please check backend logs for Cloudinary upload errors.')
+          alert('Unable to share to Facebook: Poster was not uploaded to Cloudinary. Please check backend logs.')
           return
         }
-      case 'twitter':
-        const posterPageUrl = await getPosterShareUrl(posterId)
-        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(posterPageUrl)}`
+        
+        if (!shareableUrl.startsWith('http')) {
+          console.error('❌ ERROR: Cannot share to Facebook - cloudinary_url is not a Cloudinary URL!')
+          console.error('cloudinary_url:', (result as any).cloudinary_url)
+          console.error('public_url:', (result as any).public_url)
+          console.error('Please check backend logs for Cloudinary upload errors.')
+          alert('Unable to share to Facebook: Poster URL is not publicly accessible. Please check backend logs.')
+          return
+        }
+        
+        // Ensure the URL is absolute and publicly accessible (should already be from Cloudinary)
+        const sharePageUrl = shareableUrl
+        
+        // Facebook sharer with Cloudinary image URL AND quote parameter containing caption + hashtags
+        // The quote parameter will pre-fill the text field with caption and hashtags
+        if (fullShareText) {
+          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}&quote=${encodeURIComponent(fullShareText)}`
+        } else {
+          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`
+        }
+        
+        // Open Facebook share dialog in a new tab
+        window.open(shareLink, '_blank')
+        return
+      }
+      case 'twitter': {
+        const twitterUrl = await getPosterShareUrl(posterId)
+        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(twitterUrl)}`
         break
-      case 'instagram':
+      }
+      case 'instagram': {
         // Instagram doesn't support direct sharing, copy to clipboard
         const instagramUrl = await getPosterShareUrl(posterId)
         copyToClipboard(`${shareText}\n\n${instagramUrl}`, 'instagram')
         return
-      case 'whatsapp':
+      }
+      case 'whatsapp': {
         const whatsappUrl = await getPosterShareUrl(posterId)
         shareLink = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + whatsappUrl)}`
         break
-      case 'email':
+      }
+      case 'email': {
         const emailUrl = await getPosterShareUrl(posterId)
         shareLink = `mailto:?subject=Check out this poster&body=${encodeURIComponent(shareText + '\n\n' + emailUrl)}`
         break
+      }
     }
     
     if (shareLink) {
@@ -508,11 +505,47 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
       const data = await response.json()
       console.log('Generation result:', data)
+      console.log('Response keys:', Object.keys(data))
+      console.log('public_url value:', data.public_url)
+      console.log('image_url value:', data.image_url)
 
       if (data.success) {
+        // Validate public_url - it should always be present in the response
+        // but may be empty if Cloudinary upload failed
+        // Check for missing key, undefined, or null
+        if (!data.hasOwnProperty('public_url') || data.public_url === undefined || data.public_url === null) {
+          console.error('❌ CRITICAL ERROR: public_url key is missing or invalid from API response!')
+          console.error('Response keys:', Object.keys(data))
+          console.error('public_url value:', data.public_url)
+          console.error('public_url type:', typeof data.public_url)
+          // Set it to empty string so the rest of the code doesn't break
+          data.public_url = ''
+        }
+        
+        // Ensure public_url is a string (convert if needed)
+        if (typeof data.public_url !== 'string') {
+          console.warn('⚠️ WARNING: public_url is not a string, converting...')
+          data.public_url = String(data.public_url || '')
+        }
+        
+        // Check if public_url is a valid Cloudinary URL (starts with http)
+        if (!data.public_url || !data.public_url.startsWith('http')) {
+          console.error('❌ CRITICAL ERROR: public_url is missing or is not a Cloudinary URL!')
+          console.error('public_url value:', data.public_url)
+          console.error('public_url type:', typeof data.public_url)
+          console.error('This means Facebook sharing will NOT work!')
+          console.error('Please check backend logs for Cloudinary upload errors.')
+          console.error('The poster was generated successfully, but cannot be shared on Facebook.')
+          // Don't set to local URL - this will break Facebook sharing
+          // The backend should have handled this, but if it didn't, we'll show an error
+          // Still set the result so the user can see the poster, but sharing will be disabled
+        } else {
+          console.log('✅ Poster generated successfully!')
+          console.log('✅ Public URL (Cloudinary):', data.public_url)
+        }
+        
         setResult(data)
         setError(null)
-        console.log('✅ Poster generated successfully!')
         console.log('Image URL:', data.image_url)
         console.log('Image Path:', data.image_path)
         console.log('Branding applied:', data.branding_applied)
@@ -1036,14 +1069,6 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
         </div>
       </div>
-      
-      {/* Facebook Sharing Modal */}
-      <FacebookSharingModal
-        isOpen={showFacebookModal}
-        onClose={() => setShowFacebookModal(false)}
-        content={facebookContent}
-        imageUrl={facebookImageUrl}
-      />
     </div>
     )
   } catch (error) {

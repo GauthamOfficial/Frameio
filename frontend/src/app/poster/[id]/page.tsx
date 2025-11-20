@@ -8,6 +8,7 @@ import { ShareButtons } from "@/components/poster/ShareButtons"
 interface PosterData {
   id: string
   image_url: string
+  public_url?: string  // Cloudinary URL for sharing
   caption: string
   full_caption: string
   hashtags: string[]
@@ -131,7 +132,7 @@ export async function generateMetadata({ params }: PosterPageProps): Promise<Met
       url: pageUrl,
       images: [
         {
-          url: poster.image_url,
+          url: poster.public_url || poster.image_url,  // Use Cloudinary URL for better sharing
           width: poster.width,
           height: poster.height,
           alt: poster.caption,
@@ -143,7 +144,7 @@ export async function generateMetadata({ params }: PosterPageProps): Promise<Met
       card: 'summary_large_image',
       title: poster.caption,
       description: poster.full_caption,
-      images: [poster.image_url],
+      images: [poster.public_url || poster.image_url],  // Use Cloudinary URL
     },
     other: {
       'og:image:width': poster.width.toString(),

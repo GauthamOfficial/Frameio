@@ -23,6 +23,7 @@ import { useToastHelpers } from "@/components/common"
 interface Poster {
   id: string
   image_url: string
+  public_url?: string  // Cloudinary URL for sharing
   caption: string
   full_caption: string
   prompt: string
@@ -137,27 +138,37 @@ export default function SocialMediaPage() {
   }
 
   const shareToFacebook = async (poster: Poster) => {
-    const shareText = poster.full_caption || poster.caption || ''
-    const shareUrl = typeof window !== 'undefined' ? window.location.origin + `/poster/${poster.id}` : ''
+    // Use cloudinary_url (direct image URL) or public_url for sharing
+    const shareableUrl = (poster as any).cloudinary_url || (poster as any).public_url || poster.image_url
+    const captionText = poster.full_caption || poster.caption || ''
     
-    try {
-      // Try to use Facebook sharer
-      const shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`
-      window.open(
-        shareLink,
-        'facebook-share-dialog',
-        'width=800,height=600,scrollbars=yes,resizable=yes'
-      )
-    } catch (error) {
-      console.error('Facebook sharing error:', error)
-      // Fallback: Copy to clipboard
-      const imageUrl = poster.image_url.startsWith('http') 
-        ? poster.image_url 
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${poster.image_url}`
-      
-      const facebookText = `${shareText}\n\n🖼️ View the full poster: ${imageUrl}`
-      await copyToClipboard(facebookText, `facebook-${poster.id}`)
+    // Format hashtags as string
+    const hashtagsArray = (poster as any).hashtags || []
+    const hashtagsStr = Array.isArray(hashtagsArray) 
+      ? hashtagsArray.join(' ') 
+      : (typeof hashtagsArray === 'string' ? hashtagsArray : '')
+    
+    // Combine caption and hashtags for the quote parameter
+    const fullShareText = captionText 
+      ? (hashtagsStr ? `${captionText}\n\n${hashtagsStr}` : captionText)
+      : hashtagsStr
+    
+    // Ensure the URL is absolute and publicly accessible (must be Cloudinary URL)
+    if (!shareableUrl || !shareableUrl.startsWith('http')) {
+      console.error('❌ ERROR: Cannot share to Facebook - cloudinary_url is missing or not a public URL!')
+      alert('Unable to share to Facebook: Poster was not uploaded to Cloudinary. Please check backend logs.')
+      return
     }
+    
+    const sharePageUrl = shareableUrl
+    
+    // Facebook sharer with Cloudinary image URL AND quote parameter containing caption + hashtags
+    // The quote parameter will pre-fill the text field with caption and hashtags
+    const shareLink = fullShareText
+      ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}&quote=${encodeURIComponent(fullShareText)}`
+      : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`
+    
+    window.open(shareLink, '_blank')
   }
 
   const shareToInstagram = (poster: Poster) => {
@@ -290,10 +301,30 @@ export default function SocialMediaPage() {
               {/* Content */}
               <CardContent className="p-4 space-y-4">
                 {/* Caption */}
-                <div>
-                  <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
-                    {poster.caption || poster.full_caption || poster.prompt || 'No caption'}
-                  </p>
+                <div className="relative group">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium text-foreground line-clamp-2 mb-1 flex-1">
+                      {poster.caption || poster.full_caption || poster.prompt || 'No caption'}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                      onClick={() => {
+                        const captionText = poster.full_caption || poster.caption || poster.prompt || ''
+                        if (captionText) {
+                          copyToClipboard(captionText, `caption-${poster.id}`)
+                        }
+                      }}
+                      title="Copy caption"
+                    >
+                      {copiedItem === `caption-${poster.id}` ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                   {poster.prompt && poster.prompt !== poster.caption && (
                     <p className="text-xs text-muted-foreground line-clamp-1">
                       {poster.prompt}
