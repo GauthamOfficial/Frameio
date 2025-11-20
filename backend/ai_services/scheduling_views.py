@@ -16,6 +16,7 @@ from .serializers import (
 )
 from .social_media import SocialMediaService
 from organizations.middleware import get_current_organization
+from organizations.models import OrganizationMember
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +33,30 @@ class ScheduledPostViewSet(viewsets.ModelViewSet):
             return ScheduledPostUpdateSerializer
         return ScheduledPostSerializer
     
+    def _get_organization(self):
+        """Get organization with fallback to user's organization"""
+        # First try to get from middleware
+        organization = get_current_organization()
+        if organization:
+            return organization
+        
+        # Fallback: get from user's active membership
+        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
+            try:
+                membership = OrganizationMember.objects.filter(
+                    user=self.request.user,
+                    is_active=True
+                ).select_related('organization').first()
+                if membership and membership.organization:
+                    return membership.organization
+            except Exception as e:
+                logger.warning(f"Failed to get organization from user membership: {e}")
+        
+        return None
+    
     def get_queryset(self):
         """Return scheduled posts for current organization"""
-        organization = get_current_organization()
+        organization = self._get_organization()
         if not organization:
             return ScheduledPost.objects.none()
         
@@ -60,11 +82,36 @@ class ScheduledPostViewSet(viewsets.ModelViewSet):
         
         return queryset.select_related('user').order_by('-created_at')
     
+    def create(self, request, *args, **kwargs):
+        """Override create to handle ValueError properly"""
+        try:
+            return super().create(request, *args, **kwargs)
+        except ValueError as e:
+            logger.error(f"ValueError in create: {str(e)}")
+            return Response(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "detail": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error in create: {str(e)}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": "Failed to create scheduled post",
+                    "detail": str(e)
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def perform_create(self, serializer):
         """Create scheduled post with proper organization and user"""
-        organization = get_current_organization()
+        organization = self._get_organization()
         if not organization:
-            raise ValueError("No organization context available")
+            raise ValueError("No organization context available. Please ensure you are a member of an organization.")
         
         # Validate scheduled time is in the future
         scheduled_time = serializer.validated_data['scheduled_time']
@@ -164,7 +211,7 @@ class ScheduledPostViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def ready_to_post(self, request):
         """Get posts that are ready to be posted"""
-        organization = get_current_organization()
+        organization = self._get_organization()
         if not organization:
             return Response(
                 {"error": "No organization context available"}, 
@@ -184,7 +231,7 @@ class ScheduledPostViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def process_ready_posts(self, request):
         """Process all ready-to-post scheduled posts"""
-        organization = get_current_organization()
+        organization = self._get_organization()
         if not organization:
             return Response(
                 {"error": "No organization context available"}, 
@@ -281,7 +328,7 @@ class ScheduledPostViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def analytics(self, request):
         """Get scheduling analytics"""
-        organization = get_current_organization()
+        organization = self._get_organization()
         if not organization:
             return Response(
                 {"error": "No organization context available"}, 

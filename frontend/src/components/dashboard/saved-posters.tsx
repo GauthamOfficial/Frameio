@@ -389,7 +389,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {posters.map((poster) => (
             <div
               key={poster.id}
@@ -434,10 +434,10 @@ export function SavedPosters({ limit }: SavedPostersProps) {
               </div>
               
               {/* Info Overlay - Always Visible */}
-              <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+              <div className="p-3 space-y-2" onClick={(e) => e.stopPropagation()}>
                 {/* Caption */}
                 <div>
-                  <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
+                  <p className="text-xs font-medium text-foreground line-clamp-2 mb-1">
                     {poster.caption || poster.full_caption || poster.prompt || 'No caption'}
                   </p>
                   {poster.prompt && poster.prompt !== poster.caption && (
@@ -448,34 +448,18 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                 </div>
 
                 {/* Date */}
-                <div className="flex items-center text-xs text-muted-foreground">
+                <div className="flex items-center text-xs text-muted-foreground mb-2">
                   <Calendar className="h-3 w-3 mr-1" />
                   {formatDate(poster.created_at)}
                 </div>
 
-                {/* Hashtags */}
-                {poster.hashtags && poster.hashtags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {poster.hashtags.slice(0, 3).map((tag, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {tag.replace('#', '')}
-                      </Badge>
-                    ))}
-                    {poster.hashtags.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{poster.hashtags.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
+                <div className="flex gap-1.5 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleDownload(poster)}
-                    className="flex-1 h-8 text-xs"
+                    className="flex-1 h-7 text-xs px-2"
                   >
                     <Download className="h-3 w-3 mr-1" />
                     Download
@@ -484,7 +468,8 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => window.open(poster.image_url, '_blank')}
-                    className="h-8 px-2"
+                    className="h-7 w-7 p-0 flex-shrink-0"
+                    title="Open in new tab"
                   >
                     <ExternalLink className="h-3 w-3" />
                   </Button>
@@ -492,7 +477,8 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => handleDeleteClick(poster)}
-                    className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="h-7 w-7 p-0 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    title="Delete"
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>

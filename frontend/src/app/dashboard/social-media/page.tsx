@@ -266,7 +266,7 @@ export default function SocialMediaPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {posters.map((poster) => (
             <Card key={poster.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               {/* Image */}
@@ -299,17 +299,17 @@ export default function SocialMediaPage() {
               </div>
 
               {/* Content */}
-              <CardContent className="p-4 space-y-4">
+              <CardContent className="p-3 space-y-2">
                 {/* Caption */}
                 <div className="relative group">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium text-foreground line-clamp-2 mb-1 flex-1">
+                    <p className="text-xs font-medium text-foreground line-clamp-2 mb-1 flex-1">
                       {poster.caption || poster.full_caption || poster.prompt || 'No caption'}
                     </p>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                      className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                       onClick={() => {
                         const captionText = poster.full_caption || poster.caption || poster.prompt || ''
                         if (captionText) {
@@ -319,9 +319,9 @@ export default function SocialMediaPage() {
                       title="Copy caption"
                     >
                       {copiedItem === `caption-${poster.id}` ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <CheckCircle className="h-3 w-3 text-green-600" />
                       ) : (
-                        <Copy className="h-4 w-4" />
+                        <Copy className="h-3 w-3" />
                       )}
                     </Button>
                   </div>
@@ -333,85 +333,66 @@ export default function SocialMediaPage() {
                 </div>
 
                 {/* Date */}
-                <div className="flex items-center text-xs text-muted-foreground">
+                <div className="flex items-center text-xs text-muted-foreground mb-2">
                   <Calendar className="h-3 w-3 mr-1" />
                   {formatDate(poster.created_at)}
                 </div>
 
-                {/* Hashtags */}
-                {poster.hashtags && poster.hashtags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {poster.hashtags.slice(0, 3).map((tag, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {tag.replace('#', '')}
-                      </Badge>
-                    ))}
-                    {poster.hashtags.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{poster.hashtags.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-
                 {/* Share Buttons */}
-                <div className="space-y-2 pt-2 border-t">
-                  <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1.5 pt-2 border-t">
+                  <div className="grid grid-cols-3 gap-1">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => shareToWhatsApp(poster)}
-                      className="w-full"
+                      className="w-full h-7 text-xs px-1"
+                      title="Share to WhatsApp"
                     >
-                      <MessageCircle className="h-4 w-4 mr-1 text-green-600" />
-                      <span className="text-xs">WhatsApp</span>
+                      <MessageCircle className="h-3 w-3 text-green-600" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => shareToFacebook(poster)}
-                      className="w-full"
+                      className="w-full h-7 text-xs px-1"
+                      title="Share to Facebook"
                     >
-                      <Facebook className="h-4 w-4 mr-1 text-blue-600" />
-                      <span className="text-xs">Facebook</span>
+                      <Facebook className="h-3 w-3 text-blue-600" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => shareToInstagram(poster)}
-                      className="w-full"
+                      className="w-full h-7 text-xs px-1"
+                      title="Copy for Instagram"
                     >
                       {copiedItem === `instagram-${poster.id}` ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
-                          <span className="text-xs">Copied!</span>
-                        </>
+                        <CheckCircle className="h-3 w-3 text-green-600" />
                       ) : (
-                        <>
-                          <Instagram className="h-4 w-4 mr-1 text-pink-600" />
-                          <span className="text-xs">Instagram</span>
-                        </>
+                        <Instagram className="h-3 w-3 text-pink-600" />
                       )}
                     </Button>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-1">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDownload(poster)}
-                      className="w-full"
+                      className="w-full h-7 text-xs px-1"
+                      title="Download"
                     >
-                      <Download className="h-4 w-4 mr-1" />
+                      <Download className="h-3 w-3 mr-1" />
                       <span className="text-xs">Download</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => window.open(poster.image_url, '_blank')}
-                      className="w-full"
+                      className="w-full h-7 text-xs px-1"
+                      title="View in new tab"
                     >
-                      <ExternalLink className="h-4 w-4 mr-1" />
+                      <ExternalLink className="h-3 w-3 mr-1" />
                       <span className="text-xs">View</span>
                     </Button>
                   </div>
