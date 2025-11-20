@@ -789,17 +789,36 @@ class AIPosterService:
                                                 branded_path = brand_result.get("image_path", saved_path)
                                                 
                                                 # Upload branded poster to Cloudinary (replaces original upload)
+                                                # CRITICAL: This must succeed for Facebook sharing to work
                                                 branded_public_url = None
-                                                try:
-                                                    branded_public_url = upload_to_cloudinary(branded_path)
-                                                    if branded_public_url:
-                                                        logger.info(f"Branded poster uploaded to Cloudinary: {branded_public_url}")
-                                                    else:
-                                                        logger.warning("Cloudinary upload failed for branded poster, using original URL")
-                                                        branded_public_url = public_url  # Fallback to original
-                                                except Exception as e:
-                                                    logger.error(f"Error uploading branded poster to Cloudinary: {str(e)}")
-                                                    branded_public_url = public_url  # Fallback to original
+                                                max_upload_retries = 3
+                                                for retry_attempt in range(max_upload_retries):
+                                                    try:
+                                                        logger.info(f"Uploading branded poster to Cloudinary (attempt {retry_attempt + 1}/{max_upload_retries})...")
+                                                        branded_public_url = upload_to_cloudinary(branded_path)
+                                                        if branded_public_url:
+                                                            logger.info(f"✅ Branded poster uploaded to Cloudinary: {branded_public_url}")
+                                                            break
+                                                        else:
+                                                            logger.warning(f"⚠️  Cloudinary upload attempt {retry_attempt + 1} returned None")
+                                                            if retry_attempt < max_upload_retries - 1:
+                                                                import time
+                                                                time.sleep(2)  # Wait before retry
+                                                    except Exception as e:
+                                                        logger.error(f"❌ Error uploading branded poster to Cloudinary (attempt {retry_attempt + 1}): {str(e)}")
+                                                        if retry_attempt < max_upload_retries - 1:
+                                                            import time
+                                                            time.sleep(2)  # Wait before retry
+                                                
+                                                # If branded upload failed, try to use original upload
+                                                if not branded_public_url:
+                                                    logger.error("❌ CRITICAL: All Cloudinary upload attempts failed for branded poster!")
+                                                    logger.error("Falling back to original upload...")
+                                                    branded_public_url = public_url if public_url else ''
+                                                    if not branded_public_url:
+                                                        logger.error("❌ CRITICAL: Original upload also failed! Facebook sharing will NOT work!")
+                                                else:
+                                                    logger.info(f"✅ Successfully uploaded branded poster to Cloudinary: {branded_public_url}")
                                                 
                                                 # Create shareable HTML page for branded poster
                                                 logger.info(f"=== BRANDED HTML PAGE CREATION DEBUG ===")
@@ -881,19 +900,68 @@ class AIPosterService:
                                                 final_branded_url = final_branded_url if final_branded_url else ''
                                                 
                                                 # Extract cloudinary_url for branded poster (direct image URL, not HTML page)
-                                                branded_cloudinary_url = branded_public_url if branded_public_url else (public_url if public_url else '')
+                                                # CRITICAL: Ensure we always have a valid Cloudinary URL
+                                                branded_cloudinary_url = branded_public_url if branded_public_url and branded_public_url.startswith('http') else ''
+                                                
+                                                # If branded upload failed, try multiple fallbacks
+                                                if not branded_cloudinary_url:
+                                                    # Fallback 1: Use original public_url if it's a Cloudinary URL (not HTML)
+                                                    if public_url and public_url.startswith('http') and 'cloudinary' in public_url and not public_url.endswith('.html'):
+                                                        branded_cloudinary_url = public_url
+                                                        logger.warning("⚠️  Using original Cloudinary URL as fallback for branded poster")
+                                                    # Fallback 2: Try to get from final_result's existing cloudinary_url
+                                                    elif final_result.get('cloudinary_url') and final_result.get('cloudinary_url').startswith('http'):
+                                                        branded_cloudinary_url = final_result.get('cloudinary_url')
+                                                        logger.warning("⚠️  Using existing cloudinary_url from final_result as fallback")
+                                                    # Fallback 3: Try emergency upload one more time
+                                                    else:
+                                                        logger.warning("⚠️  Attempting one final emergency upload for cloudinary_url...")
+                                                        try:
+                                                            emergency_cloudinary = upload_to_cloudinary(branded_path)
+                                                            if emergency_cloudinary:
+                                                                branded_cloudinary_url = emergency_cloudinary
+                                                                logger.info(f"✅ Emergency upload succeeded for cloudinary_url: {branded_cloudinary_url}")
+                                                        except Exception as e:
+                                                            logger.error(f"❌ Emergency upload failed: {e}")
+                                                
+                                                # Ensure final_branded_url is always a valid Cloudinary URL (not empty, not local)
+                                                if not final_branded_url or not final_branded_url.startswith('http'):
+                                                    logger.error(f"❌ CRITICAL: final_branded_url is invalid: {final_branded_url}")
+                                                    # Use branded_cloudinary_url if available
+                                                    if branded_cloudinary_url:
+                                                        final_branded_url = branded_cloudinary_url
+                                                        logger.info(f"✅ Using branded_cloudinary_url as final_branded_url: {final_branded_url}")
+                                                    # Fallback to original public_url if it's valid
+                                                    elif public_url and public_url.startswith('http'):
+                                                        final_branded_url = public_url
+                                                        logger.warning("⚠️  Using original public_url as final_branded_url fallback")
+                                                    else:
+                                                        logger.error("❌ CRITICAL: No valid Cloudinary URL available for branded poster!")
+                                                        final_branded_url = ''
+                                                
+                                                # CRITICAL: Ensure both URLs are set before updating final_result
+                                                if not branded_cloudinary_url and final_branded_url and final_branded_url.startswith('http') and not final_branded_url.endswith('.html'):
+                                                    # If cloudinary_url is still empty but we have a valid non-HTML public_url, use it
+                                                    branded_cloudinary_url = final_branded_url
+                                                    logger.info(f"✅ Using final_branded_url as cloudinary_url: {branded_cloudinary_url}")
                                                 
                                                 final_result.update({
                                                     "image_path": branded_path,
                                                     "image_url": brand_result.get("image_url", image_url),
-                                                    "public_url": final_branded_url,  # Use HTML page URL if available, or empty string
-                                                    "cloudinary_url": branded_cloudinary_url,  # Direct Cloudinary image URL (not HTML page)
+                                                    "public_url": final_branded_url if final_branded_url else '',  # Use HTML page URL if available, or Cloudinary image URL
+                                                    "cloudinary_url": branded_cloudinary_url if branded_cloudinary_url else '',  # Direct Cloudinary image URL (not HTML page)
                                                     "filename": brand_result.get("filename", filename),
                                                     "branding_applied": True,
                                                     "logo_added": brand_result.get("logo_added", False),
                                                     "contact_info_added": brand_result.get("contact_info_added", False),
                                                     "branding_metadata": brand_result.get("branding_metadata", {})
                                                 })
+                                                
+                                                # CRITICAL: Verify both URLs are set
+                                                if not final_result.get('cloudinary_url'):
+                                                    logger.error("❌ CRITICAL: cloudinary_url is empty after branding update!")
+                                                if not final_result.get('public_url'):
+                                                    logger.error("❌ CRITICAL: public_url is empty after branding update!")
                                                 
                                                 # CRITICAL: Ensure public_url key exists after update
                                                 if 'public_url' not in final_result:
@@ -1287,12 +1355,19 @@ class AIPosterService:
                         except Exception as html_error:
                             logger.warning(f"Error creating edited shareable HTML page: {html_error}")
                     
+                    # CRITICAL: Set public_url and cloudinary_url in final_result - this is what gets returned to the API
+                    # Ensure public_url is always set (even if empty)
+                    # Also include cloudinary_url as the direct image URL (not HTML page)
+                    final_public_url = shareable_page_url or public_url or image_url
+                    cloudinary_image_url = public_url if public_url and not shareable_page_url else (public_url if public_url else '')
+                    
                     # Add brand overlay if user has company profile
                     final_result = {
                         "status": "success", 
                         "image_path": saved_path,
                         "image_url": image_url,
-                        "public_url": shareable_page_url or public_url,  # Use HTML page URL if available, else image URL
+                        "public_url": final_public_url if final_public_url else '',  # Always set, even if empty (may be HTML page)
+                        "cloudinary_url": cloudinary_image_url,  # Direct Cloudinary image URL (not HTML page)
                         "filename": filename,
                         "width": final_w,
                         "height": final_h,
@@ -1304,6 +1379,14 @@ class AIPosterService:
                         "call_to_action": caption_result.get("call_to_action", ""),
                         "branding_applied": False
                     }
+                    
+                    # CRITICAL: Ensure public_url and cloudinary_url keys exist
+                    if 'public_url' not in final_result:
+                        logger.error("CRITICAL: public_url key missing from final_result!")
+                        final_result['public_url'] = ''
+                    if 'cloudinary_url' not in final_result:
+                        logger.error("CRITICAL: cloudinary_url key missing from final_result!")
+                        final_result['cloudinary_url'] = ''
                     
                     # Apply brand overlay if user is provided and has company profile
                     logger.info(f"=== BRANDING DEBUG (EDIT POSTER) ===")
@@ -1350,16 +1433,79 @@ class AIPosterService:
                                             logger.error(f"Error uploading branded edited poster to Cloudinary: {str(e)}")
                                             branded_public_url = public_url  # Fallback to original
                                         
+                                        # CRITICAL: Ensure public_url is always set (even if empty)
+                                        # Extract cloudinary_url for branded poster (direct image URL, not HTML page)
+                                        final_branded_url = branded_public_url if branded_public_url else (shareable_page_url or public_url or image_url)
+                                        final_branded_url = final_branded_url if final_branded_url else ''
+                                        
+                                        # Extract cloudinary_url for branded poster (direct image URL, not HTML page)
+                                        branded_cloudinary_url = branded_public_url if branded_public_url and branded_public_url.startswith('http') else ''
+                                        
+                                        # If branded upload failed, try multiple fallbacks
+                                        if not branded_cloudinary_url:
+                                            # Fallback 1: Use original public_url if it's a Cloudinary URL (not HTML)
+                                            if public_url and public_url.startswith('http') and 'cloudinary' in public_url and not public_url.endswith('.html'):
+                                                branded_cloudinary_url = public_url
+                                                logger.warning("⚠️  Using original Cloudinary URL as fallback for branded poster")
+                                            # Fallback 2: Try to get from final_result's existing cloudinary_url
+                                            elif final_result.get('cloudinary_url') and final_result.get('cloudinary_url').startswith('http'):
+                                                branded_cloudinary_url = final_result.get('cloudinary_url')
+                                                logger.warning("⚠️  Using existing cloudinary_url from final_result as fallback")
+                                        
+                                        # Ensure final_branded_url is always a valid Cloudinary URL (not empty, not local)
+                                        if not final_branded_url or not final_branded_url.startswith('http'):
+                                            logger.error(f"❌ CRITICAL: final_branded_url is invalid: {final_branded_url}")
+                                            # Use branded_cloudinary_url if available
+                                            if branded_cloudinary_url:
+                                                final_branded_url = branded_cloudinary_url
+                                                logger.info(f"✅ Using branded_cloudinary_url as final_branded_url: {final_branded_url}")
+                                            # Fallback to original public_url if it's valid
+                                            elif public_url and public_url.startswith('http'):
+                                                final_branded_url = public_url
+                                                logger.warning("⚠️  Using original public_url as final_branded_url fallback")
+                                            else:
+                                                logger.error("❌ CRITICAL: No valid Cloudinary URL available for branded poster!")
+                                                final_branded_url = ''
+                                        
+                                        # CRITICAL: Ensure both URLs are set before updating final_result
+                                        if not branded_cloudinary_url and final_branded_url and final_branded_url.startswith('http') and not final_branded_url.endswith('.html'):
+                                            # If cloudinary_url is still empty but we have a valid non-HTML public_url, use it
+                                            branded_cloudinary_url = final_branded_url
+                                            logger.info(f"✅ Using final_branded_url as cloudinary_url: {branded_cloudinary_url}")
+                                        
                                         final_result.update({
                                             "image_path": branded_path,
                                             "image_url": brand_result.get("image_url", image_url),
-                                            "public_url": branded_public_url,  # Use branded Cloudinary URL
+                                            "public_url": final_branded_url if final_branded_url else '',  # Use HTML page URL if available, or Cloudinary image URL
+                                            "cloudinary_url": branded_cloudinary_url if branded_cloudinary_url else '',  # Direct Cloudinary image URL (not HTML page)
                                             "filename": brand_result.get("filename", filename),
                                             "branding_applied": True,
                                             "logo_added": brand_result.get("logo_added", False),
                                             "contact_info_added": brand_result.get("contact_info_added", False),
                                             "branding_metadata": brand_result.get("branding_metadata", {})
                                         })
+                                        
+                                        # CRITICAL: Verify both URLs are set
+                                        if not final_result.get('cloudinary_url'):
+                                            logger.error("❌ CRITICAL: cloudinary_url is empty after branding update!")
+                                        if not final_result.get('public_url'):
+                                            logger.error("❌ CRITICAL: public_url is empty after branding update!")
+                                        
+                                        # CRITICAL: Ensure public_url key exists after update
+                                        if 'public_url' not in final_result:
+                                            logger.error("CRITICAL: public_url key missing after branding update!")
+                                            final_result['public_url'] = ''
+                                        elif final_result.get('public_url') is None:
+                                            logger.error("CRITICAL: public_url is None after branding update!")
+                                            final_result['public_url'] = ''
+                                        
+                                        # CRITICAL: Ensure cloudinary_url key exists after update
+                                        if 'cloudinary_url' not in final_result:
+                                            logger.error("CRITICAL: cloudinary_url key missing after branding update!")
+                                            final_result['cloudinary_url'] = ''
+                                        elif final_result.get('cloudinary_url') is None:
+                                            logger.error("CRITICAL: cloudinary_url is None after branding update!")
+                                            final_result['cloudinary_url'] = ''
                                     else:
                                         logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
                                 else:

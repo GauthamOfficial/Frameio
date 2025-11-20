@@ -193,7 +193,19 @@ export default function EnhancedPosterGeneratorWithBranding() {
     switch (platform) {
       case 'facebook': {
         // Use cloudinary_url (direct image URL) or public_url for sharing
-        const shareableUrl = (result as any).cloudinary_url || (result as any).public_url || result.image_url
+        // Priority: cloudinary_url > public_url > image_url (if Cloudinary)
+        let shareableUrl = (result as any).cloudinary_url
+        if (!shareableUrl || !shareableUrl.startsWith('http')) {
+          shareableUrl = (result as any).public_url
+        }
+        if (!shareableUrl || !shareableUrl.startsWith('http')) {
+          // Last resort: check if image_url is a Cloudinary URL
+          const imageUrl = result.image_url
+          if (imageUrl && imageUrl.startsWith('http') && imageUrl.includes('cloudinary')) {
+            shareableUrl = imageUrl
+          }
+        }
+        
         const captionText = shareText || (result as any).caption || ''
         
         // Format hashtags as string
@@ -210,14 +222,18 @@ export default function EnhancedPosterGeneratorWithBranding() {
         // CRITICAL: shareableUrl must be a Cloudinary URL (starts with http)
         // Local URLs won't work for Facebook sharing
         if (!shareableUrl) {
-          console.error('❌ ERROR: Cannot share to Facebook - cloudinary_url is missing!')
+          console.error('❌ ERROR: Cannot share to Facebook - no Cloudinary URL available!')
+          console.error('cloudinary_url:', (result as any).cloudinary_url)
+          console.error('public_url:', (result as any).public_url)
+          console.error('image_url:', result.image_url)
           console.error('Please check backend logs for Cloudinary upload errors.')
           alert('Unable to share to Facebook: Poster was not uploaded to Cloudinary. Please check backend logs.')
           return
         }
         
         if (!shareableUrl.startsWith('http')) {
-          console.error('❌ ERROR: Cannot share to Facebook - cloudinary_url is not a Cloudinary URL!')
+          console.error('❌ ERROR: Cannot share to Facebook - URL is not a Cloudinary URL!')
+          console.error('shareableUrl:', shareableUrl)
           console.error('cloudinary_url:', (result as any).cloudinary_url)
           console.error('public_url:', (result as any).public_url)
           console.error('Please check backend logs for Cloudinary upload errors.')
@@ -528,6 +544,21 @@ export default function EnhancedPosterGeneratorWithBranding() {
           data.public_url = String(data.public_url || '')
         }
         
+        // Validate cloudinary_url - it should always be present in the response
+        if (!data.hasOwnProperty('cloudinary_url') || data.cloudinary_url === undefined || data.cloudinary_url === null) {
+          console.warn('⚠️ WARNING: cloudinary_url key is missing or invalid from API response!')
+          console.warn('Response keys:', Object.keys(data))
+          console.warn('cloudinary_url value:', data.cloudinary_url)
+          // Set it to empty string so the rest of the code doesn't break
+          data.cloudinary_url = ''
+        }
+        
+        // Ensure cloudinary_url is a string (convert if needed)
+        if (typeof data.cloudinary_url !== 'string') {
+          console.warn('⚠️ WARNING: cloudinary_url is not a string, converting...')
+          data.cloudinary_url = String(data.cloudinary_url || '')
+        }
+        
         // Check if public_url is a valid Cloudinary URL (starts with http)
         if (!data.public_url || !data.public_url.startsWith('http')) {
           console.error('❌ CRITICAL ERROR: public_url is missing or is not a Cloudinary URL!')
@@ -542,6 +573,18 @@ export default function EnhancedPosterGeneratorWithBranding() {
         } else {
           console.log('✅ Poster generated successfully!')
           console.log('✅ Public URL (Cloudinary):', data.public_url)
+        }
+        
+        // Check if cloudinary_url is valid (preferred for direct image sharing)
+        if (data.cloudinary_url && data.cloudinary_url.startsWith('http')) {
+          console.log('✅ Cloudinary URL (direct image):', data.cloudinary_url)
+        } else if (data.public_url && data.public_url.startsWith('http')) {
+          // Fallback: use public_url if cloudinary_url is not available
+          console.warn('⚠️ cloudinary_url is not available, using public_url as fallback')
+          data.cloudinary_url = data.public_url
+        } else {
+          console.warn('⚠️ WARNING: cloudinary_url is not a valid Cloudinary URL!')
+          console.warn('cloudinary_url value:', data.cloudinary_url)
         }
         
         setResult(data)
