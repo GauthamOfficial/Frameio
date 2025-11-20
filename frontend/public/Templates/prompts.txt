@@ -1,0 +1,553 @@
+[
+  {
+    "id": "special-days-mothers-day",
+    "title": "Mother's Day",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "With Offer",
+    "image": "Mother's Day.jpg",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a warm, elegant atmosphere with soft lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short appreciative Mother's Day caption. Realistic, professional finish."
+  },
+  {
+    "id": "special-days-fathers-day",
+    "title": "Father's Day",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "With Offer",
+    "image": "Father's Day.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a warm, strong atmosphere with soft lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short appreciative Father's Day caption. Realistic, professional finish."
+  },
+  {
+    "id": "special-days-friendship-day",
+    "title": "Friendship Day",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Men", "Women", "Kids"],
+    "offer": "With Offer",
+    "image": "Friendship Day.png",
+    "caption": "Create a stylish product post featuring a model wearing the uploaded outfit. Set the background in a joyful, casual atmosphere with bright natural lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short celebratory Friendship Day caption. Realistic, lively, professional finish."
+  },
+  {
+    "id": "special-days-valentines-single",
+    "title": "Valentine's Day - Single",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Men", "Women"],
+    "offer": "With Offer",
+    "image": "Valentine's Day - Single.png",
+    "caption": "Create a stylish product post featuring a model wearing the uploaded outfit. Set the background in a romantic, modern atmosphere with editorial lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short romantic fashion caption. High-end, realistic finish."
+  },
+  {
+    "id": "special-days-valentines-couple",
+    "title": "Valentine's Day - Couple",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": ["Men", "Women"],
+    "offer": "With Offer",
+    "image": "Valentine's Day - Couple.png",
+    "caption": "Create a stylish product post featuring a couple wearing the uploaded outfits. Set the background in a romantic, modern atmosphere with editorial lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short romantic fashion caption celebrating love and style. High-end, realistic finish."
+  },
+  {
+    "id": "festival-diwali-women-offer",
+    "title": "Diwali - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "Diwali - Women's Collection.png",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft radiance and celebration energy. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Diwali-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-diwali-men-offer",
+    "title": "Diwali - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "Diwali - Men's Collection.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft light and elegant warmth. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Diwali-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-diwali-girl-kid-offer",
+    "title": "Diwali - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Diwali - Girl Kid Collection.png",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft glow and celebration energy. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Diwali-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-diwali-boy-kid-offer",
+    "title": "Diwali - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Diwali - Boy Kid Collection.png",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft glow and celebration energy. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Diwali-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-thaipongal-women-offer",
+    "title": "Thaipongal - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "Thaipongal - Women's Collection.png",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with natural warmth and cultural celebration. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Thaipongal-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-thaipongal-men-offer",
+    "title": "Thaipongal - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "Thaipongal - Men's Collection.png",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with gentle sunlight and cultural joy. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Thaipongal-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-thaipongal-girl-kid-offer",
+    "title": "Thaipongal - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Thaipongal - Girl Kid Collection.jpg",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with warm sunlight and harvest vibes. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Thaipongal-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-thaipongal-boy-kid-offer",
+    "title": "Thaipongal - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Thaipongal - Boy Kid Collection.png",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with warm sunlight and harvest vibes. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Thaipongal-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-christmas-women-offer",
+    "title": "Christmas - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "Christmas - Women's Collection.png",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with soft lighting and joyful ambience. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Christmas-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-christmas-men-offer",
+    "title": "Christmas - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "Christmas - Men's Collection.png",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with gentle highlights and cozy tones. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Christmas-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-christmas-girl-kid-offer",
+    "title": "Christmas - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Christmas - Girl Kid Collection.png",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with cozy tones and soft light. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Christmas-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-christmas-boy-kid-offer",
+    "title": "Christmas - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Christmas - Boy Kid Collection.png",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with cozy lighting and subtle seasonal glow. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Christmas-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-eid-women-offer",
+    "title": "Eid - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "Eid - Women's Collection.png",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with serenity and soft highlights. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Eid-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-eid-men-offer",
+    "title": "Eid - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "Eid - Men's Collection.png",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with calm lighting and cultural richness. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Eid-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-eid-girl-kid-offer",
+    "title": "Eid - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Eid - Girl Kid Collection.png",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with soft light and elegance. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Eid-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-eid-boy-kid-offer",
+    "title": "Eid - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "Eid - Boy Kid Collection.png",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with gentle light and celebration harmony. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Eid-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-newyear-women-offer",
+    "title": "New Year - Women's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Women"],
+    "offer": "Up to 50% Off",
+    "image": "New Year - Women's Collection.png",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with refined sparkle and optimism. Add the text 'Up to 50% Off' in a nice font. Generate 1 short New Year-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-newyear-men-offer",
+    "title": "New Year - Men's Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Men"],
+    "offer": "Up to 50% Off",
+    "image": "New Year - Men's Collection.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with balanced lighting and energetic elegance. Add the text 'Up to 50% Off' in a nice font. Generate 1 short New Year-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-newyear-girl-kid-offer",
+    "title": "New Year - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "New Year - Girl Kid Collection.png",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with soft light and cheerful tone. Add the text 'Up to 50% Off' in a nice font. Generate 1 short New Year-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-newyear-boy-kid-offer",
+    "title": "New Year - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": ["Kids"],
+    "offer": "Up to 50% Off",
+    "image": "New Year - Boy Kid Collection.png",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with clean modern lighting and subtle festive accents. Add the text 'Up to 50% Off' in a nice font. Generate 1 short New Year-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-diwali-women-no-offer",
+    "title": "Diwali - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "Diwali Women.jpg",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft radiance and celebration energy. Generate 1 short Diwali-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-diwali-men-no-offer",
+    "title": "Diwali - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "D man.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft light and elegant warmth. Generate 1 short Diwali-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-diwali-girl-kid-no-offer",
+    "title": "Diwali - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "D girl.jpg",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft glow and celebration energy. Generate 1 short Diwali-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-diwali-boy-kid-no-offer",
+    "title": "Diwali - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "boy.jpg",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft glow and celebration energy. Generate 1 short Diwali-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-thaipongal-women-no-offer",
+    "title": "Thaipongal - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "gril_t.jpg",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with natural warmth and cultural celebration. Generate 1 short Thaipongal-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-thaipongal-men-no-offer",
+    "title": "Thaipongal - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "thai.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with gentle sunlight and cultural joy. Generate 1 short Thaipongal-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-thaipongal-girl-kid-no-offer",
+    "title": "Thaipongal - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "kid_gril.jpg",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with warm sunlight and harvest vibes. Generate 1 short Thaipongal-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-thaipongal-boy-kid-no-offer",
+    "title": "Thaipongal - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "pongal.jpg",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with warm sunlight and harvest vibes. Generate 1 short Thaipongal-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-christmas-women-no-offer",
+    "title": "Christmas - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "chr_w.jpg",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with soft lighting and joyful ambience. Generate 1 short Christmas-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-christmas-men-no-offer",
+    "title": "Christmas - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "chr-wo.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with gentle highlights and cozy tones. Generate 1 short Christmas-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-christmas-girl-kid-no-offer",
+    "title": "Christmas - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "girl-kids.jpg",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with cozy tones and soft light. Generate 1 short Christmas-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-christmas-boy-kid-no-offer",
+    "title": "Christmas - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "Xmax-boy.jpg",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with cozy lighting and subtle seasonal glow. Generate 1 short Christmas-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-eid-women-no-offer",
+    "title": "Eid - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "eid with out _g.jpg",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with serenity and soft highlights. Generate 1 short Eid-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-eid-men-no-offer",
+    "title": "Eid - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "B_eid.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with calm lighting and cultural richness. Generate 1 short Eid-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-eid-girl-kid-no-offer",
+    "title": "Eid - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "without_G.jpg",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with soft light and elegance. Generate 1 short Eid-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-eid-boy-kid-no-offer",
+    "title": "Eid - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "boy_spring.jpg",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with gentle light and celebration harmony. Generate 1 short Eid-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-newyear-women-no-offer",
+    "title": "New Year - Women's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Women"],
+    "offer": "No Offer",
+    "image": "women.jpg",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with refined sparkle and optimism. Generate 1 short New Year-related marketing caption. Realistic, elegant, professional finish."
+  },
+  {
+    "id": "festival-newyear-men-no-offer",
+    "title": "New Year - Men's Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "men_new.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with balanced lighting and energetic elegance. Generate 1 short New Year-related marketing caption. Realistic, confident, professional finish."
+  },
+  {
+    "id": "festival-newyear-girl-kid-no-offer",
+    "title": "New Year - Girl Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "new_kids.jpg",
+    "caption": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with soft light and cheerful tone. Generate 1 short New Year-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "festival-newyear-boy-kid-no-offer",
+    "title": "New Year - Boy Kid Collection",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": ["Kids"],
+    "offer": "No Offer",
+    "image": "new.jpg",
+    "caption": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with clean modern lighting and subtle festive accents. Generate 1 short New Year-related marketing caption. Realistic, graceful, professional finish."
+  },
+  {
+    "id": "newarrivals-partywear-men-offer",
+    "title": "Party Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Men"],
+    "offer": "Flat 25% OFF",
+    "image": "Party Wear - Men's off.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background with elegant golden lighting and festive reflections. Add the text 'Flat 25% OFF' in a nice font. Generate 1 short party wear marketing caption. Realistic, professional finish."
+  },
+  {
+    "id": "newarrivals-partywear-men-no-offer",
+    "title": "Party Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "Party Wear - Men's Collection.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background with soft evening lighting and navy or charcoal tones. Generate 1 short party wear marketing caption. Realistic, professional finish."
+  },
+  {
+    "id": "newarrivals-partywear-women-offer",
+    "title": "Party Wear - Women's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Women"],
+    "offer": "Up to 30% OFF",
+    "image": "Party Wear - Women's Collection.jpg",
+    "caption": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background with subtle festive radiance and natural fabric flow. Add the text 'Up to 30% OFF' in a nice font. Generate 1 short party wear marketing caption. Realistic, professional finish."
+  },
+  {
+    "id": "newarrivals-partywear-kids-boy-offer",
+    "title": "Party Wear - Kids Boy Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Kids"],
+    "offer": "Flat 25% OFF - 3 Days Only",
+    "image": "Party Wear - Kids Boy Collection.jpg",
+    "caption": "Create a cheerful product post featuring a boy child model wearing the uploaded outfit. Set the background with soft pastel blue, colorful confetti, and light sparkles. Add the text 'New Party Collection' and 'Flat 25% OFF – 3 Days Only' in playful fonts. Generate 1 short party wear marketing caption. Fun, colorful, realistic finish."
+  },
+  {
+    "id": "newarrivals-partywear-kids-girl-offer",
+    "title": "Party Wear - Kids Girl Collection",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": ["Kids"],
+    "offer": "Flat 25% OFF - 3 Days Only",
+    "image": "Party Wear - Kids Girl Collection.jpg",
+    "caption": "Create a cheerful product post featuring a girl child model wearing the uploaded outfit. Set the background with soft pastel blue, colorful confetti, and light sparkles. Add the text 'New Party Collection' and 'Flat 25% OFF – 3 Days Only' in playful fonts. Generate 1 short party wear marketing caption. Fun, colorful, realistic finish."
+  },
+  {
+    "id": "newarrivals-sportswear-kids-boy",
+    "title": "Sports Wear - Kids Boy Collection",
+    "category": "New Arrivals",
+    "subcategory": "Sports Wear",
+    "audience": ["Kids"],
+    "offer": "FLASH SALE - 20% OFF",
+    "image": "Sports Wear - Kids Boy Collection.jpg",
+    "caption": "Create a bright product post featuring a boy child model playing in the uploaded sports wear. Set the background in a bright outdoor park with green grass and playground equipment. Add the text 'NEW ARRIVALS SPORTS WEAR', 'Play Hard. Dress Right.', and 'FLASH SALE - 20% OFF ALL KIDS SPORTS!' in bold fonts. Generate 1 short sports wear marketing caption. Vibrant, energetic, realistic finish."
+  },
+  {
+    "id": "newarrivals-sportswear-kids-girl",
+    "title": "Sports Wear - Kids Girl Collection",
+    "category": "New Arrivals",
+    "subcategory": "Sports Wear",
+    "audience": ["Kids"],
+    "offer": "FLASH SALE - 20% OFF",
+    "image": "Sports Wear - Kids Girl Collection.jpg",
+    "caption": "Create a bright product post featuring a girl child model playing in the uploaded sports wear. Set the background in a sunny park with green grass and colorful playground equipment. Add the text 'NEW ARRIVALS – SPORTS WEAR', 'Play Hard. Dress Right.', and 'FLASH SALE – 20% OFF ALL KIDS' SPORTS!' in bold fonts. Generate 1 short sports wear marketing caption. Vibrant, joyful, realistic finish."
+  },
+  {
+    "id": "newarrivals-sportswear-men-offer",
+    "title": "Sports Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Sports Wear",
+    "audience": ["Men"],
+    "offer": "LIMITED TIME OFFER! 20% OFF ALL SETS",
+    "image": "Sports Wear - Men's Collection.jpg",
+    "caption": "Create an energetic product post featuring a person actively wearing the uploaded sports apparel. Set the background in a natural outdoor park or path with soft lighting. Add the text 'GET YOUR WORKOUT ON!', 'Ultimate Compression Gear', 'LIMITED TIME OFFER! 20% OFF ALL SETS', and 'FREE SHIPPING' in high-contrast bold fonts. Generate 1 short sports wear marketing caption. Motivational, energetic, realistic finish."
+  },
+  {
+    "id": "newarrivals-officialwear-men-offer",
+    "title": "Official Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Official Wear",
+    "audience": ["Men"],
+    "offer": "Flat 20% OFF - This Week Only",
+    "image": "Official Wear - Men's Collection.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded official shirt. Set the background in a modern indoor office or studio with soft professional lighting. Add the text 'Premium Official Shirt Collection' and 'Flat 20% OFF – This Week Only' in elegant fonts positioned on the right side. Generate 1 short official wear marketing caption. Classy, professional, realistic finish."
+  },
+  {
+    "id": "newarrivals-officialwear-men-no-offer",
+    "title": "Official Wear - Men's Collection",
+    "category": "New Arrivals",
+    "subcategory": "Official Wear",
+    "audience": ["Men"],
+    "offer": "No Offer",
+    "image": "Official Wear - Men.jpg",
+    "caption": "Create a stylish product post featuring a male model wearing the uploaded official shirt. Set the background in a modern indoor office or studio with soft professional lighting. Add the text 'Premium Official Shirt Collection' in elegant font positioned on the right side. Generate 1 short official wear marketing caption. Classy, professional, realistic finish."
+  }
+]
+

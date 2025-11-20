@@ -1,0 +1,70 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Dashboard | Frameio Admin{% endblock %}
+
+{% block content %}
+<div class="dashboard-welcome">
+    <h1>🎨 Frameio Admin Dashboard</h1>
+    <p>Manage your AI-powered textile design platform</p>
+</div>
+
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <div class="icon">👥</div>
+        <h3>{{ user_count|default:"0" }}</h3>
+        <p>Total Users</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon">🏢</div>
+        <h3>{{ org_count|default:"0" }}</h3>
+        <p>Organizations</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon">📊</div>
+        <h3>{{ activity_count|default:"0" }}</h3>
+        <p>Total Activities</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon">⚡</div>
+        <h3>Active</h3>
+        <p>System Status</p>
+    </div>
+</div>
+
+<div class="recent-activity">
+    <h2>📈 Recent Activity</h2>
+    {% if recent_activities %}
+        {% for activity in recent_activities %}
+        <div class="activity-item">
+            <div class="activity-icon">🎯</div>
+            <div class="activity-content">
+                <h4>{{ activity.action|title }}</h4>
+                <p>{{ activity.user.email }} - {{ activity.created_at|timesince }} ago</p>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No recent activities found.</p>
+    {% endif %}
+</div>
+
+<div class="quick-actions">
+    <a href="{% url 'admin:users_user_changelist' %}" class="quick-action">
+        <h3>👥 Manage Users</h3>
+        <p>View and manage user accounts</p>
+    </a>
+    <a href="{% url 'admin:organizations_organization_changelist' %}" class="quick-action">
+        <h3>🏢 Organizations</h3>
+        <p>Manage organizations and memberships</p>
+    </a>
+    <a href="{% url 'admin:users_useractivity_changelist' %}" class="quick-action">
+        <h3>📈 Activity Logs</h3>
+        <p>View user activities and system logs</p>
+    </a>
+    <a href="{% url 'admin:index' %}" class="quick-action">
+        <h3>⚙️ Admin Home</h3>
+        <p>Return to main admin interface</p>
+    </a>
+</div>
+{% endblock %}

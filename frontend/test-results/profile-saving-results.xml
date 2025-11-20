@@ -1,0 +1,648 @@
+<testsuites id="" name="" tests="65" failures="11" skipped="51" errors="0" time="143.802296">
+<testsuite name="profile-saving.spec.ts" timestamp="2025-11-18T06:23:03.066Z" hostname="chromium" tests="13" failures="10" skipped="0" time="189.747" errors="0">
+<testcase name="Profile Information Saving › should display profile form with all required fields" classname="profile-saving.spec.ts" time="7.898">
+<failure message="profile-saving.spec.ts:12:7 should display profile form with all required fields" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:12:7 › Profile Information Saving › should display profile form with all required fields 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('text=Personal Information')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('text=Personal Information')
+
+
+      12 |   test('should display profile form with all required fields', async ({ page }) => {
+      13 |     // Check if the profile form is visible
+    > 14 |     await expect(page.locator('text=Personal Information')).toBeVisible();
+         |                                                             ^
+      15 |     await expect(page.locator('text=Contact Information')).toBeVisible();
+      16 |     await expect(page.locator('text=Business Logo')).toBeVisible();
+      17 |     
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:14:61
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-chromium\video.webm]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Profile Information Saving › should allow filling out profile form" classname="profile-saving.spec.ts" time="32.977">
+<failure message="profile-saving.spec.ts:31:7 should allow filling out profile form" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:31:7 › Profile Information Saving › should allow filling out profile form 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('input[id="company_name"]')
+
+
+      31 |   test('should allow filling out profile form', async ({ page }) => {
+      32 |     // Fill out the company name field
+    > 33 |     await page.fill('input[id="company_name"]', 'Test Textile Company');
+         |                ^
+      34 |     
+      35 |     // Fill out contact information
+      36 |     await page.fill('input[id="whatsapp_number"]', '+1234567890');
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:33:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-e1368-ow-filling-out-profile-form-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-e1368-ow-filling-out-profile-form-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\profile-saving-Profile-Inf-e1368-ow-filling-out-profile-form-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|profile-saving-Profile-Inf-e1368-ow-filling-out-profile-form-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-e1368-ow-filling-out-profile-form-chromium\video.webm]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-e1368-ow-filling-out-profile-form-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Profile Information Saving › should handle logo upload" classname="profile-saving.spec.ts" time="7.302">
+<failure message="profile-saving.spec.ts:51:7 should handle logo upload" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:51:7 › Profile Information Saving › should handle logo upload 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('input[type="file"][accept="image/*"]')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('input[type="file"][accept="image/*"]')
+
+
+      51 |   test('should handle logo upload', async ({ page }) => {
+      52 |     // Check if logo upload area is visible
+    > 53 |     await expect(page.locator('input[type="file"][accept="image/*"]')).toBeVisible();
+         |                                                                        ^
+      54 |     
+      55 |     // Test logo position selector
+      56 |     await expect(page.locator('select')).toBeVisible();
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:53:72
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-75bb7-g-should-handle-logo-upload-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-75bb7-g-should-handle-logo-upload-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\profile-saving-Profile-Inf-75bb7-g-should-handle-logo-upload-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|profile-saving-Profile-Inf-75bb7-g-should-handle-logo-upload-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-75bb7-g-should-handle-logo-upload-chromium\video.webm]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-75bb7-g-should-handle-logo-upload-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Profile Information Saving › should save profile successfully" classname="profile-saving.spec.ts" time="32.795">
+<failure message="profile-saving.spec.ts:60:7 should save profile successfully" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:60:7 › Profile Information Saving › should save profile successfully 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('input[id="company_name"]')
+
+
+      60 |   test('should save profile successfully', async ({ page }) => {
+      61 |     // Fill out the profile form
+    > 62 |     await page.fill('input[id="company_name"]', 'Test Company for Playwright');
+         |                ^
+      63 |     await page.fill('input[id="whatsapp_number"]', '+1234567890');
+      64 |     await page.fill('input[id="email"]', 'test@playwright.com');
+      65 |     await page.fill('input[id="facebook_link"]', 'https://facebook.com/playwright');
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:62:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-09c56-d-save-profile-successfully-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-09c56-d-save-profile-successfully-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\profile-saving-Profile-Inf-09c56-d-save-profile-successfully-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|profile-saving-Profile-Inf-09c56-d-save-profile-successfully-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-09c56-d-save-profile-successfully-chromium\video.webm]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-09c56-d-save-profile-successfully-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Profile Information Saving › should handle form validation" classname="profile-saving.spec.ts" time="32.784">
+<failure message="profile-saving.spec.ts:87:7 should handle form validation" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:87:7 › Profile Information Saving › should handle form validation 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Save Profile")')
+
+
+      87 |   test('should handle form validation', async ({ page }) => {
+      88 |     // Try to save without required fields
+    > 89 |     await page.click('button:has-text("Save Profile")');
+         |                ^
+      90 |     
+      91 |     // Check if validation messages appear (if implemented)
+      92 |     // Note: This depends on the actual validation implementation
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:89:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-aaa3b-ould-handle-form-validation-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-aaa3b-ould-handle-form-validation-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\profile-saving-Profile-Inf-aaa3b-ould-handle-form-validation-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|profile-saving-Profile-Inf-aaa3b-ould-handle-form-validation-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-aaa3b-ould-handle-form-validation-chromium\video.webm]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-aaa3b-ould-handle-form-validation-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Profile Information Saving › should display profile completion status" classname="profile-saving.spec.ts" time="7.376">
+<failure message="profile-saving.spec.ts:95:7 should display profile completion status" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:95:7 › Profile Information Saving › should display profile completion status 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('text=Profile Completion')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('text=Profile Completion')
+
+
+       95 |   test('should display profile completion status', async ({ page }) => {
+       96 |     // Check if profile completion section is visible
+    >  97 |     await expect(page.locator('text=Profile Completion')).toBeVisible();
+          |                                                           ^
+       98 |     
+       99 |     // Check for completion percentage
+      100 |     const completionText = page.locator('text=/\\d+%/');
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:97:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-c2989-y-profile-completion-status-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-c2989-y-profile-completion-status-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\profile-saving-Profile-Inf-c2989-y-profile-completion-status-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|profile-saving-Profile-Inf-c2989-y-profile-completion-status-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-c2989-y-profile-completion-status-chromium\video.webm]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-c2989-y-profile-completion-status-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Profile Information Saving › should handle network errors gracefully" classname="profile-saving.spec.ts" time="32.975">
+<failure message="profile-saving.spec.ts:106:7 should handle network errors gracefully" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:106:7 › Profile Information Saving › should handle network errors gracefully 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('input[id="company_name"]')
+
+
+      115 |     
+      116 |     // Fill out the form
+    > 117 |     await page.fill('input[id="company_name"]', 'Test Company');
+          |                ^
+      118 |     await page.fill('input[id="email"]', 'test@example.com');
+      119 |     
+      120 |     // Try to save
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:117:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-64f8b-e-network-errors-gracefully-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-64f8b-e-network-errors-gracefully-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\profile-saving-Profile-Inf-64f8b-e-network-errors-gracefully-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|profile-saving-Profile-Inf-64f8b-e-network-errors-gracefully-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-64f8b-e-network-errors-gracefully-chromium\video.webm]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-64f8b-e-network-errors-gracefully-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to GET /api/company-profiles/" classname="profile-saving.spec.ts" time="0.442">
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to POST /api/company-profiles/" classname="profile-saving.spec.ts" time="0.21">
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle profile status endpoint" classname="profile-saving.spec.ts" time="0.062">
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle authentication errors" classname="profile-saving.spec.ts" time="0.062">
+<failure message="profile-saving.spec.ts:189:7 should handle authentication errors" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:189:7 › Backend API Profile Endpoints › should handle authentication errors 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 200
+
+      195 |     
+      196 |     // Should return 403 for invalid token
+    > 197 |     expect(response.status()).toBe(403);
+          |                               ^
+      198 |   });
+      199 |
+      200 |   test('should handle CORS preflight requests', async ({ request }) => {
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:197:31
+]]>
+</failure>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle CORS preflight requests" classname="profile-saving.spec.ts" time="0.031">
+<failure message="profile-saving.spec.ts:200:7 should handle CORS preflight requests" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:200:7 › Backend API Profile Endpoints › should handle CORS preflight requests 
+
+    TypeError: request.options is not a function
+
+      199 |
+      200 |   test('should handle CORS preflight requests', async ({ request }) => {
+    > 201 |     const response = await request.options('http://localhost:8000/api/company-profiles/', {
+          |                                    ^
+      202 |       headers: {
+      203 |         'Origin': 'http://localhost:3000',
+      204 |         'Access-Control-Request-Method': 'POST',
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:201:36
+]]>
+</failure>
+</testcase>
+<testcase name="End-to-End Profile Saving Flow › complete profile saving workflow" classname="profile-saving.spec.ts" time="34.833">
+<failure message="profile-saving.spec.ts:217:7 complete profile saving workflow" type="FAILURE">
+<![CDATA[  [chromium] › profile-saving.spec.ts:217:7 › End-to-End Profile Saving Flow › complete profile saving workflow 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('input[id="company_name"]')
+
+
+      221 |     
+      222 |     // Step 2: Fill out the profile form
+    > 223 |     await page.fill('input[id="company_name"]', 'E2E Test Company');
+          |                ^
+      224 |     await page.fill('input[id="whatsapp_number"]', '+1234567890');
+      225 |     await page.fill('input[id="email"]', 'e2e@testcompany.com');
+      226 |     await page.fill('input[id="facebook_link"]', 'https://facebook.com/e2etest');
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:223:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-End-to-End--6ffbc-ete-profile-saving-workflow-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-End-to-End--6ffbc-ete-profile-saving-workflow-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\profile-saving-End-to-End--6ffbc-ete-profile-saving-workflow-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|profile-saving-End-to-End--6ffbc-ete-profile-saving-workflow-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|profile-saving-End-to-End--6ffbc-ete-profile-saving-workflow-chromium\video.webm]]
+
+[[ATTACHMENT|profile-saving-End-to-End--6ffbc-ete-profile-saving-workflow-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="profile-saving.spec.ts" timestamp="2025-11-18T06:23:03.066Z" hostname="firefox" tests="13" failures="1" skipped="12" time="34.893" errors="0">
+<testcase name="Profile Information Saving › should display profile form with all required fields" classname="profile-saving.spec.ts" time="10.747">
+<failure message="profile-saving.spec.ts:12:7 should display profile form with all required fields" type="FAILURE">
+<![CDATA[  [firefox] › profile-saving.spec.ts:12:7 › Profile Information Saving › should display profile form with all required fields 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('text=Personal Information')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('text=Personal Information')
+
+
+      12 |   test('should display profile form with all required fields', async ({ page }) => {
+      13 |     // Check if the profile form is visible
+    > 14 |     await expect(page.locator('text=Personal Information')).toBeVisible();
+         |                                                             ^
+      15 |     await expect(page.locator('text=Contact Information')).toBeVisible();
+      16 |     await expect(page.locator('text=Business Logo')).toBeVisible();
+      17 |     
+        at D:\My Files\Yarl IT Hub\Framio\frontend\tests\profile-saving.spec.ts:14:61
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-firefox\video.webm]]
+
+[[ATTACHMENT|profile-saving-Profile-Inf-9ce97-rm-with-all-required-fields-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Profile Information Saving › should allow filling out profile form" classname="profile-saving.spec.ts" time="15.88">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle logo upload" classname="profile-saving.spec.ts" time="8.266">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should save profile successfully" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle form validation" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should display profile completion status" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle network errors gracefully" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to GET /api/company-profiles/" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to POST /api/company-profiles/" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle profile status endpoint" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle authentication errors" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle CORS preflight requests" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="End-to-End Profile Saving Flow › complete profile saving workflow" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="profile-saving.spec.ts" timestamp="2025-11-18T06:23:03.066Z" hostname="webkit" tests="13" failures="0" skipped="13" time="0" errors="0">
+<testcase name="Profile Information Saving › should display profile form with all required fields" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should allow filling out profile form" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle logo upload" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should save profile successfully" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle form validation" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should display profile completion status" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle network errors gracefully" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to GET /api/company-profiles/" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to POST /api/company-profiles/" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle profile status endpoint" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle authentication errors" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle CORS preflight requests" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="End-to-End Profile Saving Flow › complete profile saving workflow" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="profile-saving.spec.ts" timestamp="2025-11-18T06:23:03.066Z" hostname="Mobile Chrome" tests="13" failures="0" skipped="13" time="0" errors="0">
+<testcase name="Profile Information Saving › should display profile form with all required fields" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should allow filling out profile form" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle logo upload" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should save profile successfully" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle form validation" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should display profile completion status" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle network errors gracefully" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to GET /api/company-profiles/" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to POST /api/company-profiles/" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle profile status endpoint" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle authentication errors" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle CORS preflight requests" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="End-to-End Profile Saving Flow › complete profile saving workflow" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="profile-saving.spec.ts" timestamp="2025-11-18T06:23:03.066Z" hostname="Mobile Safari" tests="13" failures="0" skipped="13" time="0" errors="0">
+<testcase name="Profile Information Saving › should display profile form with all required fields" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should allow filling out profile form" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle logo upload" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should save profile successfully" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle form validation" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should display profile completion status" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Profile Information Saving › should handle network errors gracefully" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to GET /api/company-profiles/" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should respond to POST /api/company-profiles/" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle profile status endpoint" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle authentication errors" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Backend API Profile Endpoints › should handle CORS preflight requests" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="End-to-End Profile Saving Flow › complete profile saving workflow" classname="profile-saving.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

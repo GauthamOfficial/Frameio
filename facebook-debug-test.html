@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Sharing Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #1877f2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .test-button:hover {
+            background: #166fe5;
+        }
+        .test-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .url-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .meta-tags {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔍 Facebook Sharing Debug Test</h1>
+        
+        <div class="test-info">
+            <h3>Problem: Facebook can't access localhost URLs</h3>
+            <p>Facebook's crawler needs to access your poster page to scrape the Open Graph meta tags. Since localhost URLs aren't accessible from the internet, Facebook can't see your poster content.</p>
+        </div>
+
+        <div id="status"></div>
+
+        <div>
+            <button class="test-button" onclick="testLocalhostAccess()">🔍 Test Localhost Access</button>
+            <button class="test-button" onclick="testNgrokSetup()">🌐 Test Ngrok Setup</button>
+            <button class="test-button" onclick="testFacebookDebugger()">📊 Test Facebook Debugger</button>
+            <button class="test-button" onclick="showSolution()">💡 Show Solution</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function addStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const statusElement = document.createElement('div');
+            statusElement.className = `status ${type}`;
+            statusElement.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            statusDiv.appendChild(statusElement);
+        }
+
+        async function testLocalhostAccess() {
+            addStatus('Testing localhost poster page access...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:3000/poster/test123');
+                
+                if (response.ok) {
+                    addStatus('✅ Localhost poster page is accessible locally', 'success');
+                    const html = await response.text();
+                    
+                    // Extract meta tags
+                    const metaTags = extractMetaTags(html);
+                    
+                    document.getElementById('results').innerHTML = `
+                        <h3>Meta Tags Found in Poster Page:</h3>
+                        <div class="meta-tags">${metaTags}</div>
+                        <div class="test-info">
+                            <p><strong>Problem:</strong> These meta tags are only accessible from localhost. Facebook's crawler can't reach localhost URLs from the internet.</p>
+                        </div>
+                    `;
+                } else {
+                    addStatus(`❌ Localhost poster page error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addStatus(`❌ Localhost test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function extractMetaTags(html) {
+            const metaRegex = /<meta[^>]*(?:property|name)=["'](?:og:|twitter:)[^"']*["'][^>]*>/gi;
+            const matches = html.match(metaRegex) || [];
+            return matches.join('\n');
+        }
+
+        async function testNgrokSetup() {
+            addStatus('Testing ngrok setup...', 'info');
+            
+            try {
+                // Try to get ngrok status
+                const response = await fetch('http://localhost:4040/api/tunnels');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const tunnels = data.tunnels || [];
+                    
+                    if (tunnels.length > 0) {
+                        const httpsTunnel = tunnels.find(t => t.proto === 'https');
+                        if (httpsTunnel) {
+                            addStatus('✅ Ngrok is running!', 'success');
+                            
+                            const ngrokUrl = httpsTunnel.public_url;
+                            const posterUrl = `${ngrokUrl}/poster/test123`;
+                            
+                            document.getElementById('results').innerHTML = `
+                                <h3>Ngrok Setup Results:</h3>
+                                <div class="test-info">
+                                    <p><strong>Ngrok URL:</strong> ${ngrokUrl}</p>
+                                    <p><strong>Poster URL:</strong> ${posterUrl}</p>
+                                </div>
+                                
+                                <h4>Test the public poster URL:</h4>
+                                <div class="url-display">${posterUrl}</div>
+                                
+                                <br>
+                                <button class="test-button" onclick="window.open('${posterUrl}', '_blank')">
+                                    🌐 Open Public Poster Page
+                                </button>
+                                
+                                <div class="test-info">
+                                    <p><strong>Next Step:</strong> Use this public URL for Facebook sharing instead of localhost.</p>
+                                </div>
+                            `;
+                        } else {
+                            addStatus('⚠️ Ngrok running but no HTTPS tunnel found', 'warning');
+                        }
+                    } else {
+                        addStatus('❌ No ngrok tunnels found', 'error');
+                    }
+                } else {
+                    addStatus('❌ Ngrok API not accessible. Make sure ngrok is running on port 4040', 'error');
+                }
+            } catch (error) {
+                addStatus(`❌ Ngrok test failed: ${error.message}`, 'error');
+                addStatus('Make sure ngrok is running: ngrok http 3000', 'info');
+            }
+        }
+
+        function testFacebookDebugger() {
+            addStatus('Opening Facebook Sharing Debugger...', 'info');
+            
+            const debuggerUrl = 'https://developers.facebook.com/tools/debug/';
+            
+            document.getElementById('results').innerHTML = `
+                <h3>Facebook Sharing Debugger Test:</h3>
+                <div class="test-info">
+                    <p><strong>Instructions:</strong></p>
+                    <ol>
+                        <li>Click the button below to open Facebook's Sharing Debugger</li>
+                        <li>Enter your ngrok poster URL (e.g., https://abc123.ngrok.io/poster/test123)</li>
+                        <li>Click "Debug" to see what Facebook sees</li>
+                        <li>If successful, you'll see your poster image and meta tags</li>
+                    </ol>
+                </div>
+                
+                <button class="test-button" onclick="window.open('${debuggerUrl}', '_blank')">
+                    📊 Open Facebook Sharing Debugger
+                </button>
+                
+                <div class="test-info">
+                    <p><strong>What to look for:</strong></p>
+                    <ul>
+                        <li>✅ og:title - Your poster caption</li>
+                        <li>✅ og:description - Your poster description</li>
+                        <li>✅ og:image - Your poster image URL</li>
+                        <li>✅ og:url - Your poster page URL</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function showSolution() {
+            addStatus('Showing solution steps...', 'info');
+            
+            document.getElementById('results').innerHTML = `
+                <h3>💡 Solution: Use Ngrok for Public Access</h3>
+                
+                <div class="test-info">
+                    <h4>Step 1: Start Ngrok</h4>
+                    <div class="url-display">ngrok http 3000</div>
+                    <p>This creates a public URL that Facebook can access.</p>
+                </div>
+                
+                <div class="test-info">
+                    <h4>Step 2: Update Your Sharing URLs</h4>
+                    <p>Instead of using localhost URLs, use the ngrok URL:</p>
+                    <div class="url-display">https://abc123.ngrok.io/poster/test123</div>
+                </div>
+                
+                <div class="test-info">
+                    <h4>Step 3: Test with Facebook Debugger</h4>
+                    <p>Use Facebook's Sharing Debugger to verify the meta tags are accessible.</p>
+                </div>
+                
+                <div class="test-info">
+                    <h4>Step 4: Update Your App Code</h4>
+                    <p>Modify your sharing functions to use the ngrok URL instead of localhost.</p>
+                </div>
+                
+                <button class="test-button" onclick="generateUpdatedCode()">
+                    🔧 Generate Updated Code
+                </button>
+            `;
+        }
+
+        function generateUpdatedCode() {
+            const code = `
+// Updated sharing function for your poster generator components
+const shareToSocialMedia = (platform: string) => {
+  if (!result?.image_url || !result?.full_caption) return
+
+  // Use ngrok URL instead of localhost for Facebook sharing
+  const posterId = \`poster_\${Date.now()}\`
+  const ngrokUrl = 'https://YOUR_NGROK_URL.ngrok.io' // Replace with your actual ngrok URL
+  const posterPageUrl = \`\${ngrokUrl}/poster/\${posterId}\`
+  
+  const shareText = result.full_caption
+
+  let shareLink = ''
+  
+  switch (platform) {
+    case 'facebook':
+      shareLink = \`https://www.facebook.com/sharer/sharer.php?u=\${encodeURIComponent(posterPageUrl)}&quote=\${encodeURIComponent(shareText)}\`
+      window.open(
+        shareLink,
+        'facebook-share-dialog',
+        'width=800,height=600,scrollbars=yes,resizable=yes'
+      )
+      return
+    // ... other platforms
+  }
+}
+            `;
+            
+            document.getElementById('results').innerHTML += `
+                <h4>Updated Code:</h4>
+                <div class="meta-tags">${code}</div>
+            `;
+        }
+
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            addStatus('🔍 Facebook Sharing Debug Test Page Loaded', 'success');
+            addStatus('The issue is that Facebook can\'t access localhost URLs. We need to use ngrok for public access.', 'info');
+        });
+    </script>
+</body>
+</html>
+
+
