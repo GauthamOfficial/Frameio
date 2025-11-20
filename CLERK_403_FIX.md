@@ -199,3 +199,4 @@ print(f"Auth result: {result}")
 5. ✅ **Better errors** - Clear authentication errors instead of 403
 
 
+

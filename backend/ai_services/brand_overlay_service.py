@@ -306,6 +306,37 @@ class BrandOverlayService:
             y_margin = max(20, int(poster_image.height * 0.04))
             y = poster_image.height - y_margin - desired_size
 
+            # Calculate text height for gradient overlay
+            sample_text = contact_items[0]['value'] if contact_items else "Sample"
+            text_bbox = draw.textbbox((0, 0), sample_text, font=font)
+            text_height = text_bbox[3] - text_bbox[1]
+            
+            # Add padding around text for gradient area
+            gradient_padding = 20
+            gradient_x = max(0, start_x - gradient_padding)
+            gradient_y = max(0, y - gradient_padding)
+            gradient_width = min(poster_image.width - gradient_x, total_width + (gradient_padding * 2))
+            gradient_height = text_height + (gradient_padding * 2)
+            
+            # Create 10% black gradient overlay (10% opacity = 26/255)
+            gradient_overlay = Image.new('RGBA', poster_image.size, (0, 0, 0, 0))
+            gradient_draw = ImageDraw.Draw(gradient_overlay)
+            
+            # Draw gradient from transparent at top to 10% black at bottom
+            max_alpha = int(255 * 0.1)  # 10% opacity = 25.5, rounded to 26
+            for i in range(gradient_height):
+                # Linear gradient: transparent at top, 10% black at bottom
+                alpha = int((i / gradient_height) * max_alpha)
+                y_pos = gradient_y + i
+                if 0 <= y_pos < poster_image.height:
+                    gradient_draw.line([(gradient_x, y_pos), (gradient_x + gradient_width, y_pos)], fill=(0, 0, 0, alpha))
+            
+            # Composite the gradient overlay onto the poster using alpha compositing
+            poster_image = Image.alpha_composite(poster_image, gradient_overlay)
+            
+            # Recreate drawing context after compositing gradient
+            draw = ImageDraw.Draw(poster_image)
+
             current_x = start_x
             text_color = (255, 255, 255, 255)
 

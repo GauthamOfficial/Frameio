@@ -61,3 +61,4 @@ def ai_services_exception_handler(exc, context):
             "error": "Internal server error"
         }, status=500)
 
+
