@@ -128,7 +128,14 @@ def generate_poster(request):
         
         # Pass request context to service for proper URL generation
         ai_poster_service._request = request
+        logger.info(f"=== STARTING POSTER GENERATION ===")
+        logger.info(f"Prompt: {prompt[:50]}...")
+        logger.info(f"Aspect Ratio: {aspect_ratio}")
         result = ai_poster_service.generate_from_prompt(prompt, aspect_ratio, user)
+        logger.info(f"Generation result status: {result.get('status')}")
+        logger.info(f"Generation result keys: {list(result.keys())}")
+        logger.info(f"public_url in result: {result.get('public_url')}")
+        logger.info(f"image_url in result: {result.get('image_url')}")
         
         if result.get('status') == 'success':
             # Get organization from user if available
@@ -147,11 +154,21 @@ def generate_poster(request):
             
             # Save the generated poster to database
             try:
+                public_url = result.get('public_url')
+                logger.info(f"Poster result - public_url: {public_url}")
+                logger.info(f"Poster result keys: {list(result.keys())}")
+                
+                # Ensure public_url is set - use image_url as fallback
+                if not public_url:
+                    logger.warning("public_url is None, using image_url as fallback")
+                    public_url = result.get('image_url', '')
+                
                 poster = GeneratedPoster.objects.create(
                     organization=organization,
                     user=user,
                     image_url=result.get('image_url', ''),
                     image_path=result.get('image_path', ''),
+                    public_url=public_url or result.get('image_url', ''),  # Cloudinary URL for sharing (fallback to image_url)
                     caption=result.get('caption', ''),
                     full_caption=result.get('full_caption', ''),
                     prompt=prompt,
@@ -171,12 +188,40 @@ def generate_poster(request):
                 logger.error(f"Failed to save poster to database: {str(e)}")
                 # Continue even if save fails
             
-            return Response({
+            # Ensure public_url is included in response - check multiple sources
+            response_public_url = (
+                result.get('public_url') or 
+                (poster.public_url if 'poster' in locals() and hasattr(poster, 'public_url') else None) or
+                result.get('image_url', '')
+            )
+            
+            logger.info(f"=== API RESPONSE DEBUG ===")
+            logger.info(f"result.get('public_url'): {result.get('public_url')}")
+            logger.info(f"poster.public_url (if exists): {poster.public_url if 'poster' in locals() and hasattr(poster, 'public_url') else 'N/A'}")
+            logger.info(f"result.get('image_url'): {result.get('image_url')}")
+            logger.info(f"Final response_public_url: {response_public_url}")
+            logger.info(f"=== END API RESPONSE DEBUG ===")
+            
+            if not response_public_url:
+                logger.error("❌ CRITICAL: No public_url or image_url in result, this will cause sharing issues!")
+                # Last resort: try to construct from image_url
+                image_url = result.get('image_url', '')
+                if image_url:
+                    # If image_url is relative, make it absolute
+                    if not image_url.startswith('http'):
+                        response_public_url = f"http://localhost:8000{image_url}"
+                    else:
+                        response_public_url = image_url
+                    logger.info(f"Using image_url as public_url fallback: {response_public_url}")
+            
+            # Build response dictionary - ALWAYS include public_url
+            response_data = {
                 "success": True,
                 "message": "Poster generated successfully",
                 "poster_id": str(poster.id) if 'poster' in locals() else None,
                 "image_path": result.get('image_path'),
                 "image_url": result.get('image_url'),
+                "public_url": response_public_url or result.get('image_url', ''),  # ALWAYS set public_url
                 "filename": result.get('filename'),
                 "aspect_ratio": aspect_ratio,
                 "width": result.get('width'),
@@ -192,7 +237,34 @@ def generate_poster(request):
                 "logo_added": result.get('logo_added', False),
                 "contact_info_added": result.get('contact_info_added', False),
                 "branding_metadata": result.get('branding_metadata', {})
-            }, status=status.HTTP_200_OK)
+            }
+            
+            # Final verification - ensure public_url is ALWAYS present and valid
+            logger.info(f"=== FINAL API RESPONSE ===")
+            logger.info(f"Response public_url before check: {response_data.get('public_url')}")
+            logger.info(f"Response keys: {list(response_data.keys())}")
+            logger.info(f"Response keys count: {len(response_data.keys())}")
+            
+            # Ensure public_url exists and is not empty
+            if 'public_url' not in response_data or not response_data.get('public_url'):
+                logger.error("❌ CRITICAL ERROR: public_url is missing or empty in final response!")
+                # Force set it to image_url as last resort
+                fallback_url = response_data.get('image_url', '')
+                if fallback_url and not fallback_url.startswith('http'):
+                    fallback_url = f"http://localhost:8000{fallback_url}"
+                response_data['public_url'] = fallback_url
+                logger.info(f"Set public_url to image_url as fallback: {response_data.get('public_url')}")
+            
+            # Final double-check
+            if 'public_url' not in response_data:
+                logger.error("❌ CRITICAL: public_url key is completely missing from dict!")
+                response_data['public_url'] = response_data.get('image_url', 'http://localhost:8000/media/default.png')
+            
+            logger.info(f"Final response_data['public_url']: {response_data.get('public_url')}")
+            logger.info(f"public_url in response_data: {'public_url' in response_data}")
+            logger.info(f"=== END FINAL API RESPONSE ===")
+            
+            return Response(response_data, status=status.HTTP_200_OK)
         else:
             error_message = result.get('message', 'Failed to generate poster')
             logger.error(f"Poster generation failed: {error_message}")
@@ -500,24 +572,47 @@ def get_poster(request, poster_id):
     Get individual poster data for sharing
     """
     try:
-        # For now, we'll return mock data since we don't have a Poster model yet
-        # In a real implementation, you would query the database for the poster
+        from .models import GeneratedPoster
         
-        # Mock poster data - replace with actual database query
+        # Query the database for the poster
+        try:
+            poster = GeneratedPoster.objects.get(id=poster_id)
+        except GeneratedPoster.DoesNotExist:
+            return Response({
+                "success": False,
+                "error": "Poster not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Ensure image_url is absolute
+        image_url = poster.image_url
+        if image_url and not image_url.startswith('http'):
+            if image_url.startswith('/'):
+                try:
+                    image_url = request.build_absolute_uri(image_url)
+                except Exception:
+                    from django.conf import settings
+                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    image_url = f"{base_url}{image_url}"
+            else:
+                from django.conf import settings
+                base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                image_url = f"{base_url}/{image_url}"
+        
         poster_data = {
-            "id": poster_id,
-            "image_url": f"http://localhost:8000/media/generated_posters/poster_{poster_id}.png",
-            "caption": "Check out this amazing AI-generated poster!",
-            "full_caption": "Check out this amazing AI-generated poster! Created with cutting-edge AI technology. #AI #Poster #Design #Innovation",
-            "hashtags": ["#AI", "#Poster", "#Design", "#Innovation"],
-            "prompt": "Create a modern textile poster for a silk saree brand",
-            "aspect_ratio": "4:5",
-            "width": 1080,
-            "height": 1350,
-            "generated_at": "2024-01-01T00:00:00Z",
-            "branding_applied": False,
-            "logo_added": False,
-            "contact_info_added": False
+            "id": str(poster.id),
+            "image_url": image_url,
+            "public_url": poster.public_url,  # Cloudinary URL for sharing
+            "caption": poster.caption,
+            "full_caption": poster.full_caption,
+            "hashtags": poster.hashtags or [],
+            "prompt": poster.prompt,
+            "aspect_ratio": poster.aspect_ratio,
+            "width": poster.width,
+            "height": poster.height,
+            "generated_at": poster.created_at.isoformat(),
+            "branding_applied": poster.branding_applied,
+            "logo_added": poster.logo_added,
+            "contact_info_added": poster.contact_info_added
         }
         
         return Response({
@@ -607,6 +702,7 @@ def composite_poster(request):
                         user=user,
                         image_url=result.get('image_url', ''),
                         image_path=result.get('image_path', ''),
+                        public_url=result.get('public_url'),  # Cloudinary URL for sharing
                         caption=result.get('caption', ''),
                         full_caption=result.get('full_caption', ''),
                         prompt=prompt,
@@ -632,6 +728,7 @@ def composite_poster(request):
                     "poster_id": str(poster.id) if poster else None,
                     "image_path": result.get('image_path'),
                     "image_url": result.get('image_url'),
+                    "public_url": result.get('public_url'),  # Cloudinary URL for sharing
                     "filename": result.get('filename'),
                     "aspect_ratio": aspect_ratio,
                     "width": result.get('width'),
@@ -911,6 +1008,7 @@ def list_posters(request):
             posters_data.append({
                 'id': str(poster.id),
                 'image_url': image_url,
+                'public_url': poster.public_url,  # Cloudinary URL for sharing
                 'caption': poster.caption,
                 'full_caption': poster.full_caption,
                 'prompt': poster.prompt,
@@ -1064,6 +1162,7 @@ def get_poster_by_id(request, poster_id):
             "poster": {
                 'id': str(poster.id),
                 'image_url': poster.image_url,
+                'public_url': poster.public_url,  # Cloudinary URL for sharing
                 'caption': poster.caption,
                 'full_caption': poster.full_caption,
                 'prompt': poster.prompt,

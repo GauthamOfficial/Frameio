@@ -237,6 +237,7 @@ class GeneratedPoster(models.Model):
     # Poster details
     image_url = models.URLField(help_text="URL of the generated poster image")
     image_path = models.CharField(max_length=500, blank=True, help_text="Storage path of the image")
+    public_url = models.URLField(blank=True, null=True, help_text="Public Cloudinary URL for sharing")
     caption = models.TextField(help_text="Short caption for the poster")
     full_caption = models.TextField(blank=True, help_text="Full caption with hashtags")
     prompt = models.TextField(help_text="Original prompt used to generate the poster")

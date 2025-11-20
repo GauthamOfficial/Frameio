@@ -15,6 +15,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from .ai_caption_service import AICaptionService
 from .brand_overlay_service import BrandOverlayService
+from .utils.cloudinary_utils import upload_to_cloudinary, create_shareable_html_page, upload_html_to_cloudinary
 
 # Import Google GenAI
 try:
@@ -567,6 +568,18 @@ class AIPosterService:
                             final_w, final_h = image.size
                             logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}; size={final_w}x{final_h}")
                             
+                            # Upload to Cloudinary for public sharing
+                            public_url = None
+                            try:
+                                public_url = upload_to_cloudinary(saved_path)
+                                if public_url:
+                                    logger.info(f"Poster uploaded to Cloudinary: {public_url}")
+                                else:
+                                    logger.warning("Cloudinary upload failed, but continuing with local URL")
+                            except Exception as e:
+                                logger.error(f"Error uploading to Cloudinary: {str(e)}")
+                                # Continue even if Cloudinary upload fails
+                            
                             # Generate caption and hashtags for the poster
                             logger.info("Starting caption generation...")
                             caption_result = self.generate_caption_and_hashtags(prompt, image_url, user)
@@ -579,11 +592,105 @@ class AIPosterService:
                                 # Still continue with poster generation, but log the error
                                 # The frontend can handle empty captions
                             
+                            # Create shareable HTML page with Open Graph tags for Facebook
+                            # This allows Facebook to automatically fetch both image and caption
+                            shareable_page_url = None
+                            logger.info(f"=== HTML PAGE CREATION DEBUG ===")
+                            logger.info(f"public_url available: {bool(public_url)}")
+                            if public_url:
+                                logger.info(f"public_url value: {public_url}")
+                                try:
+                                    caption_text = caption_result.get("caption", "")
+                                    full_caption_text = caption_result.get("full_caption", caption_text)
+                                    logger.info(f"Caption text available: {bool(caption_text)}")
+                                    logger.info(f"Full caption text available: {bool(full_caption_text)}")
+                                    
+                                    if caption_text or full_caption_text:
+                                        logger.info("Creating HTML page content...")
+                                        html_content = create_shareable_html_page(
+                                            public_url,
+                                            caption_text,
+                                            full_caption_text
+                                        )
+                                        logger.info(f"HTML content created, length: {len(html_content)}")
+                                        
+                                        logger.info("Uploading HTML page to Cloudinary...")
+                                        shareable_page_url = upload_html_to_cloudinary(
+                                            html_content,
+                                            filename=f"poster_{int(time.time())}"
+                                        )
+                                        if shareable_page_url:
+                                            logger.info(f"✅ Shareable HTML page created successfully: {shareable_page_url}")
+                                        else:
+                                            logger.error("❌ Failed to upload HTML page to Cloudinary, using image URL directly")
+                                            shareable_page_url = public_url  # Fallback to image URL
+                                    else:
+                                        logger.warning("⚠️  No caption available, using image URL directly")
+                                        shareable_page_url = public_url  # Fallback to image URL
+                                except Exception as html_error:
+                                    logger.error(f"❌ Error creating shareable HTML page: {html_error}")
+                                    import traceback
+                                    traceback.print_exc()
+                                    shareable_page_url = public_url  # Fallback to image URL
+                            else:
+                                logger.error("❌ No public_url available, cannot create HTML page")
+                            
+                            logger.info(f"Final shareable_page_url: {shareable_page_url}")
+                            logger.info(f"=== END HTML PAGE CREATION DEBUG ===")
+                            
+                            # Ensure public_url is always set - prioritize HTML page, then Cloudinary image, then local image_url
+                            final_public_url = shareable_page_url or public_url or image_url
+                            
+                            # If we don't have a Cloudinary URL, try to upload the image now
+                            if not public_url and not shareable_page_url:
+                                logger.warning("⚠️  No Cloudinary URL found, attempting to upload image now...")
+                                try:
+                                    public_url = upload_to_cloudinary(saved_path)
+                                    if public_url:
+                                        logger.info(f"✅ Image uploaded to Cloudinary: {public_url}")
+                                        # Now create HTML page
+                                        caption_text = caption_result.get("caption", "")
+                                        full_caption_text = caption_result.get("full_caption", caption_text)
+                                        if caption_text or full_caption_text:
+                                            html_content = create_shareable_html_page(
+                                                public_url,
+                                                caption_text,
+                                                full_caption_text
+                                            )
+                                            shareable_page_url = upload_html_to_cloudinary(
+                                                html_content,
+                                                filename=f"poster_{int(time.time())}"
+                                            )
+                                            if shareable_page_url:
+                                                logger.info(f"✅ HTML page created: {shareable_page_url}")
+                                                final_public_url = shareable_page_url
+                                            else:
+                                                final_public_url = public_url
+                                        else:
+                                            final_public_url = public_url
+                                    else:
+                                        logger.error("❌ Failed to upload to Cloudinary, using image_url")
+                                        final_public_url = image_url
+                                except Exception as upload_error:
+                                    logger.error(f"❌ Error uploading to Cloudinary: {upload_error}")
+                                    final_public_url = image_url
+                            
+                            if not final_public_url:
+                                logger.error("❌ CRITICAL: No public_url available at all! Using image_url as fallback")
+                                final_public_url = image_url
+                            
+                            logger.info(f"=== FINAL RESULT DEBUG ===")
+                            logger.info(f"shareable_page_url: {shareable_page_url}")
+                            logger.info(f"public_url (image): {public_url}")
+                            logger.info(f"final_public_url: {final_public_url}")
+                            logger.info(f"image_url: {image_url}")
+                            
                             # Add brand overlay if user has company profile
                             final_result = {
                                 "status": "success", 
                                 "image_path": saved_path,
                                 "image_url": image_url,
+                                "public_url": final_public_url,  # Use HTML page URL if available, else image URL
                                 "filename": filename,
                                 "width": final_w,
                                 "height": final_h,
@@ -596,6 +703,14 @@ class AIPosterService:
                                 "caption_error": caption_result.get("message") if caption_result.get("status") == "error" else None,
                                 "branding_applied": False
                             }
+                            
+                            # Final verification before returning
+                            logger.info(f"Final result public_url: {final_result.get('public_url')}")
+                            logger.info(f"Final result keys: {list(final_result.keys())}")
+                            if not final_result.get('public_url'):
+                                logger.error("❌ CRITICAL: public_url missing in final_result! Setting to image_url")
+                                final_result['public_url'] = image_url
+                            logger.info(f"=== END FINAL RESULT DEBUG ===")
                             
                             # Apply brand overlay if user is provided and has company profile
                             logger.info(f"=== BRANDING DEBUG ===")
@@ -627,9 +742,69 @@ class AIPosterService:
                                             
                                             if brand_result.get('status') == 'success':
                                                 logger.info("Brand overlay applied successfully!")
+                                                branded_path = brand_result.get("image_path", saved_path)
+                                                
+                                                # Upload branded poster to Cloudinary (replaces original upload)
+                                                branded_public_url = None
+                                                try:
+                                                    branded_public_url = upload_to_cloudinary(branded_path)
+                                                    if branded_public_url:
+                                                        logger.info(f"Branded poster uploaded to Cloudinary: {branded_public_url}")
+                                                    else:
+                                                        logger.warning("Cloudinary upload failed for branded poster, using original URL")
+                                                        branded_public_url = public_url  # Fallback to original
+                                                except Exception as e:
+                                                    logger.error(f"Error uploading branded poster to Cloudinary: {str(e)}")
+                                                    branded_public_url = public_url  # Fallback to original
+                                                
+                                                # Create shareable HTML page for branded poster
+                                                logger.info(f"=== BRANDED HTML PAGE CREATION DEBUG ===")
+                                                branded_shareable_url = None
+                                                if branded_public_url:
+                                                    logger.info(f"branded_public_url available: {branded_public_url}")
+                                                    try:
+                                                        caption_text = final_result.get("caption", "")
+                                                        full_caption_text = final_result.get("full_caption", caption_text)
+                                                        logger.info(f"Caption available for branded: {bool(caption_text or full_caption_text)}")
+                                                        
+                                                        if caption_text or full_caption_text:
+                                                            logger.info("Creating branded HTML page content...")
+                                                            html_content = create_shareable_html_page(
+                                                                branded_public_url,
+                                                                caption_text,
+                                                                full_caption_text
+                                                            )
+                                                            logger.info(f"Branded HTML content created, length: {len(html_content)}")
+                                                            
+                                                            logger.info("Uploading branded HTML page to Cloudinary...")
+                                                            branded_shareable_url = upload_html_to_cloudinary(
+                                                                html_content,
+                                                                filename=f"branded_poster_{int(time.time())}"
+                                                            )
+                                                            if branded_shareable_url:
+                                                                logger.info(f"✅ Branded shareable HTML page created: {branded_shareable_url}")
+                                                            else:
+                                                                logger.error("❌ Failed to create branded HTML page, using image URL")
+                                                                branded_shareable_url = branded_public_url
+                                                        else:
+                                                            logger.warning("⚠️  No caption for branded poster, using image URL")
+                                                            branded_shareable_url = branded_public_url
+                                                    except Exception as html_error:
+                                                        logger.error(f"❌ Error creating branded shareable HTML page: {html_error}")
+                                                        import traceback
+                                                        traceback.print_exc()
+                                                        branded_shareable_url = branded_public_url
+                                                else:
+                                                    logger.error("❌ No branded_public_url, cannot create HTML page")
+                                                
+                                                final_branded_url = branded_shareable_url or branded_public_url or shareable_page_url or public_url
+                                                logger.info(f"Final branded public_url: {final_branded_url}")
+                                                logger.info(f"=== END BRANDED HTML PAGE CREATION DEBUG ===")
+                                                
                                                 final_result.update({
-                                                    "image_path": brand_result.get("image_path", saved_path),
+                                                    "image_path": branded_path,
                                                     "image_url": brand_result.get("image_url", image_url),
+                                                    "public_url": final_branded_url,  # Use HTML page URL if available
                                                     "filename": brand_result.get("filename", filename),
                                                     "branding_applied": True,
                                                     "logo_added": brand_result.get("logo_added", False),
@@ -650,6 +825,16 @@ class AIPosterService:
                             else:
                                 logger.warning("No user provided - skipping branding")
                             
+                            # Final check before returning
+                            if not final_result.get('public_url'):
+                                logger.error("❌ CRITICAL ERROR: public_url is missing in final_result before return!")
+                                logger.error(f"Available keys: {list(final_result.keys())}")
+                                final_result['public_url'] = final_result.get('image_url', '')
+                                logger.info(f"Set public_url to image_url as last resort: {final_result.get('public_url')}")
+                            
+                            logger.info(f"=== RETURNING RESULT ===")
+                            logger.info(f"public_url: {final_result.get('public_url')}")
+                            logger.info(f"status: {final_result.get('status')}")
                             return final_result
                         except Exception as img_error:
                             logger.error(f"Error processing image: {str(img_error)}")
@@ -875,6 +1060,18 @@ class AIPosterService:
                     final_w, final_h = edited_image.size
                     logger.info(f"Edited poster generated successfully: {saved_path}; size={final_w}x{final_h}")
                     
+                    # Upload to Cloudinary for public sharing
+                    public_url = None
+                    try:
+                        public_url = upload_to_cloudinary(saved_path)
+                        if public_url:
+                            logger.info(f"Edited poster uploaded to Cloudinary: {public_url}")
+                        else:
+                            logger.warning("Cloudinary upload failed for edited poster, but continuing with local URL")
+                    except Exception as e:
+                        logger.error(f"Error uploading edited poster to Cloudinary: {str(e)}")
+                        # Continue even if Cloudinary upload fails
+                    
                     # Generate caption and hashtags for the poster
                     logger.info("Starting caption generation for edited poster...")
                     caption_result = self.generate_caption_and_hashtags(prompt, image_url, user)
@@ -885,11 +1082,34 @@ class AIPosterService:
                         error_msg = caption_result.get("message", "Unknown error")
                         logger.error(f"Caption generation failed: {error_msg}")
                     
+                    # Create shareable HTML page with Open Graph tags for Facebook
+                    shareable_page_url = None
+                    if public_url:
+                        try:
+                            caption_text = caption_result.get("caption", "")
+                            full_caption_text = caption_result.get("full_caption", caption_text)
+                            
+                            if caption_text or full_caption_text:
+                                html_content = create_shareable_html_page(
+                                    public_url,
+                                    caption_text,
+                                    full_caption_text
+                                )
+                                shareable_page_url = upload_html_to_cloudinary(
+                                    html_content,
+                                    filename=f"edited_poster_{int(time.time())}"
+                                )
+                                if shareable_page_url:
+                                    logger.info(f"Edited shareable HTML page created: {shareable_page_url}")
+                        except Exception as html_error:
+                            logger.warning(f"Error creating edited shareable HTML page: {html_error}")
+                    
                     # Add brand overlay if user has company profile
                     final_result = {
                         "status": "success", 
                         "image_path": saved_path,
                         "image_url": image_url,
+                        "public_url": shareable_page_url or public_url,  # Use HTML page URL if available, else image URL
                         "filename": filename,
                         "width": final_w,
                         "height": final_h,
@@ -932,9 +1152,25 @@ class AIPosterService:
                                     
                                     if brand_result.get('status') == 'success':
                                         logger.info("Brand overlay applied successfully to edited poster!")
+                                        branded_path = brand_result.get("image_path", saved_path)
+                                        
+                                        # Upload branded poster to Cloudinary (replaces original upload)
+                                        branded_public_url = None
+                                        try:
+                                            branded_public_url = upload_to_cloudinary(branded_path)
+                                            if branded_public_url:
+                                                logger.info(f"Branded edited poster uploaded to Cloudinary: {branded_public_url}")
+                                            else:
+                                                logger.warning("Cloudinary upload failed for branded edited poster, using original URL")
+                                                branded_public_url = public_url  # Fallback to original
+                                        except Exception as e:
+                                            logger.error(f"Error uploading branded edited poster to Cloudinary: {str(e)}")
+                                            branded_public_url = public_url  # Fallback to original
+                                        
                                         final_result.update({
-                                            "image_path": brand_result.get("image_path", saved_path),
+                                            "image_path": branded_path,
                                             "image_url": brand_result.get("image_url", image_url),
+                                            "public_url": branded_public_url,  # Use branded Cloudinary URL
                                             "filename": brand_result.get("filename", filename),
                                             "branding_applied": True,
                                             "logo_added": brand_result.get("logo_added", False),
@@ -1134,6 +1370,18 @@ class AIPosterService:
                     
                     final_w, final_h = composite_image.size
                     logger.info(f"Composite poster generated successfully: {saved_path}; size={final_w}x{final_h}")
+                    
+                    # Upload to Cloudinary for public sharing
+                    public_url = None
+                    try:
+                        public_url = upload_to_cloudinary(saved_path)
+                        if public_url:
+                            logger.info(f"Composite poster uploaded to Cloudinary: {public_url}")
+                        else:
+                            logger.warning("Cloudinary upload failed for composite, but continuing with local URL")
+                    except Exception as e:
+                        logger.error(f"Error uploading composite to Cloudinary: {str(e)}")
+                        # Continue even if Cloudinary upload fails
                     if not self._is_aspect_ratio_match(composite_image, normalized_ar):
                         logger.warning("Composite image aspect ratio mismatch; retrying once with stricter directive")
                         stricter_prompt = f"ABSOLUTE REQUIREMENT: Output must be exactly {normalized_ar}. No padding, no borders, no letterboxing. {enhanced_prompt}"
@@ -1169,6 +1417,15 @@ class AIPosterService:
                                     image_url = default_storage.url(saved_path)
                                     if not image_url.startswith('http'):
                                         image_url = f"http://localhost:8000{image_url}"
+                                    
+                                    # Upload to Cloudinary for public sharing (retry case)
+                                    try:
+                                        public_url = upload_to_cloudinary(saved_path)
+                                        if public_url:
+                                            logger.info(f"Composite poster (retry) uploaded to Cloudinary: {public_url}")
+                                    except Exception as e:
+                                        logger.error(f"Error uploading composite (retry) to Cloudinary: {str(e)}")
+                                    
                                     logger.info("Retry produced correct aspect ratio image for composite; using retry output")
                                     break
                     
@@ -1179,6 +1436,7 @@ class AIPosterService:
                         "status": "success", 
                         "image_path": saved_path,
                         "image_url": image_url,
+                        "public_url": public_url,  # Cloudinary URL for sharing
                         "filename": filename,
                         "width": final_w,
                         "height": final_h,
