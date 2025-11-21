@@ -19,7 +19,16 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file
-load_dotenv(BASE_DIR / '.env')
+# Try loading from root directory first, then from backend directory
+root_env = BASE_DIR.parent / '.env'
+backend_env = BASE_DIR / '.env'
+if root_env.exists():
+    load_dotenv(root_env)
+elif backend_env.exists():
+    load_dotenv(backend_env)
+else:
+    # Fallback: try loading from current directory
+    load_dotenv()
 
 
 # Quick-start development settings - unsuitable for production
@@ -361,6 +370,22 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Static files settings
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Email configuration
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'startuptsg@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# Use SMTP backend if password is provided, otherwise use console for development
+if EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    if DEBUG:
+        print("INFO: EMAIL_HOST_PASSWORD not set. Using console email backend for development.")
 
 # Logging configuration
 LOGGING = {

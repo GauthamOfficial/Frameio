@@ -10,4 +10,6 @@ urlpatterns = [
     path('upload/multiple/', views.upload_multiple_files, name='upload-multiple-files'),
     # AI generation endpoints
     path('ai/post-generation/generate_social_media_post/', views.generate_social_media_post, name='generate-social-media-post'),
+    # Contact form endpoint
+    path('contact/', views.contact_form, name='contact-form'),
 ]

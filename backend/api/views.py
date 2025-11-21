@@ -4,9 +4,10 @@ from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.core.mail import send_mail
+from django.conf import settings
 import os
 import uuid
-from django.conf import settings
 
 @api_view(['POST'])
 def textile_poster(request):
@@ -159,3 +160,89 @@ def generate_social_media_post(request):
         "success": False,
         "error": "AI image generation has been disabled"
     }, status=503)
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def contact_form(request):
+    """
+    POST /api/contact/
+    Handle contact form submissions and send email
+    Body: { "name": "John Doe", "email": "john@example.com", "message": "Hello..." }
+    """
+    try:
+        name = request.data.get('name', '').strip()
+        email = request.data.get('email', '').strip()
+        message = request.data.get('message', '').strip()
+        
+        # Validation
+        if not name:
+            return Response({
+                "success": False,
+                "error": "Name is required"
+            }, status=400)
+        
+        if not email:
+            return Response({
+                "success": False,
+                "error": "Email is required"
+            }, status=400)
+        
+        if not message or len(message) < 10:
+            return Response({
+                "success": False,
+                "error": "Message must be at least 10 characters long"
+            }, status=400)
+        
+        # Email validation
+        import re
+        if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+            return Response({
+                "success": False,
+                "error": "Please enter a valid email address"
+            }, status=400)
+        
+        # Send email
+        subject = f"New Contact Form Submission from {name}"
+        email_message = f"""
+You have received a new message from the Frameio contact form:
+
+Name: {name}
+Email: {email}
+
+Message:
+{message}
+
+---
+This message was sent from the Frameio contact form.
+"""
+        
+        recipient_email = 'startuptsg@gmail.com'
+        
+        try:
+            send_mail(
+                subject,
+                email_message,
+                settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL,
+                [recipient_email],
+                fail_silently=False,
+            )
+            
+            return Response({
+                "success": True,
+                "message": "Thank you for contacting us. We'll get back to you soon."
+            })
+            
+        except Exception as e:
+            # Log the error but don't expose it to the user
+            print(f"Error sending email: {str(e)}")
+            return Response({
+                "success": False,
+                "error": "Failed to send message. Please try again later."
+            }, status=500)
+            
+    except Exception as e:
+        return Response({
+            "success": False,
+            "error": f"An error occurred: {str(e)}"
+        }, status=500)

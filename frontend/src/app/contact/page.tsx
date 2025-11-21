@@ -52,14 +52,94 @@ export default function ContactPage() {
 
     setIsSubmitting(true)
 
-    // Simulate form submission (replace with actual API call)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setIsSubmitted(true)
-      setFormData({ name: "", email: "", message: "" })
-      setErrors({})
+      // Ensure we have the correct API URL format
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+      
+      // Remove trailing slash
+      apiUrl = apiUrl.replace(/\/+$/, '')
+      
+      // Ensure /api is in the path (handle cases where env var might be just http://localhost:8000)
+      if (!apiUrl.includes('/api')) {
+        apiUrl = apiUrl + '/api'
+      }
+      
+      const contactUrl = `${apiUrl}/contact/`
+      
+      console.log('Sending contact form to:', contactUrl)
+      
+      const response = await fetch(contactUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+        }),
+      })
+
+      // Read response as text first (can only read once)
+      const responseText = await response.text()
+      const contentType = response.headers.get('content-type')
+      
+      // Check if response is JSON before parsing
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Non-JSON response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          contentType,
+          url: contactUrl,
+          preview: responseText.substring(0, 200)
+        })
+        throw new Error(`Server returned an invalid response (${response.status}). Please check if the backend is running at ${apiUrl}.`)
+      }
+
+      // Parse JSON response
+      let data: any
+      try {
+        data = JSON.parse(responseText)
+      } catch (jsonError) {
+        console.error('Failed to parse JSON response:', jsonError, 'Response text:', responseText.substring(0, 200))
+        throw new Error('Server returned invalid JSON. Please check the backend logs.')
+      }
+
+      if (response.ok && data.success) {
+        setIsSubmitted(true)
+        setFormData({ name: "", email: "", message: "" })
+        setErrors({})
+      } else {
+        // Handle validation errors from backend
+        const newErrors: Record<string, string> = {}
+        if (data.error) {
+          if (data.error.includes('Name')) {
+            newErrors.name = data.error
+          } else if (data.error.includes('Email')) {
+            newErrors.email = data.error
+          } else if (data.error.includes('Message')) {
+            newErrors.message = data.error
+          } else {
+            newErrors.message = data.error
+          }
+        }
+        setErrors(newErrors)
+      }
     } catch (error) {
       console.error("Error submitting form:", error)
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setErrors({
+          message: "Cannot connect to server. Please ensure the backend is running."
+        })
+      } else if (error instanceof Error) {
+        setErrors({
+          message: error.message || "Failed to send message. Please try again later."
+        })
+      } else {
+        setErrors({
+          message: "Failed to send message. Please try again later."
+        })
+      }
     } finally {
       setIsSubmitting(false)
     }
