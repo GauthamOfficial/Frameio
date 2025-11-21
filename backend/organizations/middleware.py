@@ -41,7 +41,8 @@ class TenantMiddleware(MiddlewareMixin):
             '/admin/',
             '/api/auth/',
             '/api/health/',
-            '/api/users/company-profiles/',  # Company profiles don't require organization
+            '/api/company-profiles/',  # Company profiles don't require organization (correct path)
+            '/api/users/company-profiles/',  # Legacy path (for backward compatibility)
             '/static/',
             '/media/',
         ]
@@ -81,20 +82,24 @@ class TenantMiddleware(MiddlewareMixin):
                         # If still no organization: for unsafe methods, block; for safe (GET/HEAD/OPTIONS), allow without org
                         # BUT skip this check for company-profiles endpoints
                         if request.method not in ['GET', 'HEAD', 'OPTIONS'] and request.path.startswith('/api/'):
-                            # Allow company-profiles endpoints without organization
+                            # ALWAYS allow company-profiles endpoints without organization
                             if '/company-profiles' in request.path:
-                                logger.info(f"TenantMiddleware: Allowing company-profiles request without organization: {request.path}")
+                                logger.info(f"TenantMiddleware: Allowing company-profiles {request.method} request without organization: {request.path}")
                                 return None
                             return JsonResponse({
                                 'error': 'Organization not found or access denied'
                             }, status=403)
+                        # For GET requests to company-profiles, always allow
+                        elif request.method in ['GET', 'HEAD', 'OPTIONS'] and '/company-profiles' in request.path:
+                            logger.info(f"TenantMiddleware: Allowing company-profiles GET request without organization: {request.path}")
+                            return None
                 except Exception as e:
                     logger.warning(f"Auto-select organization failed: {e}")
+                    # ALWAYS allow company-profiles endpoints regardless of method
+                    if '/company-profiles' in request.path:
+                        logger.info(f"TenantMiddleware: Allowing company-profiles request after error: {request.path} (method: {request.method})")
+                        return None
                     if request.method not in ['GET', 'HEAD', 'OPTIONS'] and request.path.startswith('/api/'):
-                        # Allow company-profiles endpoints without organization
-                        if '/company-profiles' in request.path:
-                            logger.info(f"TenantMiddleware: Allowing company-profiles request after error: {request.path}")
-                            return None
                         return JsonResponse({'error': 'Organization context error'}, status=403)
             else:
                 # Unauthenticated request: do not force organization; let auth/csrf handle
