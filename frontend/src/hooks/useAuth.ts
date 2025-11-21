@@ -34,6 +34,7 @@ export function useAuth() {
   // Use refs to track previous values and prevent infinite loops
   const fetchingRef = useRef(false)
   const lastClerkUserIdRef = useRef<string | null>(null)
+  const syncedUsersRef = useRef<Set<string>>(new Set())
 
   // Get token - use Clerk's getToken or fallback to test token in development
   const getToken = useCallback(async (): Promise<string | null> => {
@@ -63,6 +64,55 @@ export function useAuth() {
     return null
   }, [clerkAuth])
 
+  // Sync user from Clerk to Django backend
+  const syncUserToBackend = useCallback(async (clerkUser: any, token: string | null) => {
+    if (!clerkUser || !token) return
+    
+    const email = clerkUser.emailAddresses?.[0]?.emailAddress
+    if (!email) return
+    
+    // Skip if already synced
+    if (syncedUsersRef.current.has(clerkUser.id)) {
+      return
+    }
+    
+    try {
+      const syncResponse = await fetch(`${API_BASE_URL}/api/users/sync_from_clerk/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clerk_id: clerkUser.id,
+          email: email,
+          first_name: clerkUser.firstName || '',
+          last_name: clerkUser.lastName || '',
+          username: clerkUser.username || email.split('@')[0],
+          image_url: clerkUser.imageUrl || '',
+          verified: clerkUser.emailAddresses?.[0]?.verification?.status === 'verified',
+        }),
+      })
+      
+      if (syncResponse.ok) {
+        const syncData = await syncResponse.json()
+        console.log('User synced to backend:', syncData.created ? 'Created' : 'Updated', email)
+        syncedUsersRef.current.add(clerkUser.id)
+      } else {
+        const errorText = await syncResponse.text().catch(() => 'Unknown error')
+        console.warn('Failed to sync user to backend:', errorText)
+      }
+    } catch (error) {
+      // Handle network errors gracefully - don't break the login flow
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('CORS')) {
+        console.warn('Backend may not be accessible. User sync skipped:', errorMessage)
+        // Don't mark as synced, so we can retry later
+      } else {
+        console.error('Error syncing user to backend:', error)
+      }
+    }
+  }, [])
+
   // Fetch user data
   const fetchUser = useCallback(async () => {
     // Prevent multiple simultaneous calls
@@ -76,6 +126,10 @@ export function useAuth() {
       // If Clerk user is available, use it
       if (clerkUser && clerkLoaded) {
         const token = await getToken()
+        
+        // Automatically sync user to Django backend
+        await syncUserToBackend(clerkUser, token)
+        
         setAuthState({
           user: {
             id: clerkUser.id,
@@ -102,18 +156,70 @@ export function useAuth() {
         return
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/users/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/users/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
 
-      if (response.ok) {
-        const data = await response.json()
-        const user = Array.isArray(data) ? data[0] : data
+        if (response.ok) {
+          const data = await response.json()
+          const user = Array.isArray(data) ? data[0] : data
+          setAuthState({
+            user,
+            isLoading: false,
+            isAuthenticated: true,
+            token,
+          })
+        } else {
+          setAuthState({
+            user: null,
+            isLoading: false,
+            isAuthenticated: false,
+            token: null,
+          })
+        }
+      } catch (fetchError) {
+        // Handle network errors gracefully
+        const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error'
+        if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('CORS')) {
+          console.warn('Backend may not be accessible. Using Clerk user only:', errorMessage)
+          // If we have a Clerk user, use it even if backend is unavailable
+          if (clerkUser && clerkLoaded) {
+            setAuthState({
+              user: {
+                id: clerkUser.id,
+                email: clerkUser.emailAddresses?.[0]?.emailAddress || '',
+                username: clerkUser.username || clerkUser.firstName || '',
+              },
+              isLoading: false,
+              isAuthenticated: true,
+              token,
+            })
+            return
+          }
+        }
+        // For other errors, set unauthenticated state
         setAuthState({
-          user,
+          user: null,
+          isLoading: false,
+          isAuthenticated: false,
+          token: null,
+        })
+      }
+    } catch (error) {
+      console.error('Auth error:', error)
+      // If we have a Clerk user, use it even if there's an error
+      if (clerkUser && clerkLoaded) {
+        const token = await getToken()
+        setAuthState({
+          user: {
+            id: clerkUser.id,
+            email: clerkUser.emailAddresses?.[0]?.emailAddress || '',
+            username: clerkUser.username || clerkUser.firstName || '',
+          },
           isLoading: false,
           isAuthenticated: true,
           token,
@@ -126,18 +232,10 @@ export function useAuth() {
           token: null,
         })
       }
-    } catch (error) {
-      console.error('Auth error:', error)
-      setAuthState({
-        user: null,
-        isLoading: false,
-        isAuthenticated: false,
-        token: null,
-      })
     } finally {
       fetchingRef.current = false
     }
-  }, [getToken, clerkUser?.id, clerkLoaded])
+  }, [getToken, clerkUser?.id, clerkLoaded, syncUserToBackend])
 
   useEffect(() => {
     // Only fetch if Clerk user ID changed or if Clerk just loaded

@@ -72,7 +72,6 @@ export function SavedPosters({ limit }: SavedPostersProps) {
         })
       } catch (networkError) {
         // Handle network errors (CORS, connection refused, etc.)
-        console.error('Network error fetching posters:', networkError)
         const networkErrorMessage = networkError instanceof Error 
           ? networkError.message 
           : 'Network error - check if backend is running'
@@ -81,12 +80,21 @@ export function SavedPosters({ limit }: SavedPostersProps) {
         // This allows the UI to show "No posters" instead of an error
         if (networkErrorMessage.includes('Failed to fetch') || 
             networkErrorMessage.includes('NetworkError') ||
-            networkErrorMessage.includes('CORS')) {
-          console.warn('Backend may not be accessible, showing empty state')
+            networkErrorMessage.includes('CORS') ||
+            networkErrorMessage.includes('network')) {
+          // Only log as warning in development, not as error
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Backend may not be accessible, showing empty state:', networkErrorMessage)
+          }
           setPosters([])
+          setLoading(false)
           return
         }
-        throw networkError
+        // For other errors, still handle gracefully
+        console.warn('Error fetching posters:', networkErrorMessage)
+        setPosters([])
+        setLoading(false)
+        return
       }
 
       console.log('Response status:', response.status, response.statusText)

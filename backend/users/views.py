@@ -4,6 +4,7 @@ User management views with tenant scoping and role-based permissions.
 from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.utils import timezone
@@ -23,6 +24,7 @@ from .permissions import (
     CanManageUsers, get_user_organization_permissions, IsAdminRequest,
     IsAuthenticatedOrAdmin, IsOrganizationMemberOrAdmin, CanManageUsersOrAdmin
 )
+from .clerk_utils import get_or_create_user_from_clerk
 from organizations.models import OrganizationMember, OrganizationInvitation
 
 logger = logging.getLogger(__name__)
@@ -57,9 +59,24 @@ class UserViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter users based on current organization, or return all users for admin requests."""
+        # Check for admin request header directly if flag not set yet
+        admin_header = self.request.META.get('HTTP_X_ADMIN_REQUEST', '').lower()
+        admin_username = self.request.META.get('HTTP_X_ADMIN_USERNAME', '')
+        is_admin_request = getattr(self.request, '_admin_request', False)
+        
+        # Also check header directly in case permission hasn't set the flag yet
+        if not is_admin_request and admin_header == 'true' and admin_username:
+            import os
+            expected_admin = os.getenv('ADMIN_USERNAME', 'tsg_admin')
+            if admin_username == expected_admin:
+                is_admin_request = True
+                self.request._admin_request = True
+                logger.info(f"Admin request detected in get_queryset: {admin_username}")
+        
         # If this is an admin request, return all users
-        if getattr(self.request, '_admin_request', False):
-            return User.objects.all()
+        if is_admin_request:
+            logger.info("Returning all users for admin request")
+            return User.objects.all().order_by('-date_joined')
         
         # For list action, if no organization, return just the current user
         if self.action == 'list' and self.request.user and self.request.user.is_authenticated:
@@ -77,6 +94,38 @@ class UserViewSet(viewsets.ModelViewSet):
                 organization_memberships__is_active=True
             ).distinct()
         return User.objects.none()
+    
+    def list(self, request, *args, **kwargs):
+        """List all users. For admin requests, returns all users. Otherwise filters by organization."""
+        # Check for admin request
+        admin_header = request.META.get('HTTP_X_ADMIN_REQUEST', '').lower()
+        admin_username = request.META.get('HTTP_X_ADMIN_USERNAME', '')
+        is_admin_request = getattr(request, '_admin_request', False)
+        
+        # Also check header directly
+        if not is_admin_request and admin_header == 'true' and admin_username:
+            import os
+            expected_admin = os.getenv('ADMIN_USERNAME', 'tsg_admin')
+            if admin_username == expected_admin:
+                is_admin_request = True
+                request._admin_request = True
+                logger.info(f"Admin request detected in list method: {admin_username}")
+        
+        # Get queryset (will handle admin request)
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # Log for debugging
+        logger.info(f"List users request - Admin: {is_admin_request}, Count: {queryset.count()}")
+        
+        # Paginate if needed
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        # Return all results
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
     
     def retrieve(self, request, *args, **kwargs):
         """Get user details."""
@@ -374,6 +423,57 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         
         return Response(permissions)
+    
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def sync_from_clerk(self, request):
+        """
+        Sync user from Clerk to Django database.
+        This endpoint is called when a user signs in via Clerk (e.g., Google OAuth).
+        It automatically creates the user in Django if they don't exist.
+        """
+        email = request.data.get('email')
+        clerk_id = request.data.get('clerk_id') or request.data.get('id')
+        first_name = request.data.get('first_name') or request.data.get('firstName')
+        last_name = request.data.get('last_name') or request.data.get('lastName')
+        username = request.data.get('username')
+        image_url = request.data.get('image_url') or request.data.get('imageUrl')
+        verified = request.data.get('verified', request.data.get('emailVerified', True))
+        
+        if not email:
+            return Response(
+                {'error': 'Email is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            user, created = get_or_create_user_from_clerk(
+                clerk_id=clerk_id,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                username=username,
+                image_url=image_url,
+                verified=verified
+            )
+            
+            if created:
+                logger.info(f"New user synced from Clerk: {user.email}")
+            else:
+                logger.info(f"Existing user synced from Clerk: {user.email}")
+            
+            serializer = self.get_serializer(user)
+            return Response({
+                'user': serializer.data,
+                'created': created,
+                'message': 'User synced successfully'
+            }, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error syncing user from Clerk: {e}", exc_info=True)
+            return Response(
+                {'error': f'Failed to sync user: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):

@@ -6,6 +6,7 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth import get_user_model
 from organizations.models import Organization, OrganizationMember
+from .clerk_utils import get_or_create_user_from_clerk
 import logging
 
 logger = logging.getLogger(__name__)
@@ -86,10 +87,16 @@ class ClerkAuthentication(BaseAuthentication):
         # Extract the token
         token = auth_header.split(' ')[1]
         
+        # Check for Clerk user info in custom headers (sent from frontend)
+        clerk_email = request.META.get('HTTP_X_CLERK_EMAIL')
+        clerk_id = request.META.get('HTTP_X_CLERK_ID')
+        clerk_first_name = request.META.get('HTTP_X_CLERK_FIRST_NAME')
+        clerk_last_name = request.META.get('HTTP_X_CLERK_LAST_NAME')
+        
         try:
             # For now, implement a basic token validation
             # In production, this should use Clerk's backend SDK
-            user = self.validate_clerk_token(token)
+            user = self.validate_clerk_token(token, clerk_email, clerk_id, clerk_first_name, clerk_last_name)
             if user:
                 logger.info(f"ClerkAuthentication: Successfully authenticated user {user.email}")
                 return (user, None)
@@ -103,9 +110,10 @@ class ClerkAuthentication(BaseAuthentication):
         
         return None
     
-    def validate_clerk_token(self, token):
+    def validate_clerk_token(self, token, clerk_email=None, clerk_id=None, clerk_first_name=None, clerk_last_name=None):
         """
         Validate Clerk JWT token and return user.
+        Automatically creates user in Django if they don't exist and Clerk info is provided.
         This is a simplified implementation - in production, use Clerk's backend SDK.
         """
         from django.conf import settings
@@ -116,7 +124,26 @@ class ClerkAuthentication(BaseAuthentication):
             if token == 'test_clerk_token' or token:
                 try:
                     logger.info(f"Development Clerk auth: Validating token {token[:10]}...")
-                    # Try to get the first user
+                    
+                    # If we have Clerk user info, try to get or create the user
+                    if clerk_email:
+                        try:
+                            user, created = get_or_create_user_from_clerk(
+                                clerk_id=clerk_id,
+                                email=clerk_email,
+                                first_name=clerk_first_name,
+                                last_name=clerk_last_name
+                            )
+                            if created:
+                                logger.info(f"Auto-created user from Clerk: {user.email}")
+                            else:
+                                logger.info(f"Found existing user from Clerk: {user.email}")
+                            return user
+                        except Exception as e:
+                            logger.error(f"Error getting/creating user from Clerk info: {e}", exc_info=True)
+                            # Fall through to default behavior
+                    
+                    # Fallback: Try to get the first user (for backward compatibility)
                     user = User.objects.first()
                     if not user:
                         # If no user exists, create a default development user
@@ -147,5 +174,6 @@ class ClerkAuthentication(BaseAuthentication):
                     return None
         
         # TODO: Implement proper Clerk JWT validation using clerk-backend-python
+        # When implementing, decode JWT to get user info and auto-create users
         # For now, return None to fall back to other authentication methods
         return None

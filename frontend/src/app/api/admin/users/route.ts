@@ -18,16 +18,42 @@ export async function GET(request: NextRequest) {
     }
 
     // Forward request to Django backend with admin header
-    const response = await fetch(`${API_BASE_URL}/api/users/`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Admin-Request': 'true',
-        'X-Admin-Username': session.username,
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}/api/users/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Request': 'true',
+          'X-Admin-Username': session.username,
+        },
+      });
+    } catch (fetchError) {
+      // Handle network errors (backend not accessible, CORS, etc.)
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown network error';
+      console.error('Admin users fetch network error:', errorMessage);
+      return NextResponse.json(
+        { 
+          error: 'Backend service unavailable',
+          detail: 'Unable to connect to the backend server. Please ensure the backend is running and accessible.',
+          networkError: true
+        },
+        { status: 503 }
+      );
+    }
 
-    const data = await response.json().catch(() => []);
+    let data: any;
+    try {
+      const text = await response.text();
+      if (text) {
+        data = JSON.parse(text);
+      } else {
+        data = {};
+      }
+    } catch (parseError) {
+      // If response is not JSON, use empty object
+      data = {};
+    }
 
     if (!response.ok) {
       // If it's an authentication error, provide helpful message
@@ -41,16 +67,24 @@ export async function GET(request: NextRequest) {
         );
       }
       return NextResponse.json(
-        { error: data.detail || data.message || 'Failed to fetch users' },
+        { 
+          error: data.error || data.detail || data.message || `Failed to fetch users (${response.status})`,
+          detail: data.detail || data.message || `Backend returned status ${response.status}`
+        },
         { status: response.status }
       );
     }
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Admin users fetch error:', error);
+    // Handle unexpected errors
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Admin users fetch error:', errorMessage, error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        detail: errorMessage || 'An unexpected error occurred while fetching users'
+      },
       { status: 500 }
     );
   }

@@ -44,26 +44,81 @@ export default function AdminUsersPage() {
       setError(null);
       
       console.log('[Admin Users] Fetching users from /api/admin/users');
-      const response = await fetch('/api/admin/users', {
-        method: 'GET',
-        credentials: 'include',
-      });
+      let response: Response;
+      try {
+        response = await fetch('/api/admin/users', {
+          method: 'GET',
+          credentials: 'include',
+        });
+      } catch (networkError) {
+        // Handle network errors (frontend API route not accessible)
+        const errorMessage = networkError instanceof Error ? networkError.message : 'Network error';
+        console.warn('[Admin Users] Network error:', errorMessage);
+        setError('Unable to connect to the server. Please check your connection and try again.');
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
 
       console.log('[Admin Users] Response status:', response.status);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('[Admin Users] Error response:', errorData);
+        let errorData: any = {};
+        try {
+          const text = await response.text();
+          if (text) {
+            errorData = JSON.parse(text);
+          }
+        } catch (parseError) {
+          // If response is not JSON, use status text
+          errorData = { error: response.statusText || 'Unknown error' };
+        }
+        
+        console.warn('[Admin Users] Error response:', errorData);
         
         // Provide more helpful error messages
         if (response.status === 401 || response.status === 403) {
-          throw new Error(errorData.error || errorData.detail || 'Authentication required. Please log in to the admin panel.');
+          const errorMessage = errorData.error || errorData.detail || 'Authentication required. Please log in to the admin panel.';
+          setError(errorMessage);
+          setUsers([]);
+          setLoading(false);
+          return;
         }
         
-        throw new Error(errorData.error || errorData.detail || 'Failed to load users');
+        // Handle backend unavailable errors
+        if (response.status === 503 || errorData.networkError) {
+          const errorMessage = errorData.detail || errorData.error || 'Backend service is unavailable. Please ensure the backend server is running.';
+          setError(errorMessage);
+          setUsers([]);
+          setLoading(false);
+          return;
+        }
+        
+        // For other errors
+        const errorMessage = errorData.error || errorData.detail || errorData.message || `Failed to load users (${response.status})`;
+        setError(errorMessage);
+        setUsers([]);
+        setLoading(false);
+        return;
       }
 
-      const data = await response.json();
+      let data: any;
+      try {
+        const text = await response.text();
+        if (!text) {
+          console.warn('[Admin Users] Empty response');
+          setUsers([]);
+          setLoading(false);
+          return;
+        }
+        data = JSON.parse(text);
+      } catch (parseError) {
+        console.error('[Admin Users] Failed to parse response:', parseError);
+        setError('Invalid response from server');
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
       console.log('[Admin Users] Response data:', data);
       
       // Handle both array and paginated response formats
@@ -81,7 +136,10 @@ export default function AdminUsersPage() {
         djangoUsers = data.data;
       } else {
         console.error('[Admin Users] Unexpected API response format:', data);
-        throw new Error('Invalid response format from API');
+        setError('Invalid response format from API. Please contact support.');
+        setUsers([]);
+        setLoading(false);
+        return;
       }
       
       // Transform Django users to our User interface
