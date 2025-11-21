@@ -29,8 +29,8 @@ export function Logo({ className, href, showImage = true, size = "md" }: LogoPro
           <Image
             src="/Frameio Logo Png.png"
             alt="Frameio Logo"
-            width={imageSizes[size].width}
-            height={imageSizes[size].height}
+            fill
+            sizes={`${imageSizes[size].width}px`}
             className="object-contain"
             priority
           />

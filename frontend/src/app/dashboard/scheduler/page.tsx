@@ -55,6 +55,47 @@ export default function SchedulerPage() {
   const { getToken } = useAuth()
   const { showError, showSuccess } = useToastHelpers()
 
+  // Helper to get organization context from user profile if not in localStorage
+  const getOrganizationContext = async () => {
+    try {
+      // First check localStorage
+      const orgSlug = typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null
+      const devOrgId = typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null
+      
+      if (orgSlug || devOrgId) {
+        return { orgSlug, devOrgId }
+      }
+
+      // Try to get from user profile
+      const token = await getToken()
+      if (token) {
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+        const baseUrl = apiBase.replace(/\/$/, '')
+        const response = await fetch(`${baseUrl}/api/users/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          const user = Array.isArray(data) ? data[0] : data
+          if (user?.current_organization) {
+            // Store for future use
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem('devOrgId', user.current_organization)
+            }
+            return { devOrgId: user.current_organization }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to get organization context from user profile:', e)
+    }
+    return { orgSlug: null, devOrgId: null }
+  }
+
   useEffect(() => {
     fetchData()
   }, [])
@@ -77,12 +118,34 @@ export default function SchedulerPage() {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }
+
+      // Add organization context headers
+      try {
+        const orgSlug = typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null
+          || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
+        if (orgSlug) {
+          headers['X-Organization'] = orgSlug
+        }
+        const devOrgId = typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null
+          || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        if (devOrgId) {
+          headers['X-Dev-Org-Id'] = devOrgId
+        }
+      } catch {}
       
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-        credentials: 'include'
-      })
+      let response: Response
+      try {
+        response = await fetch(url, {
+          method: 'GET',
+          headers,
+          credentials: 'include'
+        })
+      } catch (networkError) {
+        // Handle network errors gracefully
+        console.error('Network error fetching posters:', networkError)
+        setGeneratedPosters([])
+        return
+      }
 
       if (!response.ok) {
         if (response.status === 404 || response.status === 204) {
@@ -142,12 +205,34 @@ export default function SchedulerPage() {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }
+
+      // Add organization context headers
+      try {
+        const orgSlug = typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null
+          || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
+        if (orgSlug) {
+          headers['X-Organization'] = orgSlug
+        }
+        const devOrgId = typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null
+          || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        if (devOrgId) {
+          headers['X-Dev-Org-Id'] = devOrgId
+        }
+      } catch {}
       
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-        credentials: 'include'
-      })
+      let response: Response
+      try {
+        response = await fetch(url, {
+          method: 'GET',
+          headers,
+          credentials: 'include'
+        })
+      } catch (networkError) {
+        // Handle network errors gracefully
+        console.error('Network error fetching scheduled posts:', networkError)
+        setScheduledPosts([])
+        return
+      }
 
       if (!response.ok) {
         if (response.status === 404 || response.status === 204) {
@@ -219,39 +304,118 @@ export default function SchedulerPage() {
         headers['Authorization'] = `Bearer ${token}`
       }
 
-      const assetUrl = selectedPoster.public_url || selectedPoster.image_url
+      // Add organization context headers
+      try {
+        const orgContext = await getOrganizationContext()
+        const orgSlug = orgContext.orgSlug || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
+        const devOrgId = orgContext.devOrgId || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        
+        if (orgSlug) {
+          headers['X-Organization'] = orgSlug
+        }
+        if (devOrgId) {
+          headers['X-Dev-Org-Id'] = devOrgId
+        }
+        // Backend will automatically handle organization resolution from user membership if headers not provided
+      } catch (e) {
+        console.error('Error setting organization headers:', e)
+      }
+
+      // Ensure asset_url is an absolute URL
+      let assetUrl = selectedPoster.public_url || selectedPoster.image_url
+      if (assetUrl && !assetUrl.startsWith('http')) {
+        assetUrl = assetUrl.startsWith('/') 
+          ? `${baseUrl}${assetUrl}`
+          : `${baseUrl}/${assetUrl}`
+      }
       
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({
-          platform: scheduleData.platform,
-          asset_url: assetUrl,
-          caption: scheduleData.caption,
-          scheduled_time: scheduledDate.toISOString(),
-          metadata: {
-            poster_id: selectedPoster.id,
-            hashtags: selectedPoster.hashtags || [],
-            prompt: selectedPoster.prompt,
-            aspect_ratio: selectedPoster.aspect_ratio
-          }
-        })
+      if (!assetUrl) {
+        showError("Poster image URL is missing")
+        return
+      }
+      
+      const requestBody = {
+        platform: scheduleData.platform,
+        asset_url: assetUrl,
+        caption: scheduleData.caption,
+        scheduled_time: scheduledDate.toISOString(),
+        metadata: {
+          poster_id: selectedPoster.id,
+          hashtags: selectedPoster.hashtags || [],
+          prompt: selectedPoster.prompt,
+          aspect_ratio: selectedPoster.aspect_ratio
+        }
+      }
+      
+      console.log('Scheduling post with data:', {
+        url,
+        headers: Object.keys(headers),
+        body: requestBody
       })
+      
+      let response: Response
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify(requestBody)
+        })
+      } catch (networkError) {
+        // Handle network errors (CORS, connection refused, etc.)
+        console.error('Network error scheduling post:', networkError)
+        const errorObj = networkError instanceof Error ? networkError : new Error(String(networkError))
+        
+        let errorMessage = 'Failed to schedule post'
+        if (errorObj.message === 'Failed to fetch' || errorObj.name === 'TypeError') {
+          errorMessage = 'Cannot connect to server. Please ensure the backend is running and accessible.'
+        } else if (errorObj.message.includes('CORS')) {
+          errorMessage = 'CORS error. Please check backend CORS configuration.'
+        } else {
+          errorMessage = `Network error: ${errorObj.message}`
+        }
+        
+        showError(errorMessage)
+        return
+      }
 
       if (!response.ok) {
         let errorData: any = {}
         try {
           const text = await response.text()
+          console.error('Backend error response:', text)
           if (text) {
             errorData = JSON.parse(text)
+            console.error('Parsed error data:', errorData)
           }
         } catch (e) {
-          // If parsing fails, use empty object
+          console.error('Failed to parse error response:', e)
         }
         
-        const errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to schedule post (${response.status})`
-        throw new Error(errorMessage)
+        // Handle validation errors with field details
+        let errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to schedule post (${response.status})`
+        
+        // If detail is an object (field validation errors), format it nicely
+        if (typeof errorData.detail === 'object' && errorData.detail !== null && !Array.isArray(errorData.detail)) {
+          const fieldErrors = Object.entries(errorData.detail)
+            .map(([field, error]: [string, any]) => {
+              const errorText = Array.isArray(error) ? error[0] : error
+              return `${field}: ${errorText}`
+            })
+            .join(', ')
+          errorMessage = fieldErrors || errorMessage
+        }
+        
+        // Log full error for debugging
+        console.error('Scheduling error:', {
+          status: response.status,
+          errorData,
+          errorMessage
+        })
+        
+        // Show error without throwing to prevent console errors
+        showError(errorMessage)
+        return
       }
 
       showSuccess("Post scheduled successfully!")
@@ -266,6 +430,7 @@ export default function SchedulerPage() {
       // Refresh scheduled posts
       await fetchScheduledPosts()
     } catch (error) {
+      // Only log to console, don't throw - error is already shown to user
       console.error('Error scheduling post:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to schedule post'
       showError(errorMessage)

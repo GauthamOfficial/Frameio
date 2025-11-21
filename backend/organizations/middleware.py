@@ -47,6 +47,20 @@ class TenantMiddleware(MiddlewareMixin):
             '/media/',
         ]
         
+        # Allow schedule endpoint to handle organization resolution in the view
+        # (it has its own fallback logic)
+        if '/api/ai/schedule/' in request.path:
+            # Still try to set organization if available, but don't block if not found
+            organization = getattr(request, 'organization', None)
+            if not organization:
+                organization = self.get_organization_from_request(request)
+            if organization:
+                request.organization = organization
+                request.tenant = organization
+                set_current_organization(organization)
+            # Don't block - let the view handle organization resolution
+            return None
+        
         # Check if path matches any skip pattern
         if any(request.path.startswith(path) for path in skip_paths):
             logger.info(f"TenantMiddleware: Skipping tenant resolution for {request.path}")

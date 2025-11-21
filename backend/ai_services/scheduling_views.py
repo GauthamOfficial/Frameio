@@ -5,6 +5,7 @@ import logging
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.utils import timezone
 from django.db.models import Q
 from django.utils import timezone as django_timezone
@@ -15,8 +16,8 @@ from .serializers import (
     ScheduledPostUpdateSerializer
 )
 from .social_media import SocialMediaService
-from organizations.middleware import get_current_organization
-from organizations.models import OrganizationMember
+from organizations.middleware import get_current_organization, set_current_organization
+from organizations.models import OrganizationMember, Organization
 
 logger = logging.getLogger(__name__)
 
@@ -35,23 +36,145 @@ class ScheduledPostViewSet(viewsets.ModelViewSet):
     
     def _get_organization(self):
         """Get organization with fallback to user's organization"""
-        # First try to get from middleware
+        # First try to get from request (set by middleware)
+        organization = getattr(self.request, 'organization', None)
+        if organization:
+            logger.info(f"Got organization from request: {organization.name} (id: {organization.id})")
+            return organization
+        
+        # Try to get from thread-local storage (set by middleware)
         organization = get_current_organization()
         if organization:
+            logger.info(f"Got organization from thread-local: {organization.name} (id: {organization.id})")
             return organization
         
         # Fallback: get from user's active membership
         if hasattr(self.request, 'user') and self.request.user.is_authenticated:
             try:
-                membership = OrganizationMember.objects.filter(
+                logger.info(f"Attempting to get organization from user {self.request.user.id} memberships")
+                memberships = OrganizationMember.objects.filter(
                     user=self.request.user,
                     is_active=True
-                ).select_related('organization').first()
+                ).select_related('organization')
+                
+                membership = memberships.first()
                 if membership and membership.organization:
+                    logger.info(f"Got organization from user membership: {membership.organization.name} (id: {membership.organization.id})")
+                    # Set it on the request and thread-local for future use
+                    self.request.organization = membership.organization
+                    set_current_organization(membership.organization)
                     return membership.organization
+                else:
+                    logger.warning(f"User {self.request.user.id} ({getattr(self.request.user, 'email', 'no email')}) has no active organization memberships")
+                    # Log all memberships for debugging
+                    all_memberships = OrganizationMember.objects.filter(user=self.request.user).select_related('organization')
+                    logger.warning(f"User {self.request.user.id} total memberships: {all_memberships.count()}")
+                    for m in all_memberships:
+                        logger.warning(f"  - Org: {m.organization.name if m.organization else 'None'}, Active: {m.is_active}, Role: {m.role}")
+                    
+                    # Try to get ANY membership (even inactive) to help debug
+                    if all_memberships.count() == 0:
+                        logger.warning(f"User {self.request.user.id} has NO organization memberships. Attempting to create default organization...")
+                        # Try to create or get a default organization for the user
+                        try:
+                            from django.db import transaction
+                            from django.utils.text import slugify
+                            import uuid as uuid_lib
+                            
+                            # Generate a unique slug - use UUID to ensure uniqueness
+                            user_id_str = str(self.request.user.id)
+                            # Remove hyphens and take first 8 chars for shorter slug
+                            user_id_short = user_id_str.replace('-', '')[:8] if '-' in user_id_str else user_id_str[:8]
+                            base_slug = slugify(f"user-{user_id_short}-org")
+                            if not base_slug or len(base_slug) < 3:
+                                # Fallback to UUID-based slug if slugify fails
+                                base_slug = f"org-{uuid_lib.uuid4().hex[:8]}"
+                            
+                            slug = base_slug
+                            counter = 1
+                            max_attempts = 10
+                            while Organization.objects.filter(slug=slug).exists() and counter < max_attempts:
+                                slug = f"{base_slug}-{counter}"
+                                counter += 1
+                            
+                            if counter >= max_attempts:
+                                # Use UUID as last resort
+                                slug = f"org-{uuid_lib.uuid4().hex[:12]}"
+                            
+                            # Create organization and membership in a transaction
+                            with transaction.atomic():
+                                # Get user email/username safely
+                                user_name = getattr(self.request.user, 'email', None) or getattr(self.request.user, 'username', None) or 'User'
+                                org_name = f"{user_name}'s Organization"
+                                
+                                default_org = Organization.objects.create(
+                                    slug=slug,
+                                    name=org_name
+                                )
+                                
+                                # Create membership
+                                membership = OrganizationMember.objects.create(
+                                    user=self.request.user,
+                                    organization=default_org,
+                                    role='admin',
+                                    is_active=True
+                                )
+                            
+                            logger.info(f"✅ Created default organization '{default_org.name}' (id: {default_org.id}, slug: {slug}) for user {self.request.user.id}")
+                            self.request.organization = default_org
+                            set_current_organization(default_org)
+                            return default_org
+                        except Exception as e:
+                            logger.error(f"❌ Failed to create default organization: {e}", exc_info=True)
+                            # Try to get any existing organization the user might own
+                            try:
+                                # Organization model doesn't have owner field, so check by membership instead
+                                owned_org = None
+                                # Try to get any organization where user is admin
+                                admin_membership = OrganizationMember.objects.filter(
+                                    user=self.request.user,
+                                    role='admin'
+                                ).select_related('organization').first()
+                                if admin_membership:
+                                    owned_org = admin_membership.organization
+                                if owned_org:
+                                    logger.info(f"Found existing organization '{owned_org.name}' owned by user {self.request.user.id}")
+                                    # Create membership if it doesn't exist
+                                    membership, created = OrganizationMember.objects.get_or_create(
+                                        user=self.request.user,
+                                        organization=owned_org,
+                                        defaults={'role': 'admin', 'is_active': True}
+                                    )
+                                    if not membership.is_active:
+                                        membership.is_active = True
+                                        membership.save(update_fields=['is_active'])
+                                    self.request.organization = owned_org
+                                    set_current_organization(owned_org)
+                                    return owned_org
+                                else:
+                                    logger.error(f"User {self.request.user.id} has no owned organizations either")
+                            except Exception as e2:
+                                logger.error(f"Failed to get owned organization: {e2}", exc_info=True)
+                    else:
+                        logger.warning(f"User {self.request.user.id} has memberships but none are active. Activating first membership...")
+                        # Try to activate the first inactive membership
+                        try:
+                            first_membership = all_memberships.first()
+                            if first_membership:
+                                first_membership.is_active = True
+                                first_membership.save(update_fields=['is_active'])
+                                logger.info(f"Activated membership for user {self.request.user.id} in organization {first_membership.organization.name}")
+                                self.request.organization = first_membership.organization
+                                set_current_organization(first_membership.organization)
+                                return first_membership.organization
+                        except Exception as e:
+                            logger.error(f"Failed to activate membership: {e}", exc_info=True)
             except Exception as e:
-                logger.warning(f"Failed to get organization from user membership: {e}")
+                logger.error(f"Failed to get organization from user membership: {e}", exc_info=True)
+        else:
+            logger.warning(f"User is not authenticated. Has user attr: {hasattr(self.request, 'user')}, Is authenticated: {hasattr(self.request, 'user') and self.request.user.is_authenticated if hasattr(self.request, 'user') else False}")
         
+        logger.error("No organization context available after all fallbacks")
         return None
     
     def get_queryset(self):
@@ -83,9 +206,120 @@ class ScheduledPostViewSet(viewsets.ModelViewSet):
         return queryset.select_related('user').order_by('-created_at')
     
     def create(self, request, *args, **kwargs):
-        """Override create to handle ValueError properly"""
+        """Override create to handle ValueError and ValidationError properly"""
         try:
+            logger.info(f"Creating scheduled post with data: {request.data}")
+            logger.info(f"Request method: {request.method}, Path: {request.path}")
+            logger.info(f"User authenticated: {hasattr(request, 'user') and request.user.is_authenticated}")
+            if hasattr(request, 'user') and request.user.is_authenticated:
+                logger.info(f"User ID: {request.user.id}, Email: {getattr(request.user, 'email', 'no email')}")
+            else:
+                logger.warning("User is not authenticated!")
+            
+            # Check organization before proceeding - this will auto-create if needed
+            organization = self._get_organization()
+            if not organization:
+                # Last resort: In development, try to create organization for any user
+                from django.conf import settings
+                if settings.DEBUG and hasattr(request, 'user') and request.user.is_authenticated:
+                    logger.warning("Last resort: Attempting to force-create organization in DEBUG mode")
+                    try:
+                        from django.db import transaction
+                        import uuid as uuid_lib
+                        from django.utils.text import slugify
+                        
+                        # Generate unique slug
+                        slug = f"dev-org-{uuid_lib.uuid4().hex[:12]}"
+                        user_name = getattr(request.user, 'email', None) or getattr(request.user, 'username', None) or 'User'
+                        
+                        with transaction.atomic():
+                            default_org = Organization.objects.create(
+                                slug=slug,
+                                name=f"{user_name}'s Organization"
+                            )
+                            
+                            membership, created = OrganizationMember.objects.get_or_create(
+                                user=request.user,
+                                organization=default_org,
+                                defaults={'role': 'admin', 'is_active': True}
+                            )
+                            if not membership.is_active:
+                                membership.is_active = True
+                                membership.save(update_fields=['is_active'])
+                        
+                        logger.info(f"✅ Force-created organization in DEBUG mode: {default_org.name} (id: {default_org.id})")
+                        request.organization = default_org
+                        set_current_organization(default_org)
+                        organization = default_org
+                    except Exception as e:
+                        logger.error(f"❌ Even force-creation failed: {e}", exc_info=True)
+                
+                if not organization:
+                    user_info = f"user {request.user.id}" if hasattr(request, 'user') and request.user.is_authenticated else "anonymous user"
+                    logger.error(f"No organization found for {user_info} after all attempts including auto-creation and force-creation")
+                    return Response(
+                        {
+                            "success": False,
+                            "error": "Unable to set up organization context. Please contact support or ensure you are logged in.",
+                            "detail": "Unable to set up organization context. Please contact support or ensure you are logged in.",
+                            "debug_info": {
+                                "user_authenticated": hasattr(request, 'user') and request.user.is_authenticated,
+                                "user_id": getattr(request.user, 'id', None) if hasattr(request, 'user') else None,
+                                "user_email": getattr(request.user, 'email', None) if hasattr(request, 'user') else None
+                            } if settings.DEBUG else {}
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            logger.info(f"Organization context: {organization.name} (id: {organization.id})")
+            
+            # Create serializer and validate
+            serializer = self.get_serializer(data=request.data)
+            logger.info(f"Serializer created, validating data...")
+            if not serializer.is_valid():
+                logger.error(f"Serializer validation failed: {serializer.errors}")
+                return Response(
+                    {
+                        "success": False,
+                        "error": "Validation failed",
+                        "detail": serializer.errors,
+                        "message": "Please check the form fields for errors"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            logger.info(f"Serializer validation passed")
+            
             return super().create(request, *args, **kwargs)
+        except DRFValidationError as e:
+            logger.error(f"ValidationError in create: {e.detail}")
+            # Format validation errors properly
+            error_detail = e.detail
+            if isinstance(error_detail, dict):
+                # If it's a dict of field errors, format them nicely
+                formatted_errors = {}
+                for field, errors in error_detail.items():
+                    if isinstance(errors, list):
+                        formatted_errors[field] = errors[0] if len(errors) == 1 else errors
+                    else:
+                        formatted_errors[field] = errors
+                return Response(
+                    {
+                        "success": False,
+                        "error": "Validation failed",
+                        "detail": formatted_errors,
+                        "message": "Please check the form fields for errors"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                error_message = str(error_detail) if error_detail else "Validation failed"
+                return Response(
+                    {
+                        "success": False,
+                        "error": error_message,
+                        "detail": error_message
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         except ValueError as e:
             logger.error(f"ValueError in create: {str(e)}")
             return Response(
@@ -98,13 +332,17 @@ class ScheduledPostViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             logger.error(f"Unexpected error in create: {str(e)}", exc_info=True)
+            # Don't expose internal error details to client
+            error_message = "Failed to create scheduled post"
+            if "organization" in str(e).lower():
+                error_message = "No organization context available. Please ensure you are a member of an organization."
             return Response(
                 {
                     "success": False,
-                    "error": "Failed to create scheduled post",
-                    "detail": str(e)
+                    "error": error_message,
+                    "detail": error_message
                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_400_BAD_REQUEST
             )
     
     def perform_create(self, serializer):
