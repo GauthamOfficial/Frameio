@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { Logo } from "./logo"
 import { SidebarItem } from "./sidebar-item"
 import { 
   LayoutDashboard,
@@ -26,11 +27,8 @@ export function Sidebar({ items, className }: SidebarProps) {
   return (
     <aside className={cn("w-64 bg-white border-r border-gray-200 h-screen flex-shrink-0", className)}>
       <div className="p-6 h-full flex flex-col">
-        <div className="flex items-center space-x-2 mb-8">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">F</span>
-          </div>
-          <span className="text-xl font-semibold text-gray-900">Frameio</span>
+        <div className="mb-8">
+          <Logo href="/" />
         </div>
 
         <nav className="space-y-2 flex-1">

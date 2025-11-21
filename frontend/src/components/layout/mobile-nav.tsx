@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { SignInButton } from "@/components/auth/sign-in-button"
 import { SignUpButton } from "@/components/auth/sign-up-button"
 import { AuthUserButton } from "@/components/auth/user-button"
+import { Logo } from "@/components/common/logo"
 import { useUser } from '@clerk/nextjs'
 import { cn } from "@/lib/utils"
 
@@ -36,12 +37,7 @@ export function MobileNav({ className }: MobileNavProps) {
         <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-border">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shine-gold glow-primary animate-shine">
-                  <span className="text-primary-foreground font-bold text-lg">F</span>
-                </div>
-                <span className="text-xl font-bold text-gradient-primary">Frameio</span>
-              </div>
+              <Logo href="/" />
               <Button
                 variant="ghost"
                 size="icon"

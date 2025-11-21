@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/common/logo"
 import { useOrganization } from "@/contexts/organization-context"
 import { 
   LayoutDashboard, 
@@ -91,12 +92,9 @@ export function Sidebar({ className }: SidebarProps) {
           {/* Logo */}
           <div 
             onClick={() => router.push('/')}
-            className="flex items-center px-6 py-4 border-b border-sidebar-border cursor-pointer"
+            className="px-6 py-4.5 border-b border-sidebar-border cursor-pointer"
           >
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
-              <span className="text-primary-foreground font-bold text-lg">F</span>
-            </div>
-            <span className="text-xl font-bold text-sidebar-foreground">Frameio</span>
+            <Logo className="mr-3" />
           </div>
 
           {/* Navigation */}

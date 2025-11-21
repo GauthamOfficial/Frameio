@@ -6,6 +6,7 @@ import { SignInButton } from "@/components/auth/sign-in-button"
 import { SignUpButton } from "@/components/auth/sign-up-button"
 import { AuthUserButton } from "@/components/auth/user-button"
 import { MobileNav } from "@/components/layout/mobile-nav"
+import { Logo } from "@/components/common/logo"
 import { cn } from "@/lib/utils"
 
 interface HeaderProps {
@@ -20,12 +21,7 @@ export function Header({ className }: HeaderProps) {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shine-gold glow-primary animate-shine">
-              <span className="text-primary-foreground font-bold text-lg">F</span>
-            </div>
-            <span className="text-xl font-bold text-gradient-primary">Frameio</span>
-          </div>
+          <Logo href="/" />
 
           {/* Navigation */}
           <nav className="hidden md:flex space-x-6">

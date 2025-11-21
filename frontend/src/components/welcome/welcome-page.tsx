@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { SignInButton as ClerkSignInButton, SignUpButton as ClerkSignUpButton, useUser } from '@clerk/nextjs'
 import { MobileNav } from "@/components/welcome/mobile-nav"
 import { Footer } from "@/components/layout/footer"
+import { Logo } from "@/components/common/logo"
 import { cn } from "@/lib/utils"
 import { ArrowRight, Sparkles, Palette, Calendar, BarChart3 } from "lucide-react"
 import { useRouter } from 'next/navigation'
@@ -55,12 +56,7 @@ export function WelcomePage({ className }: WelcomePageProps) {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">F</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">Frameio</span>
-            </Link>
+            <Logo href="/" />
 
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center space-x-6">

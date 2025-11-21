@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Facebook, Instagram, Mail, Phone, Send, CheckCircle2 } from "lucide-react"
 import { Footer } from "@/components/layout/footer"
+import { Logo } from "@/components/common/logo"
 import Link from "next/link"
 
 export default function ContactPage() {
@@ -162,12 +163,7 @@ export default function ContactPage() {
       <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">F</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">Frameio</span>
-            </Link>
+            <Logo href="/" />
 
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center space-x-6">
