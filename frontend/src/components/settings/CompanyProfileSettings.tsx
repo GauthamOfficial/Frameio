@@ -70,14 +70,14 @@ const CompanyProfileSettings: React.FC = () => {
   useEffect(() => {
     console.log('🔍 useEffect triggered')
     console.log('User:', user ? 'Present' : 'Missing')
-    console.log('getToken:', getToken ? 'Present' : 'Missing')
+    console.log('getToken:', typeof getToken === 'function' ? 'Present' : 'Missing')
     
     // Check if Clerk is properly configured
     const clerkConfigured = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && 
                            process.env.NEXT_PUBLIC_CLERK_FRONTEND_API
     console.log('Clerk configured:', clerkConfigured)
     
-    if (user && getToken) {
+    if (user && typeof getToken === 'function') {
       console.log('✅ Loading profile...')
       loadProfile()
     } else if (!clerkConfigured) {
@@ -672,22 +672,25 @@ const CompanyProfileSettings: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Error saving profile:', error)
-      console.error('Error type:', error.constructor.name)
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
+      
+      // Type guard for error handling
+      const errorObj = error instanceof Error ? error : new Error(String(error))
+      console.error('Error type:', errorObj.constructor.name)
+      console.error('Error message:', errorObj.message)
+      console.error('Error stack:', errorObj.stack)
       
       // Check if it's a network error
-      if (error.name === 'AbortError') {
+      if (errorObj.name === 'AbortError') {
         console.error('⏰ Request timeout')
         showError('Request timed out. Please check your connection and try again.')
-      } else if (error.message === 'Failed to fetch') {
+      } else if (errorObj.message === 'Failed to fetch') {
         console.error('🌐 Network error - Backend server may not be running or CORS issue')
         showError('Cannot connect to server. Please ensure the backend is running on http://localhost:8000')
-      } else if (typeof error.message === 'string' && error.message.includes('CORS')) {
+      } else if (typeof errorObj.message === 'string' && errorObj.message.includes('CORS')) {
         console.error('🚫 CORS error')
         showError('CORS error. Please check backend CORS configuration.')
       } else {
-        showError('Failed to save company profile: ' + error.message)
+        showError('Failed to save company profile: ' + errorObj.message)
       }
     } finally {
       setSaving(false)
