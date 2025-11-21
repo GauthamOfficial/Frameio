@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { ArrowRight, Sparkles, Palette, Calendar, BarChart3 } from "lucide-react"
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import Link from "next/link"
 
 interface WelcomePageProps {
   className?: string
@@ -18,10 +19,14 @@ export function WelcomePage({ className }: WelcomePageProps) {
   const { isSignedIn, isLoaded } = useUser()
   const router = useRouter()
 
-  // Redirect to dashboard if user is already signed in
+  // Redirect to dashboard if user is already signed in (only on initial load)
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      router.push('/dashboard')
+      // Small delay to allow navigation from logo click
+      const timer = setTimeout(() => {
+        router.push('/dashboard')
+      }, 100)
+      return () => clearTimeout(timer)
     }
   }, [isLoaded, isSignedIn, router])
 
@@ -50,12 +55,34 @@ export function WelcomePage({ className }: WelcomePageProps) {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">F</span>
               </div>
               <span className="text-xl font-bold text-foreground">Frameio</span>
-            </div>
+            </Link>
+
+            {/* Navigation Links */}
+            <nav className="hidden md:flex items-center space-x-6">
+              <Link
+                href="/"
+                className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
+              >
+                Home
+              </Link>
+              <Link
+                href="/about"
+                className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
+              >
+                About
+              </Link>
+              <Link
+                href="/contact"
+                className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
+              >
+                Contact Us
+              </Link>
+            </nav>
 
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">

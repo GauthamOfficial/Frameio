@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useOrganization } from "@/contexts/organization-context"
@@ -45,6 +45,7 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { userRole, permissions, isLoading } = useOrganization()
 
   // Debug logging
@@ -88,7 +89,10 @@ export function Sidebar({ className }: SidebarProps) {
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center px-6 py-4 border-b border-sidebar-border">
+          <div 
+            onClick={() => router.push('/')}
+            className="flex items-center px-6 py-4 border-b border-sidebar-border cursor-pointer"
+          >
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
               <span className="text-primary-foreground font-bold text-lg">F</span>
             </div>

@@ -53,7 +53,7 @@ export function Footer({ className }: FooterProps) {
                 href="/contact"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
               >
-                Contact
+                Contact Us
               </Link>
             </nav>
           </div>

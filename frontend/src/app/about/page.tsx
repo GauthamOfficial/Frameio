@@ -18,6 +18,28 @@ export default function AboutPage() {
               </div>
               <span className="text-xl font-bold text-foreground">Frameio</span>
             </Link>
+
+            {/* Navigation Links */}
+            <nav className="hidden md:flex items-center space-x-6">
+              <Link
+                href="/"
+                className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
+              >
+                Home
+              </Link>
+              <Link
+                href="/about"
+                className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
+              >
+                About
+              </Link>
+              <Link
+                href="/contact"
+                className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
+              >
+                Contact Us
+              </Link>
+            </nav>
           </div>
         </div>
       </header>
