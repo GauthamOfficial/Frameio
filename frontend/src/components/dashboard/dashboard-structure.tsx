@@ -2,6 +2,7 @@
 
 import { Sidebar } from "./sidebar"
 import { TopNav } from "./top-nav"
+import { Footer } from "@/components/layout/footer"
 import { cn } from "@/lib/utils"
 
 interface DashboardStructureProps {
@@ -11,13 +12,14 @@ interface DashboardStructureProps {
 
 export function DashboardStructure({ children, className }: DashboardStructureProps) {
   return (
-    <div className="min-h-screen bg-background fabric-texture">
+    <div className="min-h-screen bg-background fabric-texture flex flex-col">
       <Sidebar />
-      <div className="md:ml-64">
+      <div className="md:ml-64 flex flex-col flex-1">
         <TopNav />
-        <main className={cn("p-6", className)}>
+        <main className={cn("p-6 flex-1", className)}>
           {children}
         </main>
+        <Footer />
       </div>
     </div>
   )

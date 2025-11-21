@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { SignInButton as ClerkSignInButton, SignUpButton as ClerkSignUpButton, useUser } from '@clerk/nextjs'
 import { MobileNav } from "@/components/welcome/mobile-nav"
+import { Footer } from "@/components/layout/footer"
 import { cn } from "@/lib/utils"
 import { ArrowRight, Sparkles, Palette, Calendar, BarChart3 } from "lucide-react"
 import { useRouter } from 'next/navigation'
@@ -59,12 +60,12 @@ export function WelcomePage({ className }: WelcomePageProps) {
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
               <div className="hidden md:flex items-center space-x-4">
-                <ClerkSignInButton mode="modal" afterSignInUrl="/dashboard">
+                <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
                   <Button variant="ghost" size="sm">
                     Sign In
                   </Button>
                 </ClerkSignInButton>
-                <ClerkSignUpButton mode="modal" afterSignUpUrl="/dashboard">
+                <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
                   <Button size="sm">
                     Get Started
                   </Button>
@@ -82,21 +83,19 @@ export function WelcomePage({ className }: WelcomePageProps) {
           {/* Hero Content */}
           <div className="mb-12">
             <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-              AI-Powered Marketing Assets
-              <span className="block text-textile-maroon">for Textile Shops</span>
+              Where <span className="text-[#8B2635]">Textile</span> Designs Become Stunning Posters
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Transform your textile business with intelligent design generation, smart fabric analysis, 
-              and automated catalog creation powered by cutting-edge AI technology.
+              Frameio helps you create beautiful, professional posters that highlight your fabrics, styles, and seasonal collections instantly.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <ClerkSignUpButton mode="modal" afterSignUpUrl="/dashboard">
+              <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
                 <Button size="lg" className="text-lg">
                   Get Started
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </ClerkSignUpButton>
-              <ClerkSignInButton mode="modal" afterSignInUrl="/dashboard">
+              <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
                 <Button variant="outline" size="lg" className="text-lg">
                   Login
                 </Button>
@@ -172,7 +171,7 @@ export function WelcomePage({ className }: WelcomePageProps) {
               Join hundreds of textile shops already using Frameio to create stunning marketing materials.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <ClerkSignUpButton mode="modal" afterSignUpUrl="/dashboard">
+              <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
                 <Button size="lg" className="bg-textile-accent hover:bg-textile-accent/90">
                   Start Your Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -187,13 +186,7 @@ export function WelcomePage({ className }: WelcomePageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border mt-20">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center text-muted-foreground">
-            <p>&copy; 2024 Frameio. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
