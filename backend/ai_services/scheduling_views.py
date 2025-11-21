@@ -392,14 +392,22 @@ class ScheduledPostViewSet(viewsets.ModelViewSet):
         logger.info(f"Updated scheduled post {scheduled_post.id}")
     
     def perform_destroy(self, instance):
-        """Cancel scheduled post"""
-        if instance.status in ['posted']:
-            raise ValueError("Cannot cancel posts that have already been posted")
+        """Delete/cancel scheduled post"""
+        # Only allow deletion of posts that haven't been posted yet
+        if instance.status == 'posted':
+            raise ValueError("Cannot delete posts that have already been posted")
         
-        instance.status = 'cancelled'
-        instance.save(update_fields=['status'])
-        
-        logger.info(f"Cancelled scheduled post {instance.id}")
+        # For pending/scheduled posts, cancel them (soft delete)
+        # For failed/cancelled posts, we can actually delete them
+        if instance.status in ['failed', 'cancelled']:
+            # Actually delete if already cancelled/failed
+            logger.info(f"Deleting scheduled post {instance.id} (status: {instance.status})")
+            instance.delete()
+        else:
+            # Soft delete by cancelling
+            instance.status = 'cancelled'
+            instance.save(update_fields=['status'])
+            logger.info(f"Cancelled scheduled post {instance.id}")
     
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):

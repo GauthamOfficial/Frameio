@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { Calendar, Plus, Clock, Image as ImageIcon, Loader2 } from "lucide-react"
+import { Calendar, Plus, Clock, Image as ImageIcon, Loader2, Edit, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
-import { useToastHelpers } from "@/components/common"
+import { useToastHelpers, ConfirmationModal } from "@/components/common"
 
 interface GeneratedPoster {
   id: string
@@ -37,6 +37,12 @@ interface ScheduledPost {
   created_at: string
   posted_at?: string
   error_message?: string
+  metadata?: {
+    poster_id?: string
+    hashtags?: string[]
+    prompt?: string
+    aspect_ratio?: string
+  }
 }
 
 export default function SchedulerPage() {
@@ -45,7 +51,13 @@ export default function SchedulerPage() {
   const [loading, setLoading] = useState(true)
   const [scheduling, setScheduling] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [selectedPoster, setSelectedPoster] = useState<GeneratedPoster | null>(null)
+  const [selectedScheduledPost, setSelectedScheduledPost] = useState<ScheduledPost | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [postToDelete, setPostToDelete] = useState<ScheduledPost | null>(null)
   const [scheduleData, setScheduleData] = useState({
     platform: 'instagram',
     scheduledTime: '',
@@ -257,7 +269,9 @@ export default function SchedulerPage() {
         scheduledData = data.results
       }
 
-      setScheduledPosts(scheduledData)
+      // Filter out cancelled posts (they're "deleted" from user's perspective)
+      const activePosts = scheduledData.filter(post => post.status !== 'cancelled')
+      setScheduledPosts(activePosts)
     } catch (error) {
       console.error('Error fetching scheduled posts:', error)
       setScheduledPosts([])
@@ -439,6 +453,229 @@ export default function SchedulerPage() {
     }
   }
 
+  const handleEditPost = (post: ScheduledPost) => {
+    setSelectedScheduledPost(post)
+    // Convert scheduled_time to local datetime format for input
+    const scheduledDate = new Date(post.scheduled_time)
+    const localDateTime = new Date(scheduledDate.getTime() - scheduledDate.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)
+    
+    setScheduleData({
+      platform: post.platform,
+      scheduledTime: localDateTime,
+      caption: post.caption
+    })
+    setShowEditModal(true)
+  }
+
+  const handleEditSubmit = async () => {
+    if (!selectedScheduledPost) return
+    
+    if (!scheduleData.scheduledTime || !scheduleData.caption.trim()) {
+      showError("Please fill in all required fields")
+      return
+    }
+
+    // Validate scheduled time is in the future
+    const scheduledDate = new Date(scheduleData.scheduledTime)
+    if (scheduledDate <= new Date()) {
+      showError("Scheduled time must be in the future")
+      return
+    }
+
+    setEditing(true)
+    try {
+      const token = await getToken()
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+      const baseUrl = apiBase.replace(/\/$/, '')
+      const url = `${baseUrl}/api/ai/schedule/${selectedScheduledPost.id}/`
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      // Add organization context headers
+      try {
+        const orgContext = await getOrganizationContext()
+        const orgSlug = orgContext.orgSlug || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
+        const devOrgId = orgContext.devOrgId || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        
+        if (orgSlug) {
+          headers['X-Organization'] = orgSlug
+        }
+        if (devOrgId) {
+          headers['X-Dev-Org-Id'] = devOrgId
+        }
+      } catch (e) {
+        console.error('Error setting organization headers:', e)
+      }
+
+      const requestBody = {
+        platform: scheduleData.platform,
+        asset_url: selectedScheduledPost.asset_url,
+        caption: scheduleData.caption,
+        scheduled_time: scheduledDate.toISOString(),
+        metadata: selectedScheduledPost.metadata || {}
+      }
+      
+      let response: Response
+      try {
+        response = await fetch(url, {
+          method: 'PATCH',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify(requestBody)
+        })
+      } catch (networkError) {
+        console.error('Network error updating post:', networkError)
+        const errorObj = networkError instanceof Error ? networkError : new Error(String(networkError))
+        let errorMessage = 'Failed to update post'
+        if (errorObj.message === 'Failed to fetch' || errorObj.name === 'TypeError') {
+          errorMessage = 'Cannot connect to server. Please ensure the backend is running and accessible.'
+        }
+        showError(errorMessage)
+        return
+      }
+
+      if (!response.ok) {
+        let errorData: any = {}
+        try {
+          const text = await response.text()
+          if (text) {
+            errorData = JSON.parse(text)
+          }
+        } catch (e) {
+          console.error('Failed to parse error response:', e)
+        }
+        
+        let errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to update post (${response.status})`
+        if (typeof errorData.detail === 'object' && errorData.detail !== null && !Array.isArray(errorData.detail)) {
+          const fieldErrors = Object.entries(errorData.detail)
+            .map(([field, error]: [string, any]) => {
+              const errorText = Array.isArray(error) ? error[0] : error
+              return `${field}: ${errorText}`
+            })
+            .join(', ')
+          errorMessage = fieldErrors || errorMessage
+        }
+        
+        showError(errorMessage)
+        return
+      }
+
+      showSuccess("Post updated successfully!")
+      setShowEditModal(false)
+      setSelectedScheduledPost(null)
+      setScheduleData({
+        platform: 'instagram',
+        scheduledTime: '',
+        caption: ''
+      })
+      
+      // Refresh scheduled posts
+      await fetchScheduledPosts()
+    } catch (error) {
+      console.error('Error updating post:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update post'
+      showError(errorMessage)
+    } finally {
+      setEditing(false)
+    }
+  }
+
+  const handleDeleteClick = (post: ScheduledPost) => {
+    setPostToDelete(post)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!postToDelete) return
+
+    setDeleting(postToDelete.id)
+    setShowDeleteConfirm(false)
+    try {
+      const token = await getToken()
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+      const baseUrl = apiBase.replace(/\/$/, '')
+      const url = `${baseUrl}/api/ai/schedule/${postToDelete.id}/`
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      // Add organization context headers
+      try {
+        const orgContext = await getOrganizationContext()
+        const orgSlug = orgContext.orgSlug || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
+        const devOrgId = orgContext.devOrgId || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        
+        if (orgSlug) {
+          headers['X-Organization'] = orgSlug
+        }
+        if (devOrgId) {
+          headers['X-Dev-Org-Id'] = devOrgId
+        }
+      } catch (e) {
+        console.error('Error setting organization headers:', e)
+      }
+      
+      let response: Response
+      try {
+        response = await fetch(url, {
+          method: 'DELETE',
+          headers,
+          credentials: 'include'
+        })
+      } catch (networkError) {
+        console.error('Network error deleting post:', networkError)
+        const errorObj = networkError instanceof Error ? networkError : new Error(String(networkError))
+        let errorMessage = 'Failed to delete post'
+        if (errorObj.message === 'Failed to fetch' || errorObj.name === 'TypeError') {
+          errorMessage = 'Cannot connect to server. Please ensure the backend is running and accessible.'
+        }
+        showError(errorMessage)
+        return
+      }
+
+      if (!response.ok) {
+        let errorData: any = {}
+        try {
+          const text = await response.text()
+          if (text) {
+            errorData = JSON.parse(text)
+          }
+        } catch (e) {
+          console.error('Failed to parse error response:', e)
+        }
+        
+        const errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to delete post (${response.status})`
+        showError(errorMessage)
+        return
+      }
+
+      showSuccess("Post deleted successfully!")
+      
+      // Refresh scheduled posts
+      await fetchScheduledPosts()
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete post'
+      showError(errorMessage)
+    } finally {
+      setDeleting(null)
+      setPostToDelete(null)
+    }
+  }
+
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleString('en-US', {
@@ -529,9 +766,39 @@ export default function SchedulerPage() {
                         </p>
                       </div>
                     </div>
-                    <Badge variant={getStatusBadgeVariant(post.status)}>
-                      {post.status_display || post.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStatusBadgeVariant(post.status)}>
+                        {post.status_display || post.status}
+                      </Badge>
+                      {/* Only show edit/delete for pending or scheduled posts */}
+                      {(post.status === 'pending' || post.status === 'scheduled') && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditPost(post)}
+                            className="h-8 w-8 p-0"
+                            title="Edit post"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(post)}
+                            disabled={deleting === post.id}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            title="Delete post"
+                          >
+                            {deleting === post.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -706,6 +973,130 @@ export default function SchedulerPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogClose onClose={() => {
+            setShowEditModal(false)
+            setSelectedScheduledPost(null)
+            setScheduleData({
+              platform: 'instagram',
+              scheduledTime: '',
+              caption: ''
+            })
+          }} />
+          <DialogHeader>
+            <DialogTitle>Edit Scheduled Post</DialogTitle>
+            <DialogDescription>
+              Update the post details and scheduled time
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedScheduledPost && (
+            <div className="space-y-4">
+              {/* Platform Selection */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Platform
+                </label>
+                <select
+                  value={scheduleData.platform}
+                  onChange={(e) => setScheduleData({ ...scheduleData, platform: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                >
+                  <option value="instagram">Instagram</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="twitter">Twitter</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="whatsapp">WhatsApp</option>
+                </select>
+              </div>
+
+              {/* Scheduled Time */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Scheduled Time *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={scheduleData.scheduledTime}
+                  onChange={(e) => setScheduleData({ ...scheduleData, scheduledTime: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                  min={new Date().toISOString().slice(0, 16)}
+                  required
+                />
+              </div>
+
+              {/* Caption */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Caption *
+                </label>
+                <textarea
+                  value={scheduleData.caption}
+                  onChange={(e) => setScheduleData({ ...scheduleData, caption: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground min-h-[100px]"
+                  placeholder="Enter post caption..."
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditModal(false)
+                setSelectedScheduledPost(null)
+                setScheduleData({
+                  platform: 'instagram',
+                  scheduledTime: '',
+                  caption: ''
+                })
+              }}
+              disabled={editing}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={editing || !scheduleData.scheduledTime || !scheduleData.caption.trim()}
+              className="bg-textile-accent hover:bg-textile-accent/90"
+            >
+              {editing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Update Post
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false)
+          setPostToDelete(null)
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Scheduled Post"
+        message="Are you sure you want to delete this scheduled post? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={deleting !== null}
+      />
     </div>
   )
 }
