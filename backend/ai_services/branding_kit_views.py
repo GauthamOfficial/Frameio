@@ -284,9 +284,18 @@ def list_branding_kits(request):
         user = None
         organization = None
         
-        logger.info(f"List branding kits - Request user: {request.user}, is_authenticated: {getattr(request.user, 'is_authenticated', False)}")
+        # Check if user is authenticated (not AnonymousUser)
+        is_authenticated = (
+            hasattr(request, 'user') and 
+            request.user and 
+            hasattr(request.user, 'is_authenticated') and 
+            request.user.is_authenticated and
+            not request.user.is_anonymous
+        )
         
-        if hasattr(request, 'user') and request.user and getattr(request.user, 'is_authenticated', False):
+        logger.info(f"List branding kits - Request user: {request.user}, is_authenticated: {is_authenticated}, is_anonymous: {getattr(request.user, 'is_anonymous', 'N/A')}")
+        
+        if is_authenticated:
             user = request.user
             logger.info(f"List branding kits - Authenticated user: {user.email if hasattr(user, 'email') else user.username}")
             
@@ -316,22 +325,38 @@ def list_branding_kits(request):
         
         # Filter by organization and/or user
         # Use OR condition to match items that belong to either the organization OR the user
+        # Also include items with user=None and organization=None in DEBUG mode or if no user/org is found
+        from django.conf import settings
         if organization and user:
             # If both organization and user are available, show items that match either
-            queryset = queryset.filter(Q(organization=organization) | Q(user=user))
+            # Also include items with no user/org association (for backward compatibility)
+            if settings.DEBUG:
+                queryset = queryset.filter(
+                    Q(organization=organization) | Q(user=user) | 
+                    (Q(organization__isnull=True) & Q(user__isnull=True))
+                )
+            else:
+                queryset = queryset.filter(Q(organization=organization) | Q(user=user))
             logger.info(f"List branding kits - Filtered by organization OR user: {queryset.count()} kits")
         elif organization:
             # If only organization is available, filter by organization
-            queryset = queryset.filter(organization=organization)
+            # Also include items with no org association in DEBUG mode
+            if settings.DEBUG:
+                queryset = queryset.filter(Q(organization=organization) | Q(organization__isnull=True))
+            else:
+                queryset = queryset.filter(organization=organization)
             logger.info(f"List branding kits - Filtered by organization: {queryset.count()} kits")
         elif user:
             # If only user is available, filter by user
-            queryset = queryset.filter(user=user)
+            # Also include items with no user association in DEBUG mode
+            if settings.DEBUG:
+                queryset = queryset.filter(Q(user=user) | Q(user__isnull=True))
+            else:
+                queryset = queryset.filter(user=user)
             logger.info(f"List branding kits - Filtered by user: {queryset.count()} kits")
         else:
             # In development, if no user is authenticated, show all kits
             # In production, this should return empty
-            from django.conf import settings
             if settings.DEBUG:
                 logger.warning("List branding kits - No authenticated user, showing all kits (DEBUG mode)")
             else:

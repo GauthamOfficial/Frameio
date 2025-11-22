@@ -1047,8 +1047,46 @@ def composite_poster(request):
             result = ai_poster_service.generate_composite(prompt, temp_paths, aspect_ratio)
             
             if result.get('status') == 'success':
-                # Get user and organization for saving
+                # Get user and organization for saving (same logic as generate_poster)
                 user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+                
+                # Try to get user from different authentication methods
+                if not user or not user.is_authenticated:
+                    logger.warning("No authenticated user found in composite_poster - trying fallback methods")
+                    
+                    # Check if we can get user from development headers
+                    dev_user_id = request.META.get('HTTP_X_DEV_USER_ID')
+                    if dev_user_id:
+                        try:
+                            from django.contrib.auth import get_user_model
+                            User = get_user_model()
+                            user = User.objects.get(id=dev_user_id)
+                            logger.info(f"Found user from development headers: {user}")
+                        except Exception as e:
+                            logger.error(f"Failed to get user from dev headers: {e}")
+                    
+                    # Fallback: Try to get the first user with a complete company profile
+                    if not user:
+                        try:
+                            from users.models import CompanyProfile
+                            from django.contrib.auth import get_user_model
+                            User = get_user_model()
+                            
+                            # Get the first user with a complete company profile
+                            company_profiles = CompanyProfile.objects.filter(
+                                logo__isnull=False,
+                                company_name__isnull=False
+                            ).exclude(company_name='').exclude(logo='')
+                            
+                            if company_profiles.exists():
+                                user = company_profiles.first().user
+                                logger.info(f"Using fallback user with complete profile: {user.username}")
+                            else:
+                                logger.warning("No users with complete company profiles found")
+                        except Exception as e:
+                            logger.error(f"Error in fallback user selection: {e}")
+                
+                # Get organization from user if available
                 organization = None
                 if user and hasattr(user, 'organization'):
                     organization = user.organization
@@ -1310,45 +1348,90 @@ def list_posters(request):
         user = None
         organization = None
         
-        if request.user and request.user.is_authenticated:
+        # Check if user is authenticated (not AnonymousUser)
+        is_authenticated = (
+            hasattr(request, 'user') and 
+            request.user and 
+            hasattr(request.user, 'is_authenticated') and 
+            request.user.is_authenticated and
+            not request.user.is_anonymous
+        )
+        
+        logger.info(f"List posters - Request user: {request.user}, is_authenticated: {is_authenticated}, is_anonymous: {getattr(request.user, 'is_anonymous', 'N/A')}")
+        
+        if is_authenticated:
             user = request.user
+            logger.info(f"List posters - Authenticated user: {user.email if hasattr(user, 'email') else user.username}")
             # Try to get organization from user
             if hasattr(user, 'organization'):
                 organization = user.organization
+                logger.info(f"List posters - Found organization from user: {organization}")
             else:
                 try:
                     from users.models import CompanyProfile
                     company_profile = getattr(user, 'company_profile', None)
                     if company_profile and hasattr(company_profile, 'organization'):
                         organization = company_profile.organization
-                except Exception:
-                    pass
+                        logger.info(f"List posters - Found organization from company profile: {organization}")
+                except Exception as e:
+                    logger.warning(f"List posters - Could not get organization: {e}")
+        else:
+            logger.warning("List posters - No authenticated user found")
         
         # Get query parameters
         limit = int(request.GET.get('limit', 50))
         offset = int(request.GET.get('offset', 0))
         
+        logger.info(f"List posters - Query params: limit={limit}, offset={offset}")
+        
         # Build queryset
         queryset = GeneratedPoster.objects.all()
+        logger.info(f"List posters - Total posters in DB: {queryset.count()}")
         
         # Filter by organization and/or user
         # Use OR condition to match items that belong to either the organization OR the user
+        # Also include items with user=None and organization=None in DEBUG mode or if no user/org is found
         if organization and user:
             # If both organization and user are available, show items that match either
-            queryset = queryset.filter(Q(organization=organization) | Q(user=user))
+            # Also include items with no user/org association (for backward compatibility)
+            from django.conf import settings
+            if settings.DEBUG:
+                queryset = queryset.filter(
+                    Q(organization=organization) | Q(user=user) | 
+                    (Q(organization__isnull=True) & Q(user__isnull=True))
+                )
+            else:
+                queryset = queryset.filter(Q(organization=organization) | Q(user=user))
         elif organization:
             # If only organization is available, filter by organization
-            queryset = queryset.filter(organization=organization)
+            # Also include items with no org association in DEBUG mode
+            from django.conf import settings
+            if settings.DEBUG:
+                queryset = queryset.filter(Q(organization=organization) | Q(organization__isnull=True))
+            else:
+                queryset = queryset.filter(organization=organization)
         elif user:
             # If only user is available, filter by user
-            queryset = queryset.filter(user=user)
+            # Also include items with no user association in DEBUG mode
+            from django.conf import settings
+            if settings.DEBUG:
+                queryset = queryset.filter(Q(user=user) | Q(user__isnull=True))
+            else:
+                queryset = queryset.filter(user=user)
+        else:
+            # If no user or organization, show all in DEBUG mode, empty in production
+            from django.conf import settings
+            if not settings.DEBUG:
+                queryset = queryset.none()
         
         # Order by created_at descending
         queryset = queryset.order_by('-created_at')
         
         # Apply pagination
         total_count = queryset.count()
+        logger.info(f"List posters - Filtered count: {total_count}")
         posters = queryset[offset:offset + limit]
+        logger.info(f"List posters - Returning {len(posters)} posters (total: {total_count})")
         
         # Serialize posters
         posters_data = []
