@@ -7,7 +7,7 @@ import { MobileNav } from "@/components/welcome/mobile-nav"
 import { Footer } from "@/components/layout/footer"
 import { Logo } from "@/components/common/logo"
 import { cn } from "@/lib/utils"
-import { ArrowRight, Sparkles, Palette, Calendar, BarChart3 } from "lucide-react"
+import { ArrowRight, Palette, Calendar, BarChart3 } from "lucide-react"
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from "next/link"
@@ -129,18 +129,40 @@ export function WelcomePage({ className }: WelcomePageProps) {
 
           {/* Hero Illustration Placeholder */}
           <div className="mb-16">
-            <Card className="textile-hover textile-shadow max-w-4xl mx-auto">
-              <CardContent className="p-8">
-                <div className="aspect-video bg-muted/50 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-24 h-24 bg-primary rounded-lg mx-auto mb-4 flex items-center justify-center">
-                      <Sparkles className="h-12 w-12 text-primary-foreground" />
-                    </div>
-                    <h3 className="text-2xl font-semibold text-foreground mb-2">AI-Powered Design Studio</h3>
-                    <p className="text-muted-foreground">
-                      Create stunning marketing materials with the power of artificial intelligence
-                    </p>
-                  </div>
+            <Card className="textile-hover textile-shadow max-w-4xl mx-auto border-2 border-[#8B2635] rounded-xl bg-[#F5F1EB]">
+              <CardContent className="p-8 relative overflow-hidden aspect-video">
+                {/* Floating Images */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <img 
+                    src="/Floating IMAGES/1.png" 
+                    alt="Floating design 1" 
+                    className="absolute w-[50%] h-[50%] md:w-[40%] md:h-[40%] object-contain animate-float-1"
+                    style={{ top: '5%', left: '-5%' }}
+                  />
+                  <img 
+                    src="/Floating IMAGES/2.png" 
+                    alt="Floating design 2" 
+                    className="absolute w-[50%] h-[50%] md:w-[40%] md:h-[40%] object-contain animate-float-2"
+                    style={{ top: '5%', right: '-5%' }}
+                  />
+                  <img 
+                    src="/Floating IMAGES/3.png" 
+                    alt="Floating design 3" 
+                    className="absolute w-[50%] h-[50%] md:w-[40%] md:h-[40%] object-contain animate-float-3"
+                    style={{ bottom: '3%', left: '-5%' }}
+                  />
+                  <img 
+                    src="/Floating IMAGES/4.png" 
+                    alt="Floating design 4" 
+                    className="absolute w-[50%] h-[50%] md:w-[40%] md:h-[40%] object-contain animate-float-4"
+                    style={{ bottom: '0.5%', right: '-5%' }}
+                  />
+                  <img 
+                    src="/Floating IMAGES/5.png" 
+                    alt="Floating design 5" 
+                    className="absolute w-[75%] h-[75%] md:w-[70%] md:h-[70%] object-contain animate-float-5"
+                    style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -200,9 +222,6 @@ export function WelcomePage({ className }: WelcomePageProps) {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </ClerkSignUpButton>
-              <Button variant="outline" size="lg" className="text-lg">
-                Watch Demo
-              </Button>
             </div>
           </div>
         </div>
