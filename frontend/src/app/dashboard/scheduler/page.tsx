@@ -133,13 +133,15 @@ export default function SchedulerPage() {
 
       // Add organization context headers
       try {
-        const orgSlug = typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null
-          || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
+        const orgSlug = (typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null) 
+          || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG 
+          || null
         if (orgSlug) {
           headers['X-Organization'] = orgSlug
         }
-        const devOrgId = typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null
-          || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        const devOrgId = (typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null)
+          || process.env.NEXT_PUBLIC_DEV_ORG_ID 
+          || null
         if (devOrgId) {
           headers['X-Dev-Org-Id'] = devOrgId
         }
@@ -220,13 +222,15 @@ export default function SchedulerPage() {
 
       // Add organization context headers
       try {
-        const orgSlug = typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null
-          || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
+        const orgSlug = (typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null) 
+          || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG 
+          || null
         if (orgSlug) {
           headers['X-Organization'] = orgSlug
         }
-        const devOrgId = typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null
-          || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        const devOrgId = (typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null)
+          || process.env.NEXT_PUBLIC_DEV_ORG_ID 
+          || null
         if (devOrgId) {
           headers['X-Dev-Org-Id'] = devOrgId
         }
@@ -848,9 +852,9 @@ export default function SchedulerPage() {
                       <Button
                         size="sm"
                         onClick={() => handleSchedulePoster(poster)}
-                        className="bg-textile-accent hover:bg-textile-accent/90 text-xs px-2 py-1 h-7"
+                        className="bg-textile-accent hover:bg-textile-accent/90 text-[10px] px-1.5 py-0.5 h-6"
                       >
-                        <Clock className="mr-1 h-3 w-3" />
+                        <Clock className="mr-1 h-2.5 w-2.5" />
                         Schedule
                       </Button>
                     </div>
