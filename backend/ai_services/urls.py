@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views, scheduling_views, file_upload_views, social_media_views, fabric_views, post_generation_views, ai_poster_views, ai_caption_views, branding_kit_views
+from .custom_views import media_views
 
 # Create router for AI service-related views
 router = DefaultRouter()
@@ -63,4 +64,7 @@ urlpatterns = [
     path('branding-kit/history/', branding_kit_views.list_branding_kits, name='list-branding-kits'),
     path('branding-kit/<str:kit_id>/', branding_kit_views.get_branding_kit, name='get-branding-kit'),
     path('branding-kit/<str:kit_id>/delete/', branding_kit_views.delete_branding_kit, name='delete-branding-kit'),
+    
+    # Media file serving with CORS headers (for Facebook sharing)
+    path('media/<path:path>', media_views.serve_media_file, name='serve-media-file'),
 ]

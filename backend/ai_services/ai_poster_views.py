@@ -1332,7 +1332,7 @@ def add_text_overlay(request):
 
 
 @csrf_exempt
-@api_view(['GET'])
+@api_view(['GET', 'OPTIONS'])
 @permission_classes([AllowAny])
 def list_posters(request):
     """
@@ -1343,6 +1343,10 @@ def list_posters(request):
     - limit: Number of posters to return (default: 50)
     - offset: Offset for pagination (default: 0)
     """
+    # Handle CORS preflight requests
+    if request.method == 'OPTIONS':
+        return Response({}, status=status.HTTP_200_OK)
+    
     try:
         # Get user from request if authenticated
         user = None
@@ -1455,24 +1459,38 @@ def list_posters(request):
                     base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
                     image_url = f"{base_url}/{image_url}"
             
+            # Ensure hashtags is a list
+            hashtags = poster.hashtags
+            if hashtags is None:
+                hashtags = []
+            elif isinstance(hashtags, str):
+                # If it's a string, try to parse it or convert to list
+                try:
+                    import json
+                    hashtags = json.loads(hashtags) if hashtags else []
+                except:
+                    hashtags = [hashtags] if hashtags else []
+            elif not isinstance(hashtags, list):
+                hashtags = list(hashtags) if hashtags else []
+            
             posters_data.append({
                 'id': str(poster.id),
-                'image_url': image_url,
-                'public_url': poster.public_url,  # Cloudinary URL for sharing
-                'caption': poster.caption,
-                'full_caption': poster.full_caption,
-                'prompt': poster.prompt,
-                'aspect_ratio': poster.aspect_ratio,
+                'image_url': image_url or '',
+                'public_url': poster.public_url or '',  # Cloudinary URL for sharing
+                'caption': poster.caption or '',
+                'full_caption': poster.full_caption or '',
+                'prompt': poster.prompt or '',
+                'aspect_ratio': poster.aspect_ratio or '1:1',
                 'width': poster.width,
                 'height': poster.height,
-                'hashtags': poster.hashtags,
-                'emoji': poster.emoji,
-                'call_to_action': poster.call_to_action,
-                'branding_applied': poster.branding_applied,
-                'logo_added': poster.logo_added,
-                'contact_info_added': poster.contact_info_added,
-                'created_at': poster.created_at.isoformat(),
-                'updated_at': poster.updated_at.isoformat(),
+                'hashtags': hashtags,
+                'emoji': poster.emoji or '',
+                'call_to_action': poster.call_to_action or '',
+                'branding_applied': poster.branding_applied or False,
+                'logo_added': poster.logo_added or False,
+                'contact_info_added': poster.contact_info_added or False,
+                'created_at': poster.created_at.isoformat() if poster.created_at else '',
+                'updated_at': poster.updated_at.isoformat() if poster.updated_at else '',
             })
         
         return Response({

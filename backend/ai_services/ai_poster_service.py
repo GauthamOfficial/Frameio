@@ -16,6 +16,7 @@ from django.core.files.base import ContentFile
 from .ai_caption_service import AICaptionService
 from .brand_overlay_service import BrandOverlayService
 from .utils.cloudinary_utils import upload_to_cloudinary, create_shareable_html_page, upload_html_to_cloudinary
+from .utils.storage_handler import store_poster_image, create_and_store_shareable_page, upload_poster_image
 
 # Import Google GenAI
 try:
@@ -549,69 +550,41 @@ class AIPosterService:
                             # Ensure minimum short side before saving
                             image = self._ensure_min_short_side(image, min_short_side=1080)
 
-                            # Save to media storage
+                            # Convert image to bytes
                             image_bytes = BytesIO()
                             image.save(image_bytes, format='PNG')
                             image_bytes.seek(0)
                             
-                            saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
-                            image_url = default_storage.url(saved_path)
-                            # Ensure full URL for sharing and download
-                            if not image_url.startswith('http'):
-                                # Use request context if available, otherwise fallback to localhost
-                                request = getattr(self, '_request', None)
-                                if request:
-                                    image_url = request.build_absolute_uri(image_url)
-                                else:
-                                    image_url = f"http://localhost:8000{image_url}"
-                            
                             final_w, final_h = image.size
-                            logger.info(f"Poster generated successfully on attempt {attempt + 1}: {saved_path}; size={final_w}x{final_h}")
+                            logger.info(f"Poster generated successfully on attempt {attempt + 1}; size={final_w}x{final_h}")
                             
-                            # Upload to Cloudinary for public sharing - CRITICAL STEP
-                            logger.info(f"=== STARTING CLOUDINARY UPLOAD ===")
-                            logger.info(f"Image saved to: {saved_path}")
-                            logger.info(f"Verifying file exists before upload...")
-                            
-                            # Verify file exists before uploading
-                            if not default_storage.exists(saved_path):
-                                logger.error(f"CRITICAL: File does not exist at {saved_path} before Cloudinary upload!")
-                            else:
-                                logger.info(f"File exists, proceeding with Cloudinary upload...")
-                            
-                            # CRITICAL: Ensure upload happens BEFORE caption generation
-                            # This ensures public_url is available for HTML page creation
-                            
-                            public_url = None
+                            # Store image using dual-mode storage handler
+                            logger.info(f"=== STARTING IMAGE STORAGE ===")
                             try:
-                                logger.info(f"Calling upload_to_cloudinary with path: {saved_path}")
-                                public_url = upload_to_cloudinary(saved_path)
-                                if public_url:
-                                    logger.info(f"SUCCESS: Poster uploaded to Cloudinary: {public_url}")
-                                else:
-                                    logger.error(f"FAILED: Cloudinary upload returned None")
-                                    logger.error(f"   This means the poster cannot be shared on Facebook immediately!")
-                                    logger.error(f"   Check Cloudinary credentials and network connectivity")
+                                saved_path, image_url, public_url = store_poster_image(
+                                    image_bytes.getvalue(),
+                                    filename=filename
+                                )
+                                logger.info(f"Image stored successfully:")
+                                logger.info(f"  saved_path: {saved_path}")
+                                logger.info(f"  image_url: {image_url}")
+                                logger.info(f"  public_url: {public_url}")
                             except Exception as e:
-                                logger.error(f"EXCEPTION during Cloudinary upload: {str(e)}")
+                                logger.error(f"Failed to store image: {str(e)}")
                                 import traceback
                                 traceback.print_exc()
-                                # Continue even if Cloudinary upload fails, but log the error
-                            
-                            logger.info(f"=== END CLOUDINARY UPLOAD ===")
-                            logger.info(f"Final public_url after upload: {public_url}")
-                            
-                            # CRITICAL: If upload failed, try one more time
-                            if not public_url:
-                                logger.warning("First upload attempt failed, retrying...")
-                                try:
-                                    public_url = upload_to_cloudinary(saved_path)
-                                    if public_url:
-                                        logger.info(f"SUCCESS on retry: Poster uploaded to Cloudinary: {public_url}")
+                                # Fallback to old method
+                                saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
+                                image_url = default_storage.url(saved_path)
+                                if not image_url.startswith('http'):
+                                    request = getattr(self, '_request', None)
+                                    if request:
+                                        image_url = request.build_absolute_uri(image_url)
                                     else:
-                                        logger.error(f"FAILED on retry: Cloudinary upload still returned None")
-                                except Exception as retry_error:
-                                    logger.error(f"EXCEPTION on retry: {retry_error}")
+                                        image_url = f"http://localhost:8000{image_url}"
+                                public_url = image_url
+                            
+                            logger.info(f"=== END IMAGE STORAGE ===")
                             
                             # Generate caption and hashtags for the poster
                             logger.info("Starting caption generation...")
@@ -639,23 +612,16 @@ class AIPosterService:
                                     logger.info(f"Full caption text available: {bool(full_caption_text)}")
                                     
                                     if caption_text or full_caption_text:
-                                        logger.info("Creating HTML page content...")
-                                        html_content = create_shareable_html_page(
+                                        logger.info("Creating and storing shareable HTML page...")
+                                        shareable_page_url = create_and_store_shareable_page(
                                             public_url,
                                             caption_text,
                                             full_caption_text
                                         )
-                                        logger.info(f"HTML content created, length: {len(html_content)}")
-                                        
-                                        logger.info("Uploading HTML page to Cloudinary...")
-                                        shareable_page_url = upload_html_to_cloudinary(
-                                            html_content,
-                                            filename=f"poster_{int(time.time())}"
-                                        )
                                         if shareable_page_url:
                                             logger.info(f"SUCCESS: Shareable HTML page created successfully: {shareable_page_url}")
                                         else:
-                                            logger.error("FAILED: Failed to upload HTML page to Cloudinary, using image URL directly")
+                                            logger.error("FAILED: Failed to create shareable HTML page, using image URL directly")
                                             shareable_page_url = public_url  # Fallback to image URL
                                     else:
                                         logger.warning("WARNING: No caption available, using image URL directly")
@@ -671,42 +637,8 @@ class AIPosterService:
                             logger.info(f"Final shareable_page_url: {shareable_page_url}")
                             logger.info(f"=== END HTML PAGE CREATION DEBUG ===")
                             
-                            # Ensure public_url is always set - prioritize HTML page, then Cloudinary image, then local image_url
+                            # Ensure public_url is always set - prioritize HTML page, then image URL
                             final_public_url = shareable_page_url or public_url or image_url
-                            
-                            # If we don't have a Cloudinary URL, try to upload the image now
-                            if not public_url and not shareable_page_url:
-                                logger.warning("⚠️  No Cloudinary URL found, attempting to upload image now...")
-                                try:
-                                    public_url = upload_to_cloudinary(saved_path)
-                                    if public_url:
-                                        logger.info(f"✅ Image uploaded to Cloudinary: {public_url}")
-                                        # Now create HTML page
-                                        caption_text = caption_result.get("caption", "")
-                                        full_caption_text = caption_result.get("full_caption", caption_text)
-                                        if caption_text or full_caption_text:
-                                            html_content = create_shareable_html_page(
-                                                public_url,
-                                                caption_text,
-                                                full_caption_text
-                                            )
-                                            shareable_page_url = upload_html_to_cloudinary(
-                                                html_content,
-                                                filename=f"poster_{int(time.time())}"
-                                            )
-                                            if shareable_page_url:
-                                                logger.info(f"✅ HTML page created: {shareable_page_url}")
-                                                final_public_url = shareable_page_url
-                                            else:
-                                                final_public_url = public_url
-                                        else:
-                                            final_public_url = public_url
-                                    else:
-                                        logger.error("❌ Failed to upload to Cloudinary, using image_url")
-                                        final_public_url = image_url
-                                except Exception as upload_error:
-                                    logger.error(f"❌ Error uploading to Cloudinary: {upload_error}")
-                                    final_public_url = image_url
                             
                             if not final_public_url:
                                 logger.error("CRITICAL: No public_url available at all! Using image_url as fallback")

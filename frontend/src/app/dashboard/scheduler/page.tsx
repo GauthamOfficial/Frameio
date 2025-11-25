@@ -123,6 +123,8 @@ export default function SchedulerPage() {
       const baseUrl = apiBase.replace(/\/$/, '')
       const url = `${baseUrl}/api/ai/ai-poster/posters/`
       
+      console.log('Fetching posters from:', url)
+      
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       }
@@ -152,11 +154,18 @@ export default function SchedulerPage() {
         response = await fetch(url, {
           method: 'GET',
           headers,
-          credentials: 'include'
+          credentials: 'include',
+          mode: 'cors', // Explicitly set CORS mode
         })
       } catch (networkError) {
         // Handle network errors gracefully
         console.error('Network error fetching posters:', networkError)
+        const errorMsg = networkError instanceof Error ? networkError.message : 'Network error'
+        
+        // Check if it's a CORS error
+        if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch')) {
+          console.error('CORS or network error - backend might not be running on', baseUrl)
+        }
         setGeneratedPosters([])
         return
       }
@@ -166,16 +175,37 @@ export default function SchedulerPage() {
           setGeneratedPosters([])
           return
         }
-        throw new Error(`Failed to fetch posters (${response.status})`)
+        
+        // Try to get error message from response
+        let errorMessage = `Failed to fetch posters (${response.status})`
+        try {
+          const errorData = await response.json()
+          if (errorData.error) {
+            errorMessage = errorData.error
+          } else if (errorData.message) {
+            errorMessage = errorData.message
+          }
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const text = await response.text()
-      if (!text) {
+      if (!text || text.trim() === '') {
         setGeneratedPosters([])
         return
       }
 
-      const data = JSON.parse(text)
+      let data: any
+      try {
+        data = JSON.parse(text)
+      } catch (parseError) {
+        console.error('Failed to parse response:', text)
+        throw new Error('Invalid response from server')
+      }
       
       let postersData: GeneratedPoster[] = []
       if (data.success && data.results) {
@@ -193,12 +223,26 @@ export default function SchedulerPage() {
             ? `${baseUrl}${poster.image_url}`
             : `${baseUrl}/${poster.image_url}`
         }
+        // Also fix public_url if it exists
+        if ((poster as any).public_url && !(poster as any).public_url.startsWith('http')) {
+          (poster as any).public_url = (poster as any).public_url.startsWith('/') 
+            ? `${baseUrl}${(poster as any).public_url}`
+            : `${baseUrl}/${(poster as any).public_url}`
+        }
         return poster
       })
 
       setGeneratedPosters(postersWithFixedUrls)
     } catch (error) {
       console.error('Error fetching posters:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load posters'
+      
+      // Only log errors that aren't network/CORS related (those are handled above)
+      if (!errorMessage.includes('Network') && 
+          !errorMessage.includes('Failed to fetch') && 
+          !errorMessage.includes('Cannot connect')) {
+        console.error('Poster fetch error:', errorMessage)
+      }
       setGeneratedPosters([])
     } finally {
       setLoading(false)
@@ -241,11 +285,18 @@ export default function SchedulerPage() {
         response = await fetch(url, {
           method: 'GET',
           headers,
-          credentials: 'include'
+          credentials: 'include',
+          mode: 'cors', // Explicitly set CORS mode
         })
       } catch (networkError) {
         // Handle network errors gracefully
         console.error('Network error fetching scheduled posts:', networkError)
+        const errorMsg = networkError instanceof Error ? networkError.message : 'Network error'
+        
+        // Check if it's a CORS error
+        if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch')) {
+          console.error('CORS or network error - backend might not be running on', baseUrl)
+        }
         setScheduledPosts([])
         return
       }
@@ -255,16 +306,37 @@ export default function SchedulerPage() {
           setScheduledPosts([])
           return
         }
-        throw new Error(`Failed to fetch scheduled posts (${response.status})`)
+        
+        // Try to get error message from response
+        let errorMessage = `Failed to fetch scheduled posts (${response.status})`
+        try {
+          const errorData = await response.json()
+          if (errorData.error) {
+            errorMessage = errorData.error
+          } else if (errorData.message) {
+            errorMessage = errorData.message
+          }
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const text = await response.text()
-      if (!text) {
+      if (!text || text.trim() === '') {
         setScheduledPosts([])
         return
       }
 
-      const data = JSON.parse(text)
+      let data: any
+      try {
+        data = JSON.parse(text)
+      } catch (parseError) {
+        console.error('Failed to parse response:', text)
+        throw new Error('Invalid response from server')
+      }
       
       let scheduledData: ScheduledPost[] = []
       if (Array.isArray(data)) {
@@ -278,6 +350,14 @@ export default function SchedulerPage() {
       setScheduledPosts(activePosts)
     } catch (error) {
       console.error('Error fetching scheduled posts:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load scheduled posts'
+      
+      // Only log errors that aren't network/CORS related (those are handled above)
+      if (!errorMessage.includes('Network') && 
+          !errorMessage.includes('Failed to fetch') && 
+          !errorMessage.includes('Cannot connect')) {
+        console.error('Scheduled posts fetch error:', errorMessage)
+      }
       setScheduledPosts([])
     }
   }

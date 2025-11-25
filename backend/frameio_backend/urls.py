@@ -92,5 +92,6 @@ urlpatterns = [
 ]
 
 # Serve media files in development
+# In production, Nginx should serve media files directly (see nginx.conf)
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

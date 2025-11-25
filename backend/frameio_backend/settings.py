@@ -368,6 +368,10 @@ AUTH_USER_MODEL = 'users.User'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Storage mode configuration
+USE_CLOUDINARY = os.getenv('USE_CLOUDINARY', 'True').lower() == 'true'
+DOMAIN_URL = os.getenv('DOMAIN_URL', '')  # e.g., https://yourdomain.com for production
+
 # Static files settings
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
