@@ -88,3 +88,76 @@ logs/
 # Temporary files
 tmp/
 temp/
+
+# Test reports and results
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Media cache and temp uploads
+media/temp_uploads/
+media/test_posters/
+**/test_logo*.png
+
+# Executables (should be downloaded, not committed)
+*.exe
+cloudflared*
+
+# Tunnel/temporary URL files
+tunnel-url.txt
+*-url.txt
+
+# Test scripts (standalone, not part of test suites)
+test_*.py
+test-*.js
+test-*.html
+test-*.ps1
+run-*-tests.js
+run-*-tests.ps1
+run_*_test.py
+run_*_tests.py
+
+# Debug and diagnostic scripts
+*_diagnose*.py
+diagnose_*.py
+debug_*.py
+check_*.py
+fix_*.py
+verify_*.py
+*_fix_test.py
+*_test.py
+simple_*.py
+final_*.py
+
+# Temporary utility scripts
+create-*-script.js
+fix-*-issue.js
+*-additions.json
+get-*-url.js
+set-*-url*.js
+start-*-tunnel.js
+start-*-ngrok.js
+start-tunnel-*.js
+
+# One-time setup scripts (user-specific)
+setup_*_admin.py
+setup_*_env.py
+create_test_user.py
+
+# One-time installation/verification scripts
+install_*.sh
+install-*.ps1
+run_*_verification.*
+cleanup-*.ps1
+
+# Facebook test files
+facebook-*.html
+simple-facebook-test.html
+
+# Temporary fix/notes files
+*_fix.txt
+clerk_fix.txt
+
+# Documentation folders (temporary implementation notes)
+MD files/
+**/MD files/
