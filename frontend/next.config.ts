@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  outputFileTracingRoot: 'D:\\My Files\\Yarl IT Hub\\Framio',
   images: {
+    unoptimized: true,
     domains: ['localhost', '127.0.0.1'],
     remotePatterns: [
       {
@@ -18,6 +17,9 @@ const nextConfig: NextConfig = {
         pathname: '/media/**',
       },
     ],
+  },
+  experimental: {
+    optimizePackageImports: ['@clerk/nextjs', '@clerk/themes'],
   },
   async rewrites() {
     return [
@@ -89,10 +91,6 @@ const nextConfig: NextConfig = {
       }
     }
     return config
-  },
-  // Add experimental features for better chunk loading
-  experimental: {
-    optimizePackageImports: ['@clerk/nextjs', '@clerk/themes'],
   },
 };
 
