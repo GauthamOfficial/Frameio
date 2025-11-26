@@ -75,7 +75,25 @@ const nextConfig: NextConfig = {
     ]
   },
   // Improve chunk loading reliability
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
+    // Ignore canvas.node files on client side
+    if (!isServer) {
+      // Prevent webpack from trying to bundle canvas
+      config.resolve = config.resolve || {};
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        canvas: false,
+      };
+      
+      // Ignore .node files using webpack's IgnorePlugin
+      config.plugins = config.plugins || [];
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /\.node$/,
+        })
+      );
+    }
+
     if (!isServer) {
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
