@@ -49,7 +49,6 @@ export default function RootLayout({
         afterSignUpUrl="/dashboard"
         signInUrl="/sign-in"
         signUpUrl="/sign-up"
-        frontendApi={process.env.NEXT_PUBLIC_CLERK_FRONTEND_API}
       >
         <html lang="en">
           <head>

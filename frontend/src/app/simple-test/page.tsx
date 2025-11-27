@@ -114,23 +114,23 @@ export default function SimpleTestPage() {
                 <div>
                   <h3 className="font-semibold mb-2">Status Check:</h3>
                   <div className="bg-green-50 p-2 rounded text-sm">
-                    ✅ {result.status.message}
+                    ✅ {result.status && typeof result.status === 'object' && result.status !== null && 'message' in result.status && typeof result.status.message === 'string' ? result.status.message : JSON.stringify(result.status)}
                   </div>
                 </div>
 
                 <div>
                   <h3 className="font-semibold mb-2">Generation Result:</h3>
                   <div className="bg-blue-50 p-2 rounded text-sm">
-                    ✅ {result.generation.message}
+                    ✅ {result.generation && typeof result.generation === 'object' && result.generation !== null && 'message' in result.generation && typeof result.generation.message === 'string' ? result.generation.message : JSON.stringify(result.generation)}
                   </div>
                 </div>
 
-                {result.imageUrl && (
+                {result.imageUrl && typeof result.imageUrl === 'string' && (
                   <div>
                     <h3 className="font-semibold mb-2">Generated Image:</h3>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={result.imageUrl as string}
+                      src={result.imageUrl}
                       alt="Generated test image"
                       className="w-full h-auto rounded border"
                       onError={(e) => {

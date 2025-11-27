@@ -67,11 +67,14 @@ export default function AIGenerationPage() {
       });
 
       if (result.success) {
+        const jobId = result.jobId || Date.now().toString();
         const newPoster: GeneratedPoster = {
-          id: result.jobId,
+          id: jobId,
           imageUrl: result.imageUrl || '',
           prompt: generationRequest.prompt,
-          metadata: result.metadata,
+          metadata: (result.metadata && typeof result.metadata === 'object' && !Array.isArray(result.metadata)) 
+            ? result.metadata as Record<string, unknown> 
+            : {},
           createdAt: new Date().toISOString(),
           status: 'generating'
         };
@@ -79,7 +82,9 @@ export default function AIGenerationPage() {
         setGeneratedPosters(prev => [newPoster, ...prev]);
         
         // Poll for completion
-        pollGenerationStatus(result.jobId);
+        if (result.jobId) {
+          pollGenerationStatus(result.jobId);
+        }
       }
     } catch (error) {
       console.error('Generation failed:', error);
@@ -125,7 +130,7 @@ export default function AIGenerationPage() {
     poll();
   };
 
-  const handleExport = async (format: string) => {
+  const handleExport = async (format: 'png' | 'jpg' | 'pdf' | 'svg' | 'zip') => {
     if (!selectedPoster) return;
 
     try {
@@ -135,7 +140,7 @@ export default function AIGenerationPage() {
         quality: 'high'
       });
 
-      if (result.success) {
+      if (result.success && result.downloadUrl) {
         // Trigger download
         const link = document.createElement('a');
         link.href = result.downloadUrl;
@@ -149,13 +154,28 @@ export default function AIGenerationPage() {
     }
   };
 
+  const handleExportWrapper = (format: string) => {
+    const validFormats: ('png' | 'jpg' | 'pdf' | 'svg' | 'zip')[] = ['png', 'jpg', 'pdf', 'svg', 'zip'];
+    if (validFormats.includes(format as 'png' | 'jpg' | 'pdf' | 'svg' | 'zip')) {
+      handleExport(format as 'png' | 'jpg' | 'pdf' | 'svg' | 'zip');
+    }
+  };
+
   const handleShare = async (shareData: Record<string, unknown>) => {
     if (!selectedPoster) return;
 
     try {
       const result = await shareDesign({
         designId: selectedPoster.id,
-        ...shareData
+        shareType: (shareData.shareType as 'public' | 'private' | 'organization') || 'public',
+        permissions: (shareData.permissions as { canView: boolean; canEdit: boolean; canComment: boolean; canExport: boolean }) || {
+          canView: true,
+          canEdit: false,
+          canComment: false,
+          canExport: false
+        },
+        expiresAt: shareData.expiresAt as string | undefined,
+        password: shareData.password as string | undefined
       });
 
       if (result.success) {
@@ -424,7 +444,9 @@ export default function AIGenerationPage() {
           poster={selectedPoster}
           onClose={() => setShowEditor(false)}
           onSave={(editedPoster) => {
-            setSelectedPoster(editedPoster);
+            if (editedPoster && typeof editedPoster === 'object' && 'id' in editedPoster && 'imageUrl' in editedPoster && 'prompt' in editedPoster) {
+              setSelectedPoster(editedPoster as GeneratedPoster);
+            }
             setShowEditor(false);
           }}
         />
@@ -434,7 +456,7 @@ export default function AIGenerationPage() {
         <ExportModal
           poster={selectedPoster}
           onClose={() => setShowExportModal(false)}
-          onExport={handleExport}
+          onExport={handleExportWrapper}
           isLoading={isExporting}
         />
       )}

@@ -157,7 +157,7 @@ export default function SocialMediaPage() {
       }
       
       let postersData: Poster[] = []
-      if (data.success && data.results) {
+      if (data.success && data.results && Array.isArray(data.results)) {
         postersData = data.results
       } else if (Array.isArray(data)) {
         postersData = data

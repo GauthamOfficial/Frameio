@@ -209,7 +209,7 @@ export default function SchedulerPage() {
       }
       
       let postersData: GeneratedPoster[] = []
-      if (data.success && data.results) {
+      if (data.success && data.results && Array.isArray(data.results)) {
         postersData = data.results
       } else if (Array.isArray(data)) {
         postersData = data
@@ -493,13 +493,16 @@ export default function SchedulerPage() {
         }
         
         // Handle validation errors with field details
-        let errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to schedule post (${response.status})`
+        let errorMessage: string = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
+                                   (typeof errorData.error === 'string' ? errorData.error : null) || 
+                                   (typeof errorData.message === 'string' ? errorData.message : null) || 
+                                   `Failed to schedule post (${response.status})`
         
         // If detail is an object (field validation errors), format it nicely
         if (typeof errorData.detail === 'object' && errorData.detail !== null && !Array.isArray(errorData.detail)) {
           const fieldErrors = Object.entries(errorData.detail as Record<string, unknown>)
             .map(([field, error]: [string, unknown]) => {
-              const errorText = Array.isArray(error) ? error[0] : error
+              const errorText = Array.isArray(error) ? (typeof error[0] === 'string' ? error[0] : String(error[0])) : (typeof error === 'string' ? error : String(error))
               return `${field}: ${errorText}`
             })
             .join(', ')
@@ -639,7 +642,10 @@ export default function SchedulerPage() {
           console.error('Failed to parse error response:', e)
         }
         
-        let errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to update post (${response.status})`
+        let errorMessage: string = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
+                                   (typeof errorData.error === 'string' ? errorData.error : null) || 
+                                   (typeof errorData.message === 'string' ? errorData.message : null) || 
+                                   `Failed to update post (${response.status})`
         if (typeof errorData.detail === 'object' && errorData.detail !== null && !Array.isArray(errorData.detail)) {
           const fieldErrors = Object.entries(errorData.detail as Record<string, unknown>)
             .map(([field, error]: [string, unknown]) => {
@@ -743,7 +749,10 @@ export default function SchedulerPage() {
           console.error('Failed to parse error response:', e)
         }
         
-        const errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to delete post (${response.status})`
+        const errorMessage: string = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
+                                   (typeof errorData.error === 'string' ? errorData.error : null) || 
+                                   (typeof errorData.message === 'string' ? errorData.message : null) || 
+                                   `Failed to delete post (${response.status})`
         showError(errorMessage)
         return
       }
