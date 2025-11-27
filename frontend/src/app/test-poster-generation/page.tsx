@@ -108,7 +108,7 @@ export default function TestPosterGenerationPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               Test Results
-              {result?.success && <CheckCircle className="h-4 w-4 text-green-500" />}
+              {result && typeof result.success === 'boolean' && result.success && <CheckCircle className="h-4 w-4 text-green-500" />}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -120,40 +120,47 @@ export default function TestPosterGenerationPage() {
               </div>
             )}
 
-            {result?.success && result.image_url && (
-              <div className="space-y-4">
-                <div className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={(result.image_url as string).startsWith('http') ? (result.image_url as string) : `http://localhost:8000${result.image_url}`}
-                    alt="Generated poster"
-                    className="w-full h-auto rounded-md border"
-                    onError={(e) => {
-                      console.error('Image load error:', e);
-                      console.error('Image URL:', result.image_url);
-                      setError('Failed to load generated image. The image URL may be invalid.');
-                    }}
-                  />
+            {(() => {
+              const success = result && typeof result.success === 'boolean' ? result.success : false;
+              const imageUrl = result && typeof result.image_url === 'string' ? result.image_url : null;
+              const message = result && typeof result.message === 'string' ? result.message : '';
+              const filename = result && typeof result.filename === 'string' ? result.filename : '';
+              
+              return success && imageUrl && (
+                <div className="space-y-4">
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imageUrl.startsWith('http') ? imageUrl : `http://localhost:8000${imageUrl}`}
+                      alt="Generated poster"
+                      className="w-full h-auto rounded-md border"
+                      onError={(e) => {
+                        console.error('Image load error:', e);
+                        console.error('Image URL:', imageUrl);
+                        setError('Failed to load generated image. The image URL may be invalid.');
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-semibold">Success:</span> {success ? '✅ Yes' : '❌ No'}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Message:</span> {message}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Filename:</span> {filename}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Image URL:</span> 
+                      <br />
+                      <code className="text-xs break-all bg-gray-100 p-1 rounded">{imageUrl}</code>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="font-semibold">Success:</span> {result.success ? '✅ Yes' : '❌ No'}
-                  </div>
-                  <div>
-                    <span className="font-semibold">Message:</span> {result.message}
-                  </div>
-                  <div>
-                    <span className="font-semibold">Filename:</span> {result.filename}
-                  </div>
-                  <div>
-                    <span className="font-semibold">Image URL:</span> 
-                    <br />
-                    <code className="text-xs break-all bg-gray-100 p-1 rounded">{result.image_url}</code>
-                  </div>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {!isGenerating && !result && (
               <div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-md">

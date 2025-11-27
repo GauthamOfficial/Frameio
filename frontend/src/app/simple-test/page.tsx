@@ -125,7 +125,7 @@ export default function SimpleTestPage() {
                   </div>
                 </div>
 
-                {result.imageUrl && typeof result.imageUrl === 'string' && (
+                {typeof result.imageUrl === 'string' && result.imageUrl && (
                   <div>
                     <h3 className="font-semibold mb-2">Generated Image:</h3>
                     {/* eslint-disable-next-line @next/next/no-img-element */}

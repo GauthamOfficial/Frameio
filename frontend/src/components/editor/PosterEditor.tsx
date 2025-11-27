@@ -109,7 +109,8 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
   const saveToHistory = () => {
     if (!editorState.canvas) return;
     
-    const state = JSON.stringify(editorState.canvas.toJSON());
+    const canvas = editorState.canvas as { toJSON: () => unknown };
+    const state = JSON.stringify(canvas.toJSON());
     setEditorState(prev => {
       const newHistory = prev.history.slice(0, prev.historyIndex + 1);
       newHistory.push(state);
@@ -144,9 +145,10 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
       evented: true
     });
 
-    editorState.canvas.add(text);
-    editorState.canvas.setActiveObject(text);
-    editorState.canvas.renderAll();
+    const canvas = editorState.canvas as { add: (obj: unknown) => void; setActiveObject: (obj: unknown) => void; renderAll: () => void };
+    canvas.add(text);
+    canvas.setActiveObject(text);
+    canvas.renderAll();
     saveToHistory();
     setTextInput('');
   };
@@ -178,17 +180,19 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
       });
     }
 
-    editorState.canvas.add(shape);
-    editorState.canvas.setActiveObject(shape);
-    editorState.canvas.renderAll();
+    const canvas = editorState.canvas as { add: (obj: unknown) => void; setActiveObject: (obj: unknown) => void; renderAll: () => void };
+    canvas.add(shape);
+    canvas.setActiveObject(shape);
+    canvas.renderAll();
     saveToHistory();
   };
 
   const deleteSelected = () => {
     if (!editorState.canvas || !editorState.selectedObject) return;
     
-    editorState.canvas.remove(editorState.selectedObject);
-    editorState.canvas.renderAll();
+    const canvas = editorState.canvas as { remove: (obj: unknown) => void; renderAll: () => void };
+    canvas.remove(editorState.selectedObject);
+    canvas.renderAll();
     saveToHistory();
   };
 
@@ -213,68 +217,77 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
   const rotateSelected = () => {
     if (!editorState.canvas || !editorState.selectedObject) return;
     
-    const currentAngle = editorState.selectedObject.angle || 0;
-    editorState.selectedObject.set('angle', currentAngle + 90);
-    editorState.canvas.renderAll();
+    const obj = editorState.selectedObject as { angle?: number; set: (prop: string, value: number) => void };
+    const currentAngle = obj.angle || 0;
+    obj.set('angle', currentAngle + 90);
+    const canvas = editorState.canvas as { renderAll: () => void };
+    canvas.renderAll();
     saveToHistory();
   };
 
   const bringToFront = () => {
     if (!editorState.canvas || !editorState.selectedObject) return;
     
-    editorState.canvas.bringToFront(editorState.selectedObject);
-    editorState.canvas.renderAll();
+    const canvas = editorState.canvas as { bringToFront: (obj: unknown) => void; renderAll: () => void };
+    canvas.bringToFront(editorState.selectedObject);
+    canvas.renderAll();
     saveToHistory();
   };
 
   const sendToBack = () => {
     if (!editorState.canvas || !editorState.selectedObject) return;
     
-    editorState.canvas.sendToBack(editorState.selectedObject);
-    editorState.canvas.renderAll();
+    const canvas = editorState.canvas as { sendToBack: (obj: unknown) => void; renderAll: () => void };
+    canvas.sendToBack(editorState.selectedObject);
+    canvas.renderAll();
     saveToHistory();
   };
 
   const zoomIn = () => {
     if (!editorState.canvas) return;
     
-    const currentZoom = editorState.canvas.getZoom();
-    editorState.canvas.setZoom(Math.min(currentZoom * 1.2, 3));
-    editorState.canvas.renderAll();
+    const canvas = editorState.canvas as { getZoom: () => number; setZoom: (zoom: number) => void; renderAll: () => void };
+    const currentZoom = canvas.getZoom();
+    canvas.setZoom(Math.min(currentZoom * 1.2, 3));
+    canvas.renderAll();
   };
 
   const zoomOut = () => {
     if (!editorState.canvas) return;
     
-    const currentZoom = editorState.canvas.getZoom();
-    editorState.canvas.setZoom(Math.max(currentZoom / 1.2, 0.1));
-    editorState.canvas.renderAll();
+    const canvas = editorState.canvas as { getZoom: () => number; setZoom: (zoom: number) => void; renderAll: () => void };
+    const currentZoom = canvas.getZoom();
+    canvas.setZoom(Math.max(currentZoom / 1.2, 0.1));
+    canvas.renderAll();
   };
 
   const resetZoom = () => {
     if (!editorState.canvas) return;
     
-    editorState.canvas.setZoom(1);
-    editorState.canvas.renderAll();
+    const canvas = editorState.canvas as { setZoom: (zoom: number) => void; renderAll: () => void };
+    canvas.setZoom(1);
+    canvas.renderAll();
   };
 
   const undo = () => {
-    if (editorState.historyIndex > 0) {
+    if (editorState.historyIndex > 0 && editorState.canvas) {
       const newIndex = editorState.historyIndex - 1;
       const state = editorState.history[newIndex];
-      editorState.canvas?.loadFromJSON(state, () => {
-        editorState.canvas?.renderAll();
+      const canvas = editorState.canvas as { loadFromJSON: (json: string, callback: () => void) => void; renderAll: () => void };
+      canvas.loadFromJSON(state, () => {
+        canvas.renderAll();
       });
       setEditorState(prev => ({ ...prev, historyIndex: newIndex }));
     }
   };
 
   const redo = () => {
-    if (editorState.historyIndex < editorState.history.length - 1) {
+    if (editorState.historyIndex < editorState.history.length - 1 && editorState.canvas) {
       const newIndex = editorState.historyIndex + 1;
       const state = editorState.history[newIndex];
-      editorState.canvas?.loadFromJSON(state, () => {
-        editorState.canvas?.renderAll();
+      const canvas = editorState.canvas as { loadFromJSON: (json: string, callback: () => void) => void; renderAll: () => void };
+      canvas.loadFromJSON(state, () => {
+        canvas.renderAll();
       });
       setEditorState(prev => ({ ...prev, historyIndex: newIndex }));
     }
@@ -283,7 +296,8 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
   const exportCanvas = () => {
     if (!editorState.canvas) return;
     
-    const dataURL = editorState.canvas.toDataURL({
+    const canvas = editorState.canvas as { toDataURL: (options: { format: string; quality: number; multiplier: number }) => string };
+    const dataURL = canvas.toDataURL({
       format: 'png',
       quality: 1,
       multiplier: 2
@@ -300,14 +314,15 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
   const handleSave = () => {
     if (!editorState.canvas) return;
     
+    const canvas = editorState.canvas as { toDataURL: (options: { format: string; quality: number; multiplier: number }) => string; toJSON: () => unknown };
     const editedData = {
       ...poster,
-      editedImageUrl: editorState.canvas.toDataURL({
+      editedImageUrl: canvas.toDataURL({
         format: 'png',
         quality: 1,
         multiplier: 2
       }),
-      canvasData: editorState.canvas.toJSON()
+      canvasData: canvas.toJSON()
     };
     
     onSave(editedData);

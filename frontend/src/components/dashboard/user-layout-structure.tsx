@@ -29,6 +29,7 @@ export function UserLayoutStructure({ children }: UserLayoutStructureProps) {
       label: "Poster Generator",
     },
     {
+      href: "/dashboard/catalog-builder",
       icon: FolderOpen,
       label: "Catalog Builder",
     },

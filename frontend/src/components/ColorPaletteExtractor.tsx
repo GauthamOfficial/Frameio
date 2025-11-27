@@ -155,7 +155,7 @@ export default function ColorPaletteExtractor({
 
         return {
           hex,
-          rgb: [r, g, b],
+          rgb: [r, g, b] as [number, number, number],
           hsl,
           percentage,
           name: colorNames[hex] || getColorName(r, g, b),

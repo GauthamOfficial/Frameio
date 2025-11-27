@@ -11,14 +11,14 @@ interface SignUpButtonProps {
 export function SignUpButton({ children, className }: SignUpButtonProps) {
   if (children) {
     return (
-      <ClerkSignUpButton mode="modal" afterSignUpUrl="/dashboard">
+      <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
         {children}
       </ClerkSignUpButton>
     )
   }
 
   return (
-    <ClerkSignUpButton mode="modal" afterSignUpUrl="/dashboard">
+    <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
       <Button size="sm" className={className}>
         Get Started
       </Button>

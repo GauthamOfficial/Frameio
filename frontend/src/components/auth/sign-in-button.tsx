@@ -11,14 +11,14 @@ interface SignInButtonProps {
 export function SignInButton({ children, className }: SignInButtonProps) {
   if (children) {
     return (
-      <ClerkSignInButton mode="modal" afterSignInUrl="/dashboard">
+      <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
         {children}
       </ClerkSignInButton>
     )
   }
 
   return (
-    <ClerkSignInButton mode="modal" afterSignInUrl="/dashboard">
+    <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
       <Button variant="ghost" size="sm" className={className}>
         Sign In
       </Button>

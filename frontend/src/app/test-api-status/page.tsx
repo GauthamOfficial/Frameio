@@ -12,7 +12,7 @@ export default function TestAPIStatusPage() {
     try {
       // Test the AI poster service status
       const response = await apiClient.get('/api/ai/ai-poster/status/');
-      setStatus(response);
+      setStatus(response && typeof response === 'object' && response !== null ? response as Record<string, unknown> : null);
     } catch (error) {
       setStatus({ error: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
@@ -27,7 +27,7 @@ export default function TestAPIStatusPage() {
         prompt: 'A beautiful silk saree for festive occasions',
         aspect_ratio: '1:1'
       });
-      setStatus(response);
+      setStatus(response && typeof response === 'object' && response !== null ? response as Record<string, unknown> : null);
     } catch (error) {
       setStatus({ error: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
