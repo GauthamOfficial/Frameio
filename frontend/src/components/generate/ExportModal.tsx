@@ -73,7 +73,7 @@ const exportFormats: ExportFormat[] = [
   }
 ];
 
-export function ExportModal({ poster, onClose, onExport, isLoading }: ExportModalProps) {
+export function ExportModal({ onClose, onExport, isLoading }: ExportModalProps) {
   const [selectedFormat, setSelectedFormat] = useState('png');
   const [customDimensions, setCustomDimensions] = useState({
     width: 1080,
@@ -91,7 +91,7 @@ export function ExportModal({ poster, onClose, onExport, isLoading }: ExportModa
       setTimeout(() => {
         onClose();
       }, 2000);
-    } catch (error) {
+    } catch {
       setExportStatus('error');
     }
   };

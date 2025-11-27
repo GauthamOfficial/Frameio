@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
   Bell, 
-  Search, 
-  Settings, 
-  LogOut,
+  Search,
   User,
   Building2
 } from "lucide-react"

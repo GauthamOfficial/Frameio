@@ -7,6 +7,7 @@ interface User {
   id: string
   email: string
   username?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
 
@@ -65,6 +66,7 @@ export function useAuth() {
   }, [clerkAuth])
 
   // Sync user from Clerk to Django backend
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const syncUserToBackend = useCallback(async (clerkUser: any, token: string | null) => {
     if (!clerkUser || !token) return
     
@@ -235,6 +237,7 @@ export function useAuth() {
     } finally {
       fetchingRef.current = false
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getToken, clerkUser?.id, clerkLoaded, syncUserToBackend])
 
   useEffect(() => {

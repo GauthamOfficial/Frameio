@@ -46,7 +46,7 @@ export function FacebookSharingModal({ isOpen, onClose, content, imageUrl }: Fac
         
         <div className="mb-4">
           <p className="text-gray-600 mb-3">
-            Since no tunnel is running, Facebook can't access your poster page directly. 
+            Since no tunnel is running, Facebook can&apos;t access your poster page directly. 
             Here are two ways to share:
           </p>
         </div>

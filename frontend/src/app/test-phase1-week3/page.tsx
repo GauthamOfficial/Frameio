@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
   Modal, 
-  ModalHeader, 
   ModalContent, 
   ModalFooter, 
   ConfirmationModal,
@@ -29,8 +28,8 @@ import { useOrganization } from "@/contexts/organization-context"
 import { CheckCircle, XCircle, AlertCircle, Info } from "lucide-react"
 
 export default function TestPhase1Week3Page() {
-  const { isAuthenticated, user, userRole, permissions, isGlobalLoading, setGlobalLoading } = useApp()
-  const { organizationId, userRole: orgUserRole, isLoading } = useOrganization()
+  const { isAuthenticated, userRole, permissions, setGlobalLoading } = useApp()
+  const { organizationId } = useOrganization()
   const { showSuccess, showError, showWarning, showInfo } = useToastHelpers()
   
   const [showModal, setShowModal] = useState(false)
@@ -47,10 +46,8 @@ export default function TestPhase1Week3Page() {
 
   const {
     data: paginatedData,
-    sort,
     currentPage,
     totalPages,
-    handleSort,
     handlePageChange,
   } = useDataTable({
     data: testData,

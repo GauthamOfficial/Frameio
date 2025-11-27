@@ -27,6 +27,7 @@ export function MetaMaskSuppressor() {
           // Create a mock ethereum object that doesn't auto-connect
           const mockEthereum = {
             ...originalEthereum,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             request: async (args: any) => {
               // Suppress connection requests
               if (args.method === 'eth_requestAccounts' || args.method === 'eth_accounts') {

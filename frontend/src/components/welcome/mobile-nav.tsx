@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { SignInButton as ClerkSignInButton, SignUpButton as ClerkSignUpButton, useUser } from '@clerk/nextjs'
-import { Menu, X } from "lucide-react"
 import { Logo } from "@/components/common/logo"
 import { cn } from "@/lib/utils"
 

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Verify admin session
     const session = await getAdminSession();
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let data: any;
+    let data: Record<string, unknown>;
     try {
       const text = await response.text();
       if (text) {
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       } else {
         data = {};
       }
-    } catch (parseError) {
+    } catch {
       // If response is not JSON, use empty object
       data = {};
     }

@@ -5,7 +5,7 @@ import { nanoBananaService } from '@/lib/ai/nanobanana';
 import NanoBananaTester from '@/lib/ai/test-nanobanana';
 
 export default function TestNanoBananaPage() {
-  const [testResults, setTestResults] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<Record<string, unknown>[]>([]);
   const [isRunning, setIsRunning] = useState(false);
 
   const runTests = async () => {
@@ -93,12 +93,12 @@ export default function TestNanoBananaPage() {
         <div className="bg-yellow-50 p-4 rounded-lg">
           <h2 className="text-xl font-semibold mb-3">What This Test Does</h2>
           <ul className="list-disc list-inside space-y-2 text-sm">
-            <li><strong>Configuration Test:</strong> Verifies that the service correctly detects when it's not configured</li>
+            <li><strong>Configuration Test:</strong> Verifies that the service correctly detects when it&apos;s not configured</li>
             <li><strong>Fallback Test:</strong> Tests that the service returns a fallback response instead of throwing errors</li>
             <li><strong>Error Handling Test:</strong> Ensures the service handles errors gracefully</li>
           </ul>
           <p className="mt-3 text-sm text-gray-600">
-            The "Failed to fetch" error should no longer occur because the service now checks configuration 
+            The &quot;Failed to fetch&quot; error should no longer occur because the service now checks configuration 
             before making API calls and provides proper fallback responses.
           </p>
         </div>

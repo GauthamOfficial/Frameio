@@ -65,7 +65,7 @@ export default function AboutPage() {
             </CardHeader>
             <CardContent>
               <p className="text-lg text-foreground leading-relaxed">
-                Frameio's vision is to empower every textile business with intelligent, AI-driven design tools that simplify content creation, boost brand visibility, and help businesses grow through creativity and innovation.
+                Frameio&apos;s vision is to empower every textile business with intelligent, AI-driven design tools that simplify content creation, boost brand visibility, and help businesses grow through creativity and innovation.
               </p>
             </CardContent>
           </Card>

@@ -31,7 +31,7 @@ interface UserTableProps {
   onSuspend?: (user: User) => void;
 }
 
-export function UserTable({ users, onView, onEdit, onDelete, onSuspend }: UserTableProps) {
+export function UserTable({ users, onView, onEdit, onDelete }: UserTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   

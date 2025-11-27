@@ -11,15 +11,15 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  expect: {
+    timeout: 5000,
+  },
   
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     actionTimeout: 10000,
     navigationTimeout: 15000,
-    expect: {
-      timeout: 5000,
-    },
   },
 
   // Full browser coverage

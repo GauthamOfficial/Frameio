@@ -25,7 +25,7 @@ interface OrganizationProviderProps {
 export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const { user, isLoaded } = useUser()
   const { getToken } = useAuth()
-  const { setGlobalLoading, setError: setAppError } = useApp()
+  const { setGlobalLoading } = useApp()
   const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
@@ -110,30 +110,36 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         console.log('Role permissions:', rolePermissions)
         setPermissions(rolePermissions)
         
-      } catch (profileError: any) {
+      } catch (profileError: unknown) {
         console.error('Profile fetch error:', profileError)
         
         // Handle specific profile errors
-        if (profileError.response?.status === 403) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((profileError as any).response?.status === 403) {
           throw new Error('User is not part of any organization. Please contact an administrator to be added to an organization.')
-        } else if (profileError.response?.status === 401) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } else if ((profileError as any).response?.status === 401) {
           throw new Error('Authentication failed. Please log in again.')
         } else {
           throw profileError
         }
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch user profile:', err)
       
       // Handle specific error types
-      if (err.message?.includes('Network Error') || err.code === 'ERR_NETWORK') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((err as any).message?.includes('Network Error') || (err as any).code === 'ERR_NETWORK') {
         setError('Unable to connect to the server. Please check if the backend is running.')
-      } else if (err.response?.status === 401) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } else if ((err as any).response?.status === 401) {
         setError('Authentication failed. Please log in again.')
-      } else if (err.response?.status === 403) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } else if ((err as any).response?.status === 403) {
         setError('Access denied. You may not have permission to access this organization.')
-      } else if (err.response?.status === 404) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } else if ((err as any).response?.status === 404) {
         setError('User profile not found. Please contact support.')
       } else {
         setError(`Failed to load user data: ${err.message || 'Unknown error'}`)
@@ -179,6 +185,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     if (isLoaded && user) {
       fetchUserProfile()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isLoaded])
 
   const value: OrganizationContextType = {

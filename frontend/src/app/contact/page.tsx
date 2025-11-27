@@ -98,7 +98,7 @@ export default function ContactPage() {
       }
 
       // Parse JSON response
-      let data: any
+      let data: Record<string, unknown>
       try {
         data = JSON.parse(responseText)
       } catch (jsonError) {
@@ -113,7 +113,7 @@ export default function ContactPage() {
       } else {
         // Handle validation errors from backend
         const newErrors: Record<string, string> = {}
-        if (data.error) {
+        if (data.error && typeof data.error === 'string') {
           if (data.error.includes('Name')) {
             newErrors.name = data.error
           } else if (data.error.includes('Email')) {
@@ -199,7 +199,7 @@ export default function ContactPage() {
               Contact Us
             </h1>
             <p className="text-xl text-muted-foreground">
-              Get in touch with our team. We'd love to hear from you!
+              Get in touch with our team. We&apos;d love to hear from you!
             </p>
           </div>
 
@@ -209,7 +209,7 @@ export default function ContactPage() {
               <CardHeader>
                 <CardTitle className="text-2xl">Send us a Message</CardTitle>
                 <CardDescription>
-                  Fill out the form below and we'll get back to you as soon as possible.
+                  Fill out the form below and we&apos;ll get back to you as soon as possible.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -220,7 +220,7 @@ export default function ContactPage() {
                       Message Sent!
                     </h3>
                     <p className="text-muted-foreground mb-4">
-                      Thank you for contacting us. We'll get back to you soon.
+                      Thank you for contacting us. We&apos;ll get back to you soon.
                     </p>
                     <Button
                       onClick={() => setIsSubmitted(false)}

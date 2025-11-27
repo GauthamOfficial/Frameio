@@ -55,6 +55,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
     return () => {
       window.removeEventListener('branding-kit-generated', handleBrandingKitGenerated)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchBrandingKits = async () => {
@@ -86,7 +87,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
           headers,
           credentials: 'include'
         })
-      } catch (networkError) {
+      } catch {
         console.warn('Backend may not be accessible, showing empty state')
         setBrandingKits([])
         return
@@ -115,6 +116,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
       }
 
       // Parse response
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let data: any
       try {
         const text = await response.text()
@@ -188,7 +190,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
           day: 'numeric'
         })
       }
-    } catch (error) {
+    } catch {
       return 'Invalid date'
     }
   }
@@ -331,6 +333,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
                 onClick={() => router.push(`/dashboard/branding-kits/${kit.id}`)}
               >
                 {kit.logo ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={`data:image/${kit.logo.format.toLowerCase()};base64,${kit.logo.data}`}
                     alt={kit.prompt || 'Generated logo'}

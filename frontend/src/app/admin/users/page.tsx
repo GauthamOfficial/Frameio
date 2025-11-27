@@ -63,13 +63,13 @@ export default function AdminUsersPage() {
       console.log('[Admin Users] Response status:', response.status);
 
       if (!response.ok) {
-        let errorData: any = {};
+        let errorData: Record<string, unknown> = {};
         try {
           const text = await response.text();
           if (text) {
             errorData = JSON.parse(text);
           }
-        } catch (parseError) {
+        } catch {
           // If response is not JSON, use status text
           errorData = { error: response.statusText || 'Unknown error' };
         }
@@ -78,7 +78,9 @@ export default function AdminUsersPage() {
         
         // Provide more helpful error messages
         if (response.status === 401 || response.status === 403) {
-          const errorMessage = errorData.error || errorData.detail || 'Authentication required. Please log in to the admin panel.';
+          const errorMessage = (typeof errorData.error === 'string' ? errorData.error : null) || 
+                               (typeof errorData.detail === 'string' ? errorData.detail : null) || 
+                               'Authentication required. Please log in to the admin panel.';
           setError(errorMessage);
           setUsers([]);
           setLoading(false);
@@ -87,7 +89,9 @@ export default function AdminUsersPage() {
         
         // Handle backend unavailable errors
         if (response.status === 503 || errorData.networkError) {
-          const errorMessage = errorData.detail || errorData.error || 'Backend service is unavailable. Please ensure the backend server is running.';
+          const errorMessage = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
+                               (typeof errorData.error === 'string' ? errorData.error : null) || 
+                               'Backend service is unavailable. Please ensure the backend server is running.';
           setError(errorMessage);
           setUsers([]);
           setLoading(false);
@@ -95,14 +99,17 @@ export default function AdminUsersPage() {
         }
         
         // For other errors
-        const errorMessage = errorData.error || errorData.detail || errorData.message || `Failed to load users (${response.status})`;
-        setError(errorMessage);
+        const errorMessage = (typeof errorData.error === 'string' ? errorData.error : null) || 
+                             (typeof errorData.detail === 'string' ? errorData.detail : null) || 
+                             (typeof errorData.message === 'string' ? errorData.message : null) || 
+                             `Failed to load users (${response.status})`;
+          setError(errorMessage);
         setUsers([]);
         setLoading(false);
         return;
       }
 
-      let data: any;
+      let data: Record<string, unknown>;
       try {
         const text = await response.text();
         if (!text) {

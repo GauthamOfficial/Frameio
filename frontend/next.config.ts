@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  outputFileTracingRoot: 'D:\\My Files\\Yarl IT Hub\\Framio',
+  // Set outputFileTracingRoot to the frontend directory to avoid multiple lockfile warning
+  outputFileTracingRoot: path.join(__dirname),
   images: {
     domains: ['localhost', '127.0.0.1'],
     remotePatterns: [
@@ -74,7 +76,15 @@ const nextConfig: NextConfig = {
   },
   // Improve chunk loading reliability
   webpack: (config, { isServer }) => {
+    // Handle fabric.js and canvas for client-side only
     if (!isServer) {
+      // Stub canvas module for client-side builds (fabric.js optional dependency)
+      const path = require('path');
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        canvas: path.resolve(__dirname, 'webpack-canvas-stub.js'),
+      };
+      
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
         cacheGroups: {
@@ -87,6 +97,12 @@ const nextConfig: NextConfig = {
           },
         },
       }
+    } else {
+      // Server-side: stub canvas to prevent SSR errors
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        canvas: false,
+      };
     }
     return config
   },

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { 
-  Wand2, 
   Download, 
   RefreshCw,
   AlertCircle,
@@ -25,6 +24,7 @@ import {
 } from "lucide-react"
 import React, { useState, useRef } from "react"
 import { useUser, useAuth } from '@clerk/nextjs'
+import Image from 'next/image'
 
 interface GenerationResult {
   success: boolean
@@ -60,7 +60,6 @@ export default function EnhancedPosterGenerator() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Caption and hashtag functionality
-  const [showCaption, setShowCaption] = useState(false)
   const [copiedItem, setCopiedItem] = useState<string | null>(null)
 
   const generatePoster = async () => {
@@ -82,7 +81,7 @@ export default function EnhancedPosterGenerator() {
 
       // Get authentication token
       const token = await getToken()
-      const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {}
+      const authHeaders: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {}
       
       // Add user context for branding (development)
       if (user?.id) {
@@ -424,11 +423,13 @@ export default function EnhancedPosterGenerator() {
 
             {result?.success && result.image_url && (
               <div className="space-y-4">
-                <div className="relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
-                  <img
+                <div className="relative w-full" style={{aspectRatio: aspectRatio.replace(':', ' / ')}}>
+                  <Image
                     src={result.image_url.startsWith('http') ? result.image_url : `http://localhost:8000${result.image_url}`}
                     alt="Generated poster"
-                    className="absolute inset-0 w-full h-full rounded-md border object-contain"
+                    fill
+                    className="rounded-md border object-contain"
+                    unoptimized
                     onError={(e) => {
                       console.error('Image load error:', e)
                       console.error('Image URL:', result.image_url)
@@ -451,13 +452,12 @@ export default function EnhancedPosterGenerator() {
                     className="w-full"
                   >
                     <Share2 className="mr-2 h-4 w-4" />
-                    {copiedItem === 'share' ? 'Copied to Clipboard!' : 'Share Poster & Caption'}
+                    {copiedItem === 'share' ? 'Copied to Clipboard!' : 'Share Poster &amp; Caption'}
                   </Button>
                 </div>
 
                 {/* AI Generated Caption and Hashtags Section */}
-                {result && (
-                  <div className="mt-6 space-y-4">
+                <div className="mt-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-purple-500" />
@@ -594,7 +594,7 @@ export default function EnhancedPosterGenerator() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    const hashtagText = result.hashtags.join(' ')
+                                    const hashtagText = result.hashtags?.join(' ') || ''
                                     copyToClipboard(hashtagText, 'hashtags')
                                   }}
                                   className="flex-1"
@@ -706,9 +706,7 @@ export default function EnhancedPosterGenerator() {
                           </CardContent>
                         </Card>
                       </div>
-                    )}
                   </div>
-                )}
               </div>
             )}
 
@@ -725,7 +723,8 @@ export default function EnhancedPosterGenerator() {
             {/* Preview uploaded image */}
             {previewUrl && !result && !isGenerating && (
               <div className="space-y-4">
-                <div className="relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
+                <div className="relative w-full" style={{aspectRatio: aspectRatio.replace(':', ' / ')}}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={previewUrl}
                     alt="Uploaded reference image"

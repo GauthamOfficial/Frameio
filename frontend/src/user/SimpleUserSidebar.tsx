@@ -9,7 +9,6 @@ import { Logo } from "@/components/common/logo"
 import { 
   LayoutDashboard, 
   Image, 
-  BookOpen, 
   Palette, 
   Share2, 
   Calendar,

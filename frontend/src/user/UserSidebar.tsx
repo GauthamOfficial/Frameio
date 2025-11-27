@@ -10,7 +10,6 @@ import { useOrganization } from "@/contexts/organization-context"
 import { 
   LayoutDashboard, 
   Image, 
-  BookOpen, 
   Palette, 
   Share2, 
   Calendar,

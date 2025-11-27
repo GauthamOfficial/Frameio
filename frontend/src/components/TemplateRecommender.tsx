@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Eye, Download, Heart, Star } from 'lucide-react';
+import { Sparkles, Eye, Download, Star } from 'lucide-react';
 import { useToastHelpers } from '@/components/common';
 import { ColorInfo } from './ColorPaletteExtractor';
 
@@ -181,6 +181,7 @@ export default function TemplateRecommender({
     if (theme || colorPalette.length > 0 || style) {
       generateRecommendations();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, colorPalette, style]);
 
   /**
@@ -195,7 +196,7 @@ export default function TemplateRecommender({
       
       const recommendations = getRecommendedTemplates(theme, colorPalette, style);
       setRecommendedTemplates(recommendations);
-    } catch (error) {
+    } catch {
       showError('Failed to generate recommendations');
     } finally {
       setIsLoading(false);
@@ -210,7 +211,7 @@ export default function TemplateRecommender({
     palette: ColorInfo[],
     style: string
   ): Template[] => {
-    let scoredTemplates = MOCK_TEMPLATES.map(template => ({
+    const scoredTemplates = MOCK_TEMPLATES.map(template => ({
       ...template,
       score: calculateTemplateScore(template, theme, palette, style),
     }));
@@ -219,7 +220,8 @@ export default function TemplateRecommender({
     return scoredTemplates
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
-      .map(({ score, ...template }) => template);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .map(({ score: _score, ...template }) => template);
   };
 
   /**
@@ -345,6 +347,7 @@ export default function TemplateRecommender({
                 <div className="flex gap-4">
                   {/* Template Preview */}
                   <div className="w-20 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={template.previewUrl}
                       alt={template.name}

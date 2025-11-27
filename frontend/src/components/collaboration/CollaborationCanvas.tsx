@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { fabric } from 'fabric';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User } from 'lucide-react';
@@ -22,7 +21,7 @@ interface Participant {
 interface CollaborationCanvasProps {
   participants: Participant[];
   onCursorUpdate: (cursor: { x: number; y: number }) => void;
-  onDesignUpdate: (update: any) => void;
+  onDesignUpdate: (update: unknown) => void;
 }
 
 export function CollaborationCanvas({ 
@@ -31,20 +30,25 @@ export function CollaborationCanvas({
   onDesignUpdate 
 }: CollaborationCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [canvas, setCanvas] = useState<unknown | null>(null); // fabric.Canvas - using unknown to avoid SSR issues
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const fabricCanvas = new fabric.Canvas(canvasRef.current, {
-      width: 800,
-      height: 600,
-      backgroundColor: '#ffffff'
-    });
+    // Import fabric.js only on client side
+    import('fabric').then((fabricModule) => {
+      const { fabric } = fabricModule;
+      
+      const fabricCanvas = new fabric.Canvas(canvasRef.current!, {
+        width: 800,
+        height: 600,
+        backgroundColor: '#ffffff'
+      });
 
-    // Add some sample content
-    const sampleText = new fabric.Text('Collaborative Design', {
+      // Add some sample content
+      const sampleText = new fabric.Text('Collaborative Design', {
       left: 100,
       top: 100,
       fontSize: 32,
@@ -92,12 +96,16 @@ export function CollaborationCanvas({
       });
     });
 
-    setCanvas(fabricCanvas);
-    setIsLoading(false);
+      setCanvas(fabricCanvas);
+      setIsLoading(false);
 
-    return () => {
-      fabricCanvas.dispose();
-    };
+      return () => {
+        fabricCanvas.dispose();
+      };
+    }).catch((error) => {
+      console.error('Failed to load fabric.js:', error);
+      setIsLoading(false);
+    });
   }, [onCursorUpdate, onDesignUpdate]);
 
   const getRoleColor = (role: string) => {

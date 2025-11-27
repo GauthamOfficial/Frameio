@@ -343,6 +343,7 @@ export default function PosterGenerator() {
           <CardContent>
             <div className="aspect-[4/5] bg-muted rounded-lg flex items-center justify-center mb-4 overflow-hidden">
               {generatedPoster ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={generatedPoster.url}
                   alt="Generated poster"

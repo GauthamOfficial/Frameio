@@ -33,7 +33,7 @@ interface CommentRequest {
 
 interface CollaborationResponse {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
 }
 
@@ -124,7 +124,7 @@ export function useCollaboration() {
     }
   };
 
-  const updateAccess = async (designId: string, userId: string, permissions: any): Promise<CollaborationResponse> => {
+  const updateAccess = async (designId: string, userId: string, permissions: unknown): Promise<CollaborationResponse> => {
     setIsLoading(true);
     
     try {

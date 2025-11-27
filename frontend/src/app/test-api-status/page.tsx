@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 
 export default function TestAPIStatusPage() {
-  const [status, setStatus] = useState<any>(null);
+  const [status, setStatus] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const checkAPIStatus = async () => {

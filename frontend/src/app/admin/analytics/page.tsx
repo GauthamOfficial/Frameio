@@ -10,7 +10,6 @@ import {
   Users, 
   Download,
   Calendar,
-  DollarSign,
   Eye,
   BarChart3,
   AlertCircle
@@ -47,6 +46,7 @@ export default function AdminAnalyticsPage() {
 
   useEffect(() => {
     loadAnalyticsData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange]);
 
   const loadAnalyticsData = async () => {

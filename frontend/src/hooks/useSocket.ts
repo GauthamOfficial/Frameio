@@ -1,9 +1,11 @@
+'use client';
+
 import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@clerk/nextjs';
 
 interface SocketEventHandlers {
-  [key: string]: (...args: any[]) => void;
+  [key: string]: (...args: unknown[]) => void;
 }
 
 export function useSocket() {
@@ -61,14 +63,14 @@ export function useSocket() {
     initializeSocket();
   }, [getToken]);
 
-  const on = (event: string, handler: (...args: any[]) => void) => {
+  const on = (event: string, handler: (...args: unknown[]) => void) => {
     eventHandlers.current[event] = handler;
     if (socket) {
       socket.on(event, handler);
     }
   };
 
-  const off = (event: string, handler?: (...args: any[]) => void) => {
+  const off = (event: string, handler?: (...args: unknown[]) => void) => {
     if (handler) {
       delete eventHandlers.current[event];
     }
@@ -77,7 +79,7 @@ export function useSocket() {
     }
   };
 
-  const emit = (event: string, data?: any) => {
+  const emit = (event: string, data?: unknown) => {
     if (socket && isConnected) {
       socket.emit(event, data);
     } else {
@@ -96,7 +98,7 @@ export function useSocket() {
         reject(new Error('Join session timeout'));
       }, 5000);
 
-      socket.emit('join_session', { sessionId }, (response: any) => {
+      socket.emit('join_session', { sessionId }, (response: { success?: boolean; error?: string }) => {
         clearTimeout(timeout);
         if (response.success) {
           resolve(response);
@@ -114,7 +116,7 @@ export function useSocket() {
         return;
       }
 
-      socket.emit('leave_session', {}, (response: any) => {
+      socket.emit('leave_session', {}, (response: { success?: boolean; error?: string }) => {
         if (response.success) {
           resolve(response);
         } else {
@@ -132,11 +134,11 @@ export function useSocket() {
     emit('cursor_update', { cursor });
   };
 
-  const sendDesignUpdate = (update: any) => {
+  const sendDesignUpdate = (update: unknown) => {
     emit('design_update', update);
   };
 
-  const sendComment = (comment: any) => {
+  const sendComment = (comment: unknown) => {
     emit('new_comment', comment);
   };
 
@@ -144,15 +146,15 @@ export function useSocket() {
     emit('request_design_sync');
   };
 
-  const sendDesignSync = (designData: any) => {
+  const sendDesignSync = (designData: unknown) => {
     emit('design_sync', designData);
   };
 
-  const sendParticipantUpdate = (update: any) => {
+  const sendParticipantUpdate = (update: unknown) => {
     emit('participant_update', update);
   };
 
-  const sendActivity = (activity: any) => {
+  const sendActivity = (activity: unknown) => {
     emit('activity', activity);
   };
 

@@ -2,7 +2,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { 
   Image, 
-  BookOpen, 
   Palette, 
   Share2, 
   Calendar,

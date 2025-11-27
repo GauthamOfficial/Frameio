@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { fabric } from 'fabric';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { 
   Save, 
   Undo, 
@@ -14,16 +12,13 @@ import {
   Download, 
   Type, 
   Square, 
-  Circle, 
-  Image as ImageIcon,
-  Palette,
+  Circle,
   Layers,
   ZoomIn,
   ZoomOut,
   RotateCw,
   Trash2,
-  Copy,
-  Move
+  Copy
 } from 'lucide-react';
 
 interface PosterEditorProps {
@@ -31,17 +26,17 @@ interface PosterEditorProps {
     id: string;
     imageUrl: string;
     prompt: string;
-    metadata: any;
+    metadata: unknown;
   };
   onClose: () => void;
-  onSave: (editedPoster: any) => void;
+  onSave: (editedPoster: unknown) => void;
 }
 
 interface EditorState {
-  canvas: fabric.Canvas | null;
+  canvas: unknown | null; // fabric.Canvas - using unknown to avoid SSR issues
   history: string[];
   historyIndex: number;
-  selectedObject: fabric.Object | null;
+  selectedObject: unknown | null; // fabric.Object - using unknown to avoid SSR issues
 }
 
 export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
@@ -64,14 +59,18 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const canvas = new fabric.Canvas(canvasRef.current, {
-      width: 800,
-      height: 800,
-      backgroundColor: '#ffffff'
-    });
+    // Import fabric.js only on client side
+    import('fabric').then((fabricModule) => {
+      const { fabric } = fabricModule;
+      
+      const canvas = new fabric.Canvas(canvasRef.current!, {
+        width: 800,
+        height: 800,
+        backgroundColor: '#ffffff'
+      });
 
-    // Load the poster image
-    fabric.Image.fromURL(poster.imageUrl, (img) => {
+      // Load the poster image
+      fabric.Image.fromURL(poster.imageUrl, (img) => {
       if (img) {
         // Scale image to fit canvas
         const scale = Math.min(800 / img.width!, 800 / img.height!);
@@ -89,17 +88,22 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
       setIsLoading(false);
     });
 
-    // Event listeners
-    canvas.on('selection:created', handleSelection);
-    canvas.on('selection:updated', handleSelection);
-    canvas.on('selection:cleared', handleSelectionCleared);
-    canvas.on('object:modified', saveToHistory);
+      // Event listeners
+      canvas.on('selection:created', handleSelection);
+      canvas.on('selection:updated', handleSelection);
+      canvas.on('selection:cleared', handleSelectionCleared);
+      canvas.on('object:modified', saveToHistory);
 
-    setEditorState(prev => ({ ...prev, canvas }));
+      setEditorState(prev => ({ ...prev, canvas }));
 
-    return () => {
-      canvas.dispose();
-    };
+      return () => {
+        canvas.dispose();
+      };
+    }).catch((error) => {
+      console.error('Failed to load fabric.js:', error);
+      setIsLoading(false);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poster.imageUrl]);
 
   const saveToHistory = () => {
@@ -117,7 +121,7 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
     });
   };
 
-  const handleSelection = (e: fabric.IEvent) => {
+  const handleSelection = (e: { selected?: unknown[] }) => {
     const activeObject = e.selected?.[0] || null;
     setEditorState(prev => ({ ...prev, selectedObject: activeObject }));
   };
@@ -126,9 +130,10 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
     setEditorState(prev => ({ ...prev, selectedObject: null }));
   };
 
-  const addText = () => {
+  const addText = async () => {
     if (!editorState.canvas || !textInput.trim()) return;
 
+    const { fabric } = await import('fabric');
     const text = new fabric.Text(textInput, {
       left: 100,
       top: 100,
@@ -146,10 +151,11 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
     setTextInput('');
   };
 
-  const addShape = () => {
+  const addShape = async () => {
     if (!editorState.canvas) return;
 
-    let shape: fabric.Object;
+    const { fabric } = await import('fabric');
+    let shape: unknown;
     
     if (shapeType === 'rect') {
       shape = new fabric.Rect({
@@ -186,17 +192,20 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
     saveToHistory();
   };
 
-  const duplicateSelected = () => {
+  const duplicateSelected = async () => {
     if (!editorState.canvas || !editorState.selectedObject) return;
     
-    editorState.selectedObject.clone((cloned: fabric.Object) => {
-      cloned.set({
-        left: (editorState.selectedObject?.left || 0) + 20,
-        top: (editorState.selectedObject?.top || 0) + 20
+    const obj = editorState.selectedObject as { clone: (callback: (cloned: unknown) => void) => void; left?: number; top?: number };
+    obj.clone(async (cloned: unknown) => {
+      const clonedObj = cloned as { set: (props: { left: number; top: number }) => void };
+      clonedObj.set({
+        left: ((obj.left as number) || 0) + 20,
+        top: ((obj.top as number) || 0) + 20
       });
-      editorState.canvas!.add(cloned);
-      editorState.canvas!.setActiveObject(cloned);
-      editorState.canvas!.renderAll();
+      const canvas = editorState.canvas as { add: (obj: unknown) => void; setActiveObject: (obj: unknown) => void; renderAll: () => void };
+      canvas.add(cloned);
+      canvas.setActiveObject(cloned);
+      canvas.renderAll();
       saveToHistory();
     });
   };

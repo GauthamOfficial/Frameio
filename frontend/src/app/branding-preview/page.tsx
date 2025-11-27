@@ -28,6 +28,7 @@ export default function BrandingPreviewPage() {
   }, [whatsapp, email])
 
   // Keep old corner presets as a quick starter if user hasn't dragged yet
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const positionStyle = useMemo<React.CSSProperties>(() => {
     const style: React.CSSProperties = { position: "absolute" }
     switch (logoPosition) {

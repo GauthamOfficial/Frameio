@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +8,7 @@ import {
   MessageSquare, 
   Reply, 
   MoreVertical, 
-  ThumbsUp,
-  ThumbsDown,
-  Flag
+  ThumbsUp
 } from 'lucide-react';
 
 interface Participant {

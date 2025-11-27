@@ -13,7 +13,7 @@ interface GenerationResponse {
   success: boolean;
   jobId?: string;
   imageUrl?: string;
-  metadata?: any;
+  metadata?: unknown;
   error?: string;
 }
 

@@ -92,10 +92,10 @@ export async function PATCH(request: NextRequest) {
     const users = await getUserResponse.json();
     
     // Find the current user by email (from the request body or from the users list)
-    let currentUser: any;
+    let currentUser: Record<string, unknown> | null = null;
     if (Array.isArray(users)) {
       if (body.email) {
-        currentUser = users.find((u: any) => u.email === body.email);
+        currentUser = users.find((u: Record<string, unknown>) => u.email === body.email);
       }
       if (!currentUser && users.length > 0) {
         currentUser = users[0];
@@ -112,6 +112,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Remove email from body as it's not part of the update
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { email, ...updateData } = body;
 
     // Update the user profile

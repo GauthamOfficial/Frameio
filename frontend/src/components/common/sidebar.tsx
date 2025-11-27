@@ -3,19 +3,11 @@
 import { cn } from "@/lib/utils"
 import { Logo } from "./logo"
 import { SidebarItem } from "./sidebar-item"
-import { 
-  LayoutDashboard,
-  Users,
-  Building2,
-  CreditCard,
-  BarChart3,
-  Settings,
-  HelpCircle
-} from "lucide-react"
 
 interface SidebarProps {
   items: Array<{
     href: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     icon: any
     label: string
     badge?: string | number

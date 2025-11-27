@@ -19,6 +19,7 @@ export function AnalyticsChart({
   title, 
   description, 
   data,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type = 'bar' 
 }: AnalyticsChartProps) {
   const maxValue = Math.max(...data.map(d => d.value));

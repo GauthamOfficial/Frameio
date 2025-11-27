@@ -98,7 +98,7 @@ export default function BrandingKitPage() {
       if (err instanceof SyntaxError) {
         setError('Invalid response from server. Please check if the backend is running.')
       } else {
-        setError(`Network error: ${err.message}`)
+        setError(`Network error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`)
       }
       console.error('Error generating branding kit:', err)
     } finally {
@@ -267,6 +267,7 @@ This branding kit was generated using AI and is ready for use in your marketing 
                   disabled={isGenerating}
                 >
                   <div className="w-full aspect-square rounded-md mb-2 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src="/Fashion Textile.png" 
                       alt="Fashion Textile" 
@@ -287,6 +288,7 @@ This branding kit was generated using AI and is ready for use in your marketing 
                   disabled={isGenerating}
                 >
                   <div className="w-full aspect-square rounded-md mb-2 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src="/Kids.png" 
                       alt="Kids Textile" 
@@ -307,6 +309,7 @@ This branding kit was generated using AI and is ready for use in your marketing 
                   disabled={isGenerating}
                 >
                   <div className="w-full aspect-square rounded-md mb-2 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src="/wholesale.png" 
                       alt="Wholesale Textile" 
@@ -327,6 +330,7 @@ This branding kit was generated using AI and is ready for use in your marketing 
                   disabled={isGenerating}
                 >
                   <div className="w-full aspect-square rounded-md mb-2 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src="/Online.png" 
                       alt="Online Textile" 
@@ -414,6 +418,7 @@ This branding kit was generated using AI and is ready for use in your marketing 
                       </div>
                       <div className="aspect-square bg-background rounded border flex items-center justify-center p-4">
                         {brandingData.logo ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img 
                             src={`data:image/png;base64,${brandingData.logo.data}`}
                             alt="Generated Logo"
@@ -446,6 +451,7 @@ This branding kit was generated using AI and is ready for use in your marketing 
                       </div>
                       <div className="aspect-square bg-background rounded border flex items-center justify-center p-4">
                         {brandingData.color_palette ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img 
                             src={`data:image/png;base64,${brandingData.color_palette.data}`}
                             alt="Generated Color Palette"

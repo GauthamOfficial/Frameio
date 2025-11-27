@@ -1,7 +1,6 @@
 "use client"
 
 import { useUser } from '@clerk/nextjs'
-import { Button } from "@/components/ui/button"
 import { SignInButton } from "@/components/auth/sign-in-button"
 import { SignUpButton } from "@/components/auth/sign-up-button"
 import { AuthUserButton } from "@/components/auth/user-button"

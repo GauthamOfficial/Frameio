@@ -14,7 +14,7 @@
     // Validate the final URL
     try {
       new URL(finalImageUrl)
-    } catch (urlError) {
+    } catch {
       console.error('❌ Invalid poster URL format:', finalImageUrl)
       setGenerationError('Invalid image URL generated. Please try again.')
       setAiServiceStatus('error')
@@ -24,7 +24,8 @@
 
 // And then update the posterData to use finalImageUrl instead of data.poster_url:
 
-    const posterData = {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _posterData = {
       url: finalImageUrl, // Use the processed URL instead of data.poster_url
       captions: data.caption_suggestions?.length > 0 ? data.caption_suggestions : dynamicCaptions,
       hashtags: data.hashtags?.length > 0 ? data.hashtags : dynamicHashtags,

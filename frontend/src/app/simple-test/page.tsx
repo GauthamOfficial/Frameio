@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function SimpleTestPage() {
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -128,8 +128,9 @@ export default function SimpleTestPage() {
                 {result.imageUrl && (
                   <div>
                     <h3 className="font-semibold mb-2">Generated Image:</h3>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={result.imageUrl}
+                      src={result.imageUrl as string}
                       alt="Generated test image"
                       className="w-full h-auto rounded border"
                       onError={(e) => {
@@ -146,7 +147,7 @@ export default function SimpleTestPage() {
 
             {!isLoading && !result && (
               <div className="text-center py-8 text-gray-500">
-                Click "Test API Directly" to start
+                Click &quot;Test API Directly&quot; to start
               </div>
             )}
           </CardContent>

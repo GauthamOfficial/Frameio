@@ -11,15 +11,15 @@ export default defineConfig({
   retries: 0, // No retries for maximum speed
   workers: 4, // Maximum parallel workers
   reporter: 'list', // Simple list reporter for speed
+  expect: {
+    timeout: 2000, // Very fast assertions
+  },
   
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'off', // No tracing for speed
     actionTimeout: 3000, // Very fast timeout
     navigationTimeout: 5000,
-    expect: {
-      timeout: 2000, // Very fast assertions
-    },
     ignoreHTTPSErrors: true,
     // Disable all non-essential features
     launchOptions: {

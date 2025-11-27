@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
 import { User } from './UserTable';
 
 interface EditUserDialogProps {
@@ -66,7 +65,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSave }: EditUserDia
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
-            Update user information below. Click save when you're done.
+            Update user information below. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
 

@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +12,6 @@ import { usePosterGeneration } from '@/hooks/usePosterGeneration';
 import { useExportDesign } from '@/hooks/useExportDesign';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import { PosterEditor } from '@/components/editor/PosterEditor';
-import { GenerationProgress } from '@/components/generate/GenerationProgress';
 import { ExportModal } from '@/components/generate/ExportModal';
 import { ShareModal } from '@/components/generate/ShareModal';
 
@@ -29,13 +27,13 @@ interface GeneratedPoster {
   id: string;
   imageUrl: string;
   prompt: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   createdAt: string;
   status: 'generating' | 'completed' | 'failed';
 }
 
 export default function AIGenerationPage() {
-  const { userId } = useAuth();
+  useAuth();
   const [generationRequest, setGenerationRequest] = useState<GenerationRequest>({
     prompt: '',
     style: 'modern',
@@ -50,7 +48,7 @@ export default function AIGenerationPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
 
-  const { generatePoster, isLoading: isGeneratingPoster } = usePosterGeneration();
+  const { generatePoster } = usePosterGeneration();
   const { exportDesign, isLoading: isExporting } = useExportDesign();
   const { shareDesign, isLoading: isSharing } = useCollaboration();
 
@@ -151,7 +149,7 @@ export default function AIGenerationPage() {
     }
   };
 
-  const handleShare = async (shareData: any) => {
+  const handleShare = async (shareData: Record<string, unknown>) => {
     if (!selectedPoster) return;
 
     try {
@@ -343,6 +341,7 @@ export default function AIGenerationPage() {
                         {poster.status === 'generating' ? (
                           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         ) : poster.status === 'completed' ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             src={poster.imageUrl}
                             alt="Generated poster"

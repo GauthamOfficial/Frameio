@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -13,9 +12,7 @@ import {
   Share2, 
   Download, 
   X, 
-  Sparkles, 
-  Palette, 
-  RefreshCw,
+  Sparkles,
   AlertCircle,
   CheckCircle,
   Loader2
@@ -25,7 +22,7 @@ import { useToastHelpers } from "@/components/common"
 import { useAppContext } from "@/contexts/app-context"
 import { apiClient } from "@/lib/api-client"
 import { nanoBananaService } from "@/lib/ai/nanobanana"
-import { generateTextilePrompt, extractKeywordsFromInput, suggestPromptImprovements } from "@/lib/ai/promptUtils"
+import { generateTextilePrompt } from "@/lib/ai/promptUtils"
 import ColorPaletteExtractor, { ColorInfo } from "@/components/ColorPaletteExtractor"
 
 interface GeneratedPoster {
@@ -60,6 +57,7 @@ export default function EnhancedPosterGenerator() {
   
   // State management
   const [isGenerating, setIsGenerating] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isScheduling, setIsScheduling] = useState(false)
   const [isPosting, setIsPosting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
@@ -67,15 +65,20 @@ export default function EnhancedPosterGenerator() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [generatedPoster, setGeneratedPoster] = useState<GeneratedPoster | null>(null)
   const [extractedColors, setExtractedColors] = useState<ColorInfo[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [scheduleData, setScheduleData] = useState<ScheduleData>({
     platform: 'instagram',
     scheduledTime: '',
     caption: ''
   })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [aiServiceStatus, setAiServiceStatus] = useState<'available' | 'error'>('available')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [promptSuggestions, setPromptSuggestions] = useState<string[]>([])
   const [generationStep, setGenerationStep] = useState<'idle' | 'refining' | 'generating' | 'completed'>('idle')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [refinedPrompt, setRefinedPrompt] = useState<string>('')
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [imageLoadError, setImageLoadError] = useState<boolean>(false)
@@ -278,7 +281,7 @@ export default function EnhancedPosterGenerator() {
     // Additional URL validation
     try {
       new URL(data.poster_url)
-    } catch (urlError) {
+    } catch {
       console.error('❌ Invalid poster URL format:', data.poster_url)
       setGenerationError('Invalid image URL generated. Please try again.')
       setAiServiceStatus('error')
@@ -555,6 +558,7 @@ export default function EnhancedPosterGenerator() {
               {generatedPoster && !imageLoadError ? (
                   <>
                     {console.log('🖼️ Rendering image with URL:', generatedPoster.url)}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={generatedPoster.url}
                       alt="AI Generated poster"

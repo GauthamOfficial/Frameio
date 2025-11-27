@@ -43,12 +43,16 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ({ className, variant, size, asChild: _asChild = false, ...props }, ref) => {
     // Filter out Clerk-specific props that shouldn't be passed to DOM
     const {
-      afterSignInUrl,
-      afterSignUpUrl,
-      mode,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      afterSignInUrl: _afterSignInUrl,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      afterSignUpUrl: _afterSignUpUrl,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      mode: _mode,
       ...domProps
     } = props
 

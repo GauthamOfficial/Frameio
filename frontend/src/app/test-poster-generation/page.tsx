@@ -7,7 +7,7 @@ import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function TestPosterGenerationPage() {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const testGeneration = async () => {
@@ -67,7 +67,7 @@ export default function TestPosterGenerationPage() {
             <div className="space-y-2">
               <h3 className="font-semibold">Test Prompt:</h3>
               <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                "Beautiful silk saree for Diwali celebrations with gold accents and red colors, high-quality textile poster design"
+                &quot;Beautiful silk saree for Diwali celebrations with gold accents and red colors, high-quality textile poster design&quot;
               </p>
             </div>
 
@@ -123,8 +123,9 @@ export default function TestPosterGenerationPage() {
             {result?.success && result.image_url && (
               <div className="space-y-4">
                 <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={result.image_url.startsWith('http') ? result.image_url : `http://localhost:8000${result.image_url}`}
+                    src={(result.image_url as string).startsWith('http') ? (result.image_url as string) : `http://localhost:8000${result.image_url}`}
                     alt="Generated poster"
                     className="w-full h-auto rounded-md border"
                     onError={(e) => {
@@ -159,7 +160,7 @@ export default function TestPosterGenerationPage() {
                 <div className="text-center">
                   <div className="text-4xl mb-4">🧪</div>
                   <p className="text-gray-600">Test results will appear here</p>
-                  <p className="text-sm text-gray-500 mt-2">Click "Test Poster Generation" to start</p>
+                  <p className="text-sm text-gray-500 mt-2">Click &quot;Test Poster Generation&quot; to start</p>
                 </div>
               </div>
             )}

@@ -12,8 +12,7 @@ interface RoleBasedRouteProps {
 
 export function RoleBasedRoute({ 
   children, 
-  allowedRoles, 
-  redirectTo 
+  allowedRoles
 }: RoleBasedRouteProps) {
   const { userRole, isLoading } = useOrganization()
   const router = useRouter()
