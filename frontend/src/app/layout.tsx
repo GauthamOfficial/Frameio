@@ -14,6 +14,7 @@ import "@/lib/test-data"; // Import test data utilities
 import "@/lib/wallet-error-handler"; // Handle wallet connection errors
 import "@/lib/meta-mask-suppressor"; // Comprehensive MetaMask suppression
 import "@/lib/chunk-error-handler"; // Handle chunk loading errors
+import "@/lib/test-data"; // Import test data utilities
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
