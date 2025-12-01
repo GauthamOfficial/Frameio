@@ -15,6 +15,9 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined, // More workers for parallel execution
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
+  expect: {
+    timeout: 3000, // Reduced assertion timeout
+  },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
@@ -26,9 +29,6 @@ export default defineConfig({
     /* Performance optimizations */
     actionTimeout: 5000, // Reduced timeout for faster failure detection
     navigationTimeout: 10000, // Reduced navigation timeout
-    expect: {
-      timeout: 3000, // Reduced assertion timeout
-    },
     
     /* Disable images and fonts for faster loading */
     ignoreHTTPSErrors: true,

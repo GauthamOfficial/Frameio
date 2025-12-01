@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +12,6 @@ import { usePosterGeneration } from '@/hooks/usePosterGeneration';
 import { useExportDesign } from '@/hooks/useExportDesign';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import { PosterEditor } from '@/components/editor/PosterEditor';
-import { GenerationProgress } from '@/components/generate/GenerationProgress';
 import { ExportModal } from '@/components/generate/ExportModal';
 import { ShareModal } from '@/components/generate/ShareModal';
 
@@ -29,13 +27,13 @@ interface GeneratedPoster {
   id: string;
   imageUrl: string;
   prompt: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   createdAt: string;
   status: 'generating' | 'completed' | 'failed';
 }
 
 export default function AIGenerationPage() {
-  const { userId } = useAuth();
+  useAuth();
   const [generationRequest, setGenerationRequest] = useState<GenerationRequest>({
     prompt: '',
     style: 'modern',
@@ -50,7 +48,7 @@ export default function AIGenerationPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
 
-  const { generatePoster, isLoading: isGeneratingPoster } = usePosterGeneration();
+  const { generatePoster } = usePosterGeneration();
   const { exportDesign, isLoading: isExporting } = useExportDesign();
   const { shareDesign, isLoading: isSharing } = useCollaboration();
 
@@ -69,11 +67,14 @@ export default function AIGenerationPage() {
       });
 
       if (result.success) {
+        const jobId = result.jobId || Date.now().toString();
         const newPoster: GeneratedPoster = {
-          id: result.jobId,
+          id: jobId,
           imageUrl: result.imageUrl || '',
           prompt: generationRequest.prompt,
-          metadata: result.metadata,
+          metadata: (result.metadata && typeof result.metadata === 'object' && !Array.isArray(result.metadata)) 
+            ? result.metadata as Record<string, unknown> 
+            : {},
           createdAt: new Date().toISOString(),
           status: 'generating'
         };
@@ -81,7 +82,9 @@ export default function AIGenerationPage() {
         setGeneratedPosters(prev => [newPoster, ...prev]);
         
         // Poll for completion
-        pollGenerationStatus(result.jobId);
+        if (result.jobId) {
+          pollGenerationStatus(result.jobId);
+        }
       }
     } catch (error) {
       console.error('Generation failed:', error);
@@ -127,7 +130,7 @@ export default function AIGenerationPage() {
     poll();
   };
 
-  const handleExport = async (format: string) => {
+  const handleExport = async (format: 'png' | 'jpg' | 'pdf' | 'svg' | 'zip') => {
     if (!selectedPoster) return;
 
     try {
@@ -137,7 +140,7 @@ export default function AIGenerationPage() {
         quality: 'high'
       });
 
-      if (result.success) {
+      if (result.success && result.downloadUrl) {
         // Trigger download
         const link = document.createElement('a');
         link.href = result.downloadUrl;
@@ -151,20 +154,40 @@ export default function AIGenerationPage() {
     }
   };
 
-  const handleShare = async (shareData: any) => {
-    if (!selectedPoster) return;
+  const handleExportWrapper = (format: string) => {
+    const validFormats: ('png' | 'jpg' | 'pdf' | 'svg' | 'zip')[] = ['png', 'jpg', 'pdf', 'svg', 'zip'];
+    if (validFormats.includes(format as 'png' | 'jpg' | 'pdf' | 'svg' | 'zip')) {
+      handleExport(format as 'png' | 'jpg' | 'pdf' | 'svg' | 'zip');
+    }
+  };
+
+  const handleShare = async (shareData: Record<string, unknown>) => {
+    if (!selectedPoster) {
+      return { success: false, error: 'No poster selected' };
+    }
 
     try {
       const result = await shareDesign({
         designId: selectedPoster.id,
-        ...shareData
+        shareType: (shareData.shareType as 'public' | 'private' | 'organization') || 'public',
+        permissions: (shareData.permissions as { canView: boolean; canEdit: boolean; canComment: boolean; canExport: boolean }) || {
+          canView: true,
+          canEdit: false,
+          canComment: false,
+          canExport: false
+        },
+        expiresAt: shareData.expiresAt as string | undefined,
+        password: shareData.password as string | undefined
       });
 
       if (result.success) {
         setShowShareModal(false);
       }
+      
+      return result;
     } catch (error) {
       console.error('Share failed:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   };
 
@@ -343,6 +366,7 @@ export default function AIGenerationPage() {
                         {poster.status === 'generating' ? (
                           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         ) : poster.status === 'completed' ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             src={poster.imageUrl}
                             alt="Generated poster"
@@ -425,7 +449,9 @@ export default function AIGenerationPage() {
           poster={selectedPoster}
           onClose={() => setShowEditor(false)}
           onSave={(editedPoster) => {
-            setSelectedPoster(editedPoster);
+            if (editedPoster && typeof editedPoster === 'object' && 'id' in editedPoster && 'imageUrl' in editedPoster && 'prompt' in editedPoster) {
+              setSelectedPoster(editedPoster as GeneratedPoster);
+            }
             setShowEditor(false);
           }}
         />
@@ -435,7 +461,7 @@ export default function AIGenerationPage() {
         <ExportModal
           poster={selectedPoster}
           onClose={() => setShowExportModal(false)}
-          onExport={handleExport}
+          onExport={handleExportWrapper}
           isLoading={isExporting}
         />
       )}

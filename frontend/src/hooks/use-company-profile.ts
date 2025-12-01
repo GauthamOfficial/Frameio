@@ -13,6 +13,7 @@ export interface UseCompanyProfileReturn {
   loading: boolean
   error: string | null
   hasBrandingData: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   brandingData: any
   contactInfoText: string
   refreshProfile: () => Promise<void>
@@ -63,6 +64,7 @@ export function useCompanyProfile(): UseCompanyProfileReturn {
 
   useEffect(() => {
     loadProfile()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const hasBrandingData = companyProfileService.hasBrandingData(profile)

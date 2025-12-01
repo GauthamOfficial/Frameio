@@ -8,7 +8,6 @@ import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Badge } from '../ui/badge'
-import { Separator } from '../ui/separator'
 import { Upload, Image as ImageIcon, Save, Palette } from 'lucide-react'
 import { useToastHelpers } from '@/components/common'
 import { API_ENDPOINTS, API_BASE_URL } from '@/lib/config'
@@ -48,6 +47,7 @@ const CompanyProfileSettings: React.FC = () => {
   const { getToken } = useAuth()
   const { showSuccess, showError } = useToastHelpers()
   const router = useRouter()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [status, setStatus] = useState<ProfileStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -88,6 +88,7 @@ const CompanyProfileSettings: React.FC = () => {
       console.log('❌ Missing user or getToken')
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, getToken])
 
   const loadProfile = async () => {
@@ -127,12 +128,14 @@ const CompanyProfileSettings: React.FC = () => {
         })
         clearTimeout(timeoutId)
         console.log('Health check status:', healthResponse.status)
-      } catch (healthError: any) {
+      } catch (healthError) {
         // Don't block if health check fails - continue with profile load
-        if (healthError.name === 'AbortError') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((healthError as any).name === 'AbortError') {
           console.warn('⚠️ Health check timed out (non-blocking)')
         } else {
-          console.warn('⚠️ Health check failed (non-blocking):', healthError.message)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          console.warn('⚠️ Health check failed (non-blocking):', (healthError as any).message)
         }
       }
       
@@ -151,12 +154,12 @@ const CompanyProfileSettings: React.FC = () => {
           signal: controller.signal
         })
         clearTimeout(timeoutId)
-      } catch (networkError: any) {
+      } catch (networkError: unknown) {
         // Network error (connection failed, timeout, etc.)
         const errorMsg = networkError instanceof Error ? networkError.message : 'Network error'
         console.error('❌ Network error:', errorMsg)
         
-        if (networkError.name === 'AbortError') {
+        if (networkError instanceof Error && networkError.name === 'AbortError') {
           showError('Request timed out. Please check your connection and try again.')
         } else if (errorMsg === 'Failed to fetch' || errorMsg.includes('fetch')) {
           showError('Cannot connect to server. Please ensure the backend is running on http://localhost:8000')
@@ -227,7 +230,7 @@ const CompanyProfileSettings: React.FC = () => {
               errorMessage = response.statusText || `HTTP ${response.status}`
             }
           }
-        } catch (parseError) {
+        } catch {
           errorMessage = response.statusText || `HTTP ${response.status}`
           console.error('❌ Load error (non-JSON):', errorMessage)
         }
@@ -254,6 +257,7 @@ const CompanyProfileSettings: React.FC = () => {
       }
       
       // Handle successful response
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let data: any = {}
       try {
         const responseText = await response.text()
@@ -422,12 +426,12 @@ const CompanyProfileSettings: React.FC = () => {
         })
         clearTimeout(timeoutId)
         console.log('✅ Backend connectivity test:', testResponse.status)
-      } catch (testError: any) {
+      } catch (testError: unknown) {
         // Don't block the save operation if health check fails
         // It might be a CORS issue or network problem, but the actual API call might still work
-        if (testError.name === 'AbortError') {
+        if (testError instanceof Error && testError.name === 'AbortError') {
           console.warn('⚠️ Backend connectivity test timed out (non-blocking)')
-        } else {
+        } else if (testError instanceof Error) {
           console.warn('⚠️ Backend connectivity test failed (non-blocking):', testError.message)
         }
         // Continue with the save attempt - don't return early
@@ -543,6 +547,7 @@ const CompanyProfileSettings: React.FC = () => {
       } else {
         // Handle different response types
         let errorMessage = 'Failed to update profile'
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let errorData: any = null
         try {
           errorData = await response.json()
@@ -843,6 +848,7 @@ const CompanyProfileSettings: React.FC = () => {
               <div className="space-y-2">
                 <Label>Preview</Label>
                 <div className="border rounded-lg p-2 bg-gray-50 flex justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={logoPreview} 
                     alt="Logo preview" 

@@ -1,15 +1,27 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  /* config options here */
+  // Set outputFileTracingRoot to the frontend directory to avoid multiple lockfile warning
+  outputFileTracingRoot: path.join(__dirname),
   images: {
-    unoptimized: true,
-    domains: ['localhost', '127.0.0.1'],
     remotePatterns: [
       {
         protocol: 'http',
         hostname: 'localhost',
         port: '8000',
         pathname: '/media/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        pathname: '/**',
       },
       {
         protocol: 'https',
@@ -75,26 +87,16 @@ const nextConfig: NextConfig = {
     ]
   },
   // Improve chunk loading reliability
-  webpack: (config, { isServer, webpack }) => {
-    // Ignore canvas.node files on client side
+  webpack: (config, { isServer }) => {
+    // Handle fabric.js and canvas for client-side only
     if (!isServer) {
-      // Prevent webpack from trying to bundle canvas
-      config.resolve = config.resolve || {};
+      // Stub canvas module for client-side builds (fabric.js optional dependency)
+      const path = require('path');
       config.resolve.alias = {
         ...config.resolve.alias,
-        canvas: false,
+        canvas: path.resolve(__dirname, 'webpack-canvas-stub.js'),
       };
       
-      // Ignore .node files using webpack's IgnorePlugin
-      config.plugins = config.plugins || [];
-      config.plugins.push(
-        new webpack.IgnorePlugin({
-          resourceRegExp: /\.node$/,
-        })
-      );
-    }
-
-    if (!isServer) {
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
         cacheGroups: {
@@ -107,6 +109,12 @@ const nextConfig: NextConfig = {
           },
         },
       }
+    } else {
+      // Server-side: stub canvas to prevent SSR errors
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        canvas: false,
+      };
     }
     return config
   },

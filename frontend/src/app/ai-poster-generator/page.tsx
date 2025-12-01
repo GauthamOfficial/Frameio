@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { useUser, useAuth } from '@clerk/nextjs';
-import BrandingPreview from '@/components/BrandingPreview';
 
 interface GenerationResult {
   success: boolean;
@@ -47,7 +46,7 @@ export default function AIPosterGeneratorPage() {
 
       // Get authentication token
       const token = await getToken();
-      const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const authHeaders: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
       
       // Add user context for branding (development)
       if (user?.id) {
@@ -200,6 +199,7 @@ export default function AIPosterGeneratorPage() {
             {result?.success && result.image_url && (
               <div className="space-y-4">
                 <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={result.image_url.startsWith('http') ? result.image_url : `http://localhost:8000${result.image_url}`}
                     alt="Generated poster"

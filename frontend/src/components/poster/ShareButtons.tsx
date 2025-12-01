@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { 
-  Share2, 
   Download, 
   Facebook, 
   Twitter, 
@@ -58,6 +57,7 @@ export function ShareButtons({ poster, pageUrl }: ShareButtonsProps) {
     switch (platform) {
       case 'facebook':
         // Use the cloudinary_url (direct image URL) or public_url for sharing
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const shareableUrl = (poster as any).cloudinary_url || poster.public_url || poster.image_url
         const captionText = shareText || poster.caption || ''
         
@@ -75,6 +75,7 @@ export function ShareButtons({ poster, pageUrl }: ShareButtonsProps) {
         // Ensure the URL is absolute and publicly accessible (must be Cloudinary URL)
         if (!shareableUrl || !shareableUrl.startsWith('http')) {
           console.error('❌ ERROR: Cannot share to Facebook - cloudinary_url is missing or not a public URL!')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           console.error('cloudinary_url:', (poster as any).cloudinary_url)
           console.error('public_url:', poster.public_url)
           console.error('image_url:', poster.image_url)

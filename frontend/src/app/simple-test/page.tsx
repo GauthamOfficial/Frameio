@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function SimpleTestPage() {
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,20 +114,21 @@ export default function SimpleTestPage() {
                 <div>
                   <h3 className="font-semibold mb-2">Status Check:</h3>
                   <div className="bg-green-50 p-2 rounded text-sm">
-                    ✅ {result.status.message}
+                    ✅ {result.status && typeof result.status === 'object' && result.status !== null && 'message' in result.status && typeof result.status.message === 'string' ? result.status.message : JSON.stringify(result.status)}
                   </div>
                 </div>
 
                 <div>
                   <h3 className="font-semibold mb-2">Generation Result:</h3>
                   <div className="bg-blue-50 p-2 rounded text-sm">
-                    ✅ {result.generation.message}
+                    ✅ {result.generation && typeof result.generation === 'object' && result.generation !== null && 'message' in result.generation && typeof result.generation.message === 'string' ? result.generation.message : JSON.stringify(result.generation)}
                   </div>
                 </div>
 
-                {result.imageUrl && (
+                {typeof result.imageUrl === 'string' && result.imageUrl && (
                   <div>
                     <h3 className="font-semibold mb-2">Generated Image:</h3>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={result.imageUrl}
                       alt="Generated test image"
@@ -146,7 +147,7 @@ export default function SimpleTestPage() {
 
             {!isLoading && !result && (
               <div className="text-center py-8 text-gray-500">
-                Click "Test API Directly" to start
+                Click &quot;Test API Directly&quot; to start
               </div>
             )}
           </CardContent>

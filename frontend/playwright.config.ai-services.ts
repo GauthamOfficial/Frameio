@@ -44,9 +44,6 @@ export default defineConfig({
     /* Performance optimizations for AI testing */
     actionTimeout: 120000, // AI operations take much longer - 2 minutes
     navigationTimeout: 30000,
-    expect: {
-      timeout: 120000, // 2 minutes for AI operations
-    },
     
     /* Ignore HTTPS errors for local development */
     ignoreHTTPSErrors: true,
@@ -138,13 +135,13 @@ export default defineConfig({
   /* Expect configuration */
   expect: {
     /* Custom matchers timeout */
-    timeout: 5000,
+    timeout: 120000, // 2 minutes for AI operations
     
-    /* Screenshot comparison threshold */
-    threshold: 0.2,
-    
-    /* Animation handling */
-    animations: 'disabled'
+    /* Screenshot comparison options */
+    toHaveScreenshot: {
+      threshold: 0.2,
+      animations: 'disabled'
+    }
   }
 });
 

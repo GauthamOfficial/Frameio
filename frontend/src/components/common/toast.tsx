@@ -51,6 +51,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
 
       return () => clearTimeout(timer)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast.duration])
 
   const handleDismiss = () => {

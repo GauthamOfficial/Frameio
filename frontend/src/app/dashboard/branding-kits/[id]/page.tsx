@@ -4,9 +4,8 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { Palette, Calendar, Download, Loader2, Trash2, ArrowLeft } from "lucide-react"
+import { Calendar, Download, Loader2, Trash2, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
 
@@ -43,6 +42,7 @@ export default function BrandingKitPreviewPage() {
     if (kitId) {
       fetchBrandingKit()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kitId])
 
   const fetchBrandingKit = async () => {
@@ -101,7 +101,7 @@ export default function BrandingKitPreviewPage() {
       } else {
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
       }
-    } catch (error) {
+    } catch {
       return 'Invalid date'
     }
   }
@@ -217,6 +217,7 @@ export default function BrandingKitPreviewPage() {
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Logo</h3>
                 <div className="w-full aspect-square bg-muted rounded-lg overflow-hidden border border-border flex items-center justify-center p-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={`data:image/${kit.logo.format.toLowerCase()};base64,${kit.logo.data}`}
                     alt={kit.prompt || 'Generated logo'}
@@ -243,6 +244,7 @@ export default function BrandingKitPreviewPage() {
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Color Palette</h3>
                 <div className="w-full aspect-square bg-muted rounded-lg overflow-hidden border border-border flex items-center justify-center p-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={`data:image/${kit.color_palette.format.toLowerCase()};base64,${kit.color_palette.data}`}
                     alt="Color palette"

@@ -23,9 +23,9 @@ interface PosterData {
 }
 
 interface PosterPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 // Function to fetch poster data from API
@@ -83,7 +83,8 @@ async function getPosterData(id: string): Promise<PosterData | null> {
 }
 
 export async function generateMetadata({ params }: PosterPageProps): Promise<Metadata> {
-  const poster = await getPosterData(params.id)
+  const { id } = await params
+  const poster = await getPosterData(id)
   
   if (!poster) {
     return {
@@ -93,7 +94,7 @@ export async function generateMetadata({ params }: PosterPageProps): Promise<Met
   }
 
   // Try to get ngrok URL for public sharing
-  let pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/poster/${params.id}`
+  let pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/poster/${id}`
   
   try {
     // Check if we're in a browser environment and ngrok is available
@@ -107,17 +108,17 @@ export async function generateMetadata({ params }: PosterPageProps): Promise<Met
       if (response.ok) {
         const data = await response.json()
         const tunnels = data.tunnels || []
-        const httpsTunnel = tunnels.find((t: any) => 
+        const httpsTunnel = tunnels.find((t: { proto: string; config: { addr: string }; public_url: string }) => 
           t.proto === 'https' && 
           t.config.addr.includes('3000')
         )
         
         if (httpsTunnel) {
-          pageUrl = `${httpsTunnel.public_url}/poster/${params.id}`
+          pageUrl = `${httpsTunnel.public_url}/poster/${id}`
         }
       }
     }
-  } catch (error) {
+  } catch {
     // Silently fall back to localhost URL
     console.log('Ngrok not available, using localhost URL')
   }
@@ -154,14 +155,15 @@ export async function generateMetadata({ params }: PosterPageProps): Promise<Met
 }
 
 export default async function PosterPage({ params }: PosterPageProps) {
-  const poster = await getPosterData(params.id)
+  const { id } = await params
+  const poster = await getPosterData(id)
   
   if (!poster) {
     notFound()
   }
 
   // Try to get ngrok URL for public sharing
-  let pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/poster/${params.id}`
+  let pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/poster/${id}`
   
   try {
     // Check if we're in a browser environment and ngrok is available
@@ -175,17 +177,17 @@ export default async function PosterPage({ params }: PosterPageProps) {
       if (response.ok) {
         const data = await response.json()
         const tunnels = data.tunnels || []
-        const httpsTunnel = tunnels.find((t: any) => 
+        const httpsTunnel = tunnels.find((t: { proto: string; config: { addr: string }; public_url: string }) => 
           t.proto === 'https' && 
           t.config.addr.includes('3000')
         )
         
         if (httpsTunnel) {
-          pageUrl = `${httpsTunnel.public_url}/poster/${params.id}`
+          pageUrl = `${httpsTunnel.public_url}/poster/${id}`
         }
       }
     }
-  } catch (error) {
+  } catch {
     // Silently fall back to localhost URL
     console.log('Ngrok not available, using localhost URL')
   }

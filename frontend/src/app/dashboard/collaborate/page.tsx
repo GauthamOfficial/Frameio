@@ -1,29 +1,25 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Users, 
   MessageSquare, 
   Clock, 
-  User, 
   Send, 
   Video, 
   Mic, 
   MicOff,
   VideoOff,
   Share2,
-  Settings,
   Loader2,
-  AlertCircle,
-  CheckCircle
+  AlertCircle
 } from 'lucide-react';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import { useSocket } from '@/hooks/useSocket';
 import { CollaborationCanvas } from '@/components/collaboration/CollaborationCanvas';
@@ -73,7 +69,8 @@ interface Activity {
 }
 
 export default function CollaborationPage() {
-  const { userId, user } = useAuth();
+  const { userId } = useAuth();
+  const { user } = useUser();
   const [session, setSession] = useState<CollaborationSession | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -85,11 +82,7 @@ export default function CollaborationPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { 
-    getComments, 
-    getCollaborators, 
-    getDesignActivity,
-    addComment,
-    isLoading: isCollaborationLoading 
+    addComment
   } = useCollaboration();
 
   const { 
@@ -97,7 +90,6 @@ export default function CollaborationPage() {
     isConnected, 
     joinSession, 
     leaveSession,
-    sendMessage,
     sendCursorUpdate,
     sendDesignUpdate
   } = useSocket();
@@ -223,7 +215,7 @@ export default function CollaborationPage() {
       );
     };
 
-    const handleDesignUpdate = (data: any) => {
+    const handleDesignUpdate = (data: Record<string, unknown>) => {
       // Handle real-time design updates
       console.log('Design updated:', data);
     };
@@ -257,7 +249,7 @@ export default function CollaborationPage() {
         isActive: true,
         createdAt: new Date().toISOString()
       });
-    } catch (error) {
+    } catch {
       setError('Failed to join session');
     }
   };
@@ -266,7 +258,7 @@ export default function CollaborationPage() {
     try {
       await leaveSession();
       setSession(null);
-    } catch (error) {
+    } catch {
       setError('Failed to leave session');
     }
   };
@@ -289,7 +281,7 @@ export default function CollaborationPage() {
 
       setComments(prev => [comment, ...prev]);
       setNewComment('');
-    } catch (error) {
+    } catch {
       setError('Failed to send comment');
     }
   };
@@ -299,7 +291,7 @@ export default function CollaborationPage() {
       const shareUrl = `${window.location.origin}/collaborate/${session?.id}`;
       await navigator.clipboard.writeText(shareUrl);
       // Show success message
-    } catch (error) {
+    } catch {
       setError('Failed to copy share link');
     }
   };

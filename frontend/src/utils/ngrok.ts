@@ -135,7 +135,7 @@ async function getCloudflareTunnelUrl(): Promise<string | null> {
           console.log('✅ Found Cloudflare Tunnel URL from API:', tunnelUrl)
           return tunnelUrl
         }
-      } catch (apiError) {
+      } catch {
         console.log('API endpoint not available, trying localStorage only')
       }
     }

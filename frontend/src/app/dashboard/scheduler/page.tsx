@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { Calendar, Plus, Clock, Image as ImageIcon, Loader2, Edit, Trash2 } from "lucide-react"
+import { Calendar, Clock, Image as ImageIcon, Loader2, Edit, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers, ConfirmationModal } from "@/components/common"
 
@@ -110,6 +110,7 @@ export default function SchedulerPage() {
 
   useEffect(() => {
     fetchData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchData = async () => {
@@ -199,16 +200,16 @@ export default function SchedulerPage() {
         return
       }
 
-      let data: any
+      let data: Record<string, unknown>
       try {
         data = JSON.parse(text)
-      } catch (parseError) {
+      } catch {
         console.error('Failed to parse response:', text)
         throw new Error('Invalid response from server')
       }
       
       let postersData: GeneratedPoster[] = []
-      if (data.success && data.results) {
+      if (data.success && data.results && Array.isArray(data.results)) {
         postersData = data.results
       } else if (Array.isArray(data)) {
         postersData = data
@@ -224,10 +225,11 @@ export default function SchedulerPage() {
             : `${baseUrl}/${poster.image_url}`
         }
         // Also fix public_url if it exists
-        if ((poster as any).public_url && !(poster as any).public_url.startsWith('http')) {
-          (poster as any).public_url = (poster as any).public_url.startsWith('/') 
-            ? `${baseUrl}${(poster as any).public_url}`
-            : `${baseUrl}/${(poster as any).public_url}`
+        const posterWithUrl = poster as GeneratedPoster & { public_url?: string };
+        if (posterWithUrl.public_url && !posterWithUrl.public_url.startsWith('http')) {
+          posterWithUrl.public_url = posterWithUrl.public_url.startsWith('/') 
+            ? `${baseUrl}${posterWithUrl.public_url}`
+            : `${baseUrl}/${posterWithUrl.public_url}`
         }
         return poster
       })
@@ -330,10 +332,10 @@ export default function SchedulerPage() {
         return
       }
 
-      let data: any
+      let data: Record<string, unknown>
       try {
         data = JSON.parse(text)
-      } catch (parseError) {
+      } catch {
         console.error('Failed to parse response:', text)
         throw new Error('Invalid response from server')
       }
@@ -478,7 +480,7 @@ export default function SchedulerPage() {
       }
 
       if (!response.ok) {
-        let errorData: any = {}
+        let errorData: Record<string, unknown> = {}
         try {
           const text = await response.text()
           console.error('Backend error response:', text)
@@ -491,13 +493,16 @@ export default function SchedulerPage() {
         }
         
         // Handle validation errors with field details
-        let errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to schedule post (${response.status})`
+        let errorMessage: string = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
+                                   (typeof errorData.error === 'string' ? errorData.error : null) || 
+                                   (typeof errorData.message === 'string' ? errorData.message : null) || 
+                                   `Failed to schedule post (${response.status})`
         
         // If detail is an object (field validation errors), format it nicely
         if (typeof errorData.detail === 'object' && errorData.detail !== null && !Array.isArray(errorData.detail)) {
-          const fieldErrors = Object.entries(errorData.detail)
-            .map(([field, error]: [string, any]) => {
-              const errorText = Array.isArray(error) ? error[0] : error
+          const fieldErrors = Object.entries(errorData.detail as Record<string, unknown>)
+            .map(([field, error]: [string, unknown]) => {
+              const errorText = Array.isArray(error) ? (typeof error[0] === 'string' ? error[0] : String(error[0])) : (typeof error === 'string' ? error : String(error))
               return `${field}: ${errorText}`
             })
             .join(', ')
@@ -627,7 +632,7 @@ export default function SchedulerPage() {
       }
 
       if (!response.ok) {
-        let errorData: any = {}
+        let errorData: Record<string, unknown> = {}
         try {
           const text = await response.text()
           if (text) {
@@ -637,10 +642,13 @@ export default function SchedulerPage() {
           console.error('Failed to parse error response:', e)
         }
         
-        let errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to update post (${response.status})`
+        let errorMessage: string = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
+                                   (typeof errorData.error === 'string' ? errorData.error : null) || 
+                                   (typeof errorData.message === 'string' ? errorData.message : null) || 
+                                   `Failed to update post (${response.status})`
         if (typeof errorData.detail === 'object' && errorData.detail !== null && !Array.isArray(errorData.detail)) {
-          const fieldErrors = Object.entries(errorData.detail)
-            .map(([field, error]: [string, any]) => {
+          const fieldErrors = Object.entries(errorData.detail as Record<string, unknown>)
+            .map(([field, error]: [string, unknown]) => {
               const errorText = Array.isArray(error) ? error[0] : error
               return `${field}: ${errorText}`
             })
@@ -731,7 +739,7 @@ export default function SchedulerPage() {
       }
 
       if (!response.ok) {
-        let errorData: any = {}
+        let errorData: Record<string, unknown> = {}
         try {
           const text = await response.text()
           if (text) {
@@ -741,7 +749,10 @@ export default function SchedulerPage() {
           console.error('Failed to parse error response:', e)
         }
         
-        const errorMessage = errorData.detail || errorData.error || errorData.message || `Failed to delete post (${response.status})`
+        const errorMessage: string = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
+                                   (typeof errorData.error === 'string' ? errorData.error : null) || 
+                                   (typeof errorData.message === 'string' ? errorData.message : null) || 
+                                   `Failed to delete post (${response.status})`
         showError(errorMessage)
         return
       }
@@ -911,6 +922,7 @@ export default function SchedulerPage() {
               {generatedPosters.map((poster) => (
                 <div key={poster.id} className="border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                   <div className="aspect-square bg-muted relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={poster.image_url}
                       alt={poster.caption}
@@ -962,6 +974,7 @@ export default function SchedulerPage() {
               {/* Poster Preview */}
               <div className="border border-border rounded-lg p-4">
                 <div className="aspect-square w-32 mx-auto bg-muted rounded-lg overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={selectedPoster.image_url}
                     alt={selectedPoster.caption}

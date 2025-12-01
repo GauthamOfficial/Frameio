@@ -7,6 +7,7 @@ interface User {
   id: string
   email: string
   username?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
 
@@ -65,6 +66,7 @@ export function useAuth() {
   }, [clerkAuth])
 
   // Sync user from Clerk to Django backend
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const syncUserToBackend = useCallback(async (clerkUser: any, token: string | null) => {
     if (!clerkUser || !token) return
     
@@ -187,12 +189,14 @@ export function useAuth() {
         if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('CORS')) {
           console.warn('Backend may not be accessible. Using Clerk user only:', errorMessage)
           // If we have a Clerk user, use it even if backend is unavailable
-          if (clerkUser && clerkLoaded) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const currentClerkUser = clerkUser as any
+          if (currentClerkUser && clerkLoaded) {
             setAuthState({
               user: {
-                id: clerkUser.id,
-                email: clerkUser.emailAddresses?.[0]?.emailAddress || '',
-                username: clerkUser.username || clerkUser.firstName || '',
+                id: currentClerkUser.id,
+                email: currentClerkUser.emailAddresses?.[0]?.emailAddress || '',
+                username: currentClerkUser.username || currentClerkUser.firstName || '',
               },
               isLoading: false,
               isAuthenticated: true,
@@ -235,6 +239,7 @@ export function useAuth() {
     } finally {
       fetchingRef.current = false
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getToken, clerkUser?.id, clerkLoaded, syncUserToBackend])
 
   useEffect(() => {

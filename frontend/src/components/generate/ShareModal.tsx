@@ -5,13 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Share2, 
   Copy, 
   Mail, 
-  Link, 
   Lock, 
   Globe, 
   Users, 
@@ -21,6 +19,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+interface ShareResponse {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
 interface ShareModalProps {
   poster: {
     id: string;
@@ -28,7 +32,8 @@ interface ShareModalProps {
     prompt: string;
   };
   onClose: () => void;
-  onShare: (shareData: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onShare: (shareData: any) => Promise<ShareResponse>;
   isLoading: boolean;
 }
 
@@ -45,7 +50,7 @@ interface ShareSettings {
   message?: string;
 }
 
-export function ShareModal({ poster, onClose, onShare, isLoading }: ShareModalProps) {
+export function ShareModal({ onClose, onShare, isLoading }: ShareModalProps) {
   const [shareSettings, setShareSettings] = useState<ShareSettings>({
     shareType: 'private',
     permissions: {
@@ -113,12 +118,12 @@ export function ShareModal({ poster, onClose, onShare, isLoading }: ShareModalPr
     try {
       const result = await onShare(shareSettings);
       if (result.success) {
-        setShareUrl(result.data?.share_url || '');
+        setShareUrl((result.data as { share_url?: string } | undefined)?.share_url || '');
         setShareStatus('success');
       } else {
         setShareStatus('error');
       }
-    } catch (error) {
+    } catch {
       setShareStatus('error');
     }
   };
@@ -142,7 +147,7 @@ export function ShareModal({ poster, onClose, onShare, isLoading }: ShareModalPr
       } else {
         setShareStatus('error');
       }
-    } catch (error) {
+    } catch {
       setShareStatus('error');
     }
   };
@@ -152,8 +157,8 @@ export function ShareModal({ poster, onClose, onShare, isLoading }: ShareModalPr
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy:', error);
+    } catch {
+      console.error('Failed to copy');
     }
   };
 
@@ -193,6 +198,7 @@ export function ShareModal({ poster, onClose, onShare, isLoading }: ShareModalPr
                       ? 'ring-2 ring-primary border-primary' 
                       : 'hover:border-primary/50'
                   }`}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   onClick={() => setShareSettings(prev => ({ ...prev, shareType: type.id as any }))}
                 >
                   <div className="flex items-center gap-3">
@@ -323,6 +329,7 @@ export function ShareModal({ poster, onClose, onShare, isLoading }: ShareModalPr
                       key={role.id}
                       variant={inviteRole === role.id ? 'default' : 'outline'}
                       size="sm"
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       onClick={() => setInviteRole(role.id as any)}
                     >
                       {role.name}

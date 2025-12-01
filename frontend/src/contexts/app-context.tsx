@@ -2,12 +2,13 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { useUser, useAuth } from '@clerk/nextjs'
-import { setAuthToken, getAuthToken } from '@/lib/api'
+import { setAuthToken } from '@/lib/api'
 // Removed circular dependency - toast helpers will be used directly in components
 
 export interface AppState {
   // Auth state
   isAuthenticated: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   user: any
   token: string | null
   
@@ -102,13 +103,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setPermissions([])
         lastUserIdRef.current = null
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Auth initialization error:', err)
       setError('Failed to initialize authentication')
     } finally {
       setIsLoading(false)
       initializingRef.current = false
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, userLoaded, getToken])
 
   // Refresh auth state
@@ -138,7 +140,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       localStorage.removeItem('auth-token')
       
       console.log('Logged out successfully')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Logout error:', err)
       console.error('Failed to log out')
     } finally {

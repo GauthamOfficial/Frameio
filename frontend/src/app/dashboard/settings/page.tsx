@@ -16,7 +16,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [clerkConfigured, setClerkConfigured] = useState(false)
 
-  // Profile settings
+  // Profile settings (kept for future use)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [profileData, setProfileData] = useState({
     firstName: '',
     lastName: '',
@@ -82,7 +83,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-yellow-700">
-              Clerk authentication is not configured. You're running in development mode. 
+              Clerk authentication is not configured. You&apos;re running in development mode. 
               To enable full authentication features, run: <code className="bg-yellow-100 px-2 py-1 rounded">node setup-clerk-env.js</code>
             </p>
           </CardContent>

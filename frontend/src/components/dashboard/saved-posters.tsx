@@ -39,6 +39,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
 
   useEffect(() => {
     fetchPosters()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchPosters = async () => {
@@ -103,6 +104,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
       if (!response.ok) {
         // Try to get error message from response
         let errorMessage = `Failed to fetch posters (${response.status})`
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let errorData: any = null
         try {
           const text = await response.text()
@@ -130,7 +132,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
               console.error('Error response data:', errorData)
             }
           }
-        } catch (e) {
+        } catch {
           // If response is not JSON, use status text
           errorMessage = response.statusText || errorMessage
         }
@@ -168,6 +170,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
       }
 
       // Parse response
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let data: any
       try {
         const text = await response.text()
@@ -279,7 +282,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
           day: 'numeric'
         })
       }
-    } catch (error) {
+    } catch {
       return 'Invalid date'
     }
   }
@@ -374,7 +377,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center h-64 text-center">
-            <Image className="h-12 w-12 text-muted-foreground mb-4" />
+            <Image className="h-12 w-12 text-muted-foreground mb-4" aria-label="No posters icon" />
             <p className="text-muted-foreground mb-2">No posters generated yet</p>
             <p className="text-sm text-muted-foreground">Create your first poster to see it here</p>
           </div>
@@ -388,7 +391,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
-            <Image className="mr-2 h-5 w-5 text-chart-1" />
+            <Image className="mr-2 h-5 w-5 text-chart-1" aria-label="Posters icon" />
             Generated Posters
           </div>
           <Badge variant="secondary" className="text-xs">
@@ -409,6 +412,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                 onClick={() => handlePosterClick(poster)}
               >
                 {poster.image_url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={poster.image_url}
                     alt={poster.caption || poster.prompt || 'Generated poster'}
@@ -437,7 +441,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                 ) : null}
                 {/* Placeholder when image fails to load */}
                 <div className="image-placeholder absolute inset-0 flex items-center justify-center bg-muted" style={{ display: poster.image_url ? 'none' : 'flex' }}>
-                  <Image className="h-12 w-12 text-muted-foreground opacity-50" />
+                  <Image className="h-12 w-12 text-muted-foreground opacity-50" aria-label="Placeholder image" />
                 </div>
               </div>
               

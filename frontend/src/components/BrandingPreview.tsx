@@ -158,6 +158,7 @@ export default function BrandingPreview({ className }: BrandingPreviewProps) {
           <h4 className="text-sm font-medium text-gray-700">Logo:</h4>
           {companyProfile?.logo ? (
             <div className="flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={companyProfile.logo} 
                 alt="Company Logo" 

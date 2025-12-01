@@ -3,7 +3,6 @@
 import { Bell, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { AuthUserButton } from "@/components/auth/user-button"
 import { useOrganization } from "@/contexts/organization-context"
 import { useUser } from "@clerk/nextjs"
@@ -17,15 +16,6 @@ interface TopNavProps {
 export function TopNav({ className }: TopNavProps) {
   const { user } = useUser()
   const { userRole, isLoading } = useOrganization()
-
-  const getRoleBadgeVariant = (role: string | null) => {
-    switch (role) {
-      case 'Designer':
-        return 'secondary'
-      default:
-        return 'outline'
-    }
-  }
 
   return (
     <header className={cn(

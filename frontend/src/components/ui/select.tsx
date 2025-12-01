@@ -43,12 +43,13 @@ const Select = ({ value, onValueChange, children }: SelectProps) => {
     <div className="relative">
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child, {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return React.cloneElement(child as any, {
             isOpen,
             setIsOpen,
             selectedValue,
             onValueChange: handleValueChange,
-          } as any)
+          })
         }
         return child
       })}
@@ -58,7 +59,9 @@ const Select = ({ value, onValueChange, children }: SelectProps) => {
 
 const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
   ({ className, children, ...props }, ref) => {
-    const { isOpen, setIsOpen, selectedValue, onValueChange, ...domProps } = (props as any) || {}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { isOpen, setIsOpen, selectedValue, onValueChange: _onValueChange, ...domProps } = (props as any) || {}
+    void _onValueChange
     
     return (
       <button
@@ -81,7 +84,10 @@ SelectTrigger.displayName = "SelectTrigger"
 
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children, ...props }, ref) => {
-    const { isOpen, setIsOpen, onValueChange, selectedValue, ...domProps } = (props as any) || {}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { isOpen, setIsOpen: _setIsOpen, onValueChange, selectedValue: _selectedValue, ...domProps } = (props as any) || {}
+    void _setIsOpen
+    void _selectedValue
     
     if (!isOpen) return null
 
@@ -97,11 +103,12 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
         <div className="p-1">
           {React.Children.map(children, (child) => {
             if (React.isValidElement(child)) {
-              return React.cloneElement(child, {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              return React.cloneElement(child as any, {
                 onSelect: (value: string) => {
                   onValueChange?.(value)
                 },
-              } as any)
+              })
             }
             return child
           })}
@@ -114,6 +121,7 @@ SelectContent.displayName = "SelectContent"
 
 const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
   ({ className, children, value, ...props }, ref) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { onSelect, ...domProps } = (props as any) || {}
     
     return (

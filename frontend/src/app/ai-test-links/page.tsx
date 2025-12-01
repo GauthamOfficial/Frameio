@@ -49,7 +49,7 @@ export default function AITestLinksPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Image className="h-5 w-5" />
+              <Image className="h-5 w-5" aria-label="AI Poster Generator icon" />
               AI Poster Generator
             </CardTitle>
           </CardHeader>
@@ -146,19 +146,19 @@ export default function AITestLinksPage() {
               <div>
                 <h4 className="font-semibold">1. Start with Test Page</h4>
                 <p className="text-sm text-gray-600">
-                  Use "Test Poster Generation" first to verify the backend is working.
+                  Use &quot;Test Poster Generation&quot; first to verify the backend is working.
                 </p>
               </div>
               <div>
                 <h4 className="font-semibold">2. Try the Generator</h4>
                 <p className="text-sm text-gray-600">
-                  Once the test works, use "AI Poster Generator" for custom prompts.
+                  Once the test works, use &quot;AI Poster Generator&quot; for custom prompts.
                 </p>
               </div>
               <div>
                 <h4 className="font-semibold">3. Check Status</h4>
                 <p className="text-sm text-gray-600">
-                  If something fails, use "API Status Check" to debug.
+                  If something fails, use &quot;API Status Check&quot; to debug.
                 </p>
               </div>
             </div>
@@ -171,8 +171,8 @@ export default function AITestLinksPage() {
         <ol className="text-sm text-blue-700 space-y-1">
           <li>1. Make sure your backend server is running: <code className="bg-blue-100 px-1 rounded">cd backend && python manage.py runserver 8000</code></li>
           <li>2. Make sure your frontend server is running: <code className="bg-blue-100 px-1 rounded">npm run dev</code></li>
-          <li>3. Click "Test Poster Generation" to test the API</li>
-          <li>4. If successful, try "AI Poster Generator" for custom prompts</li>
+          <li>3. Click &quot;Test Poster Generation&quot; to test the API</li>
+          <li>4. If successful, try &quot;AI Poster Generator&quot; for custom prompts</li>
         </ol>
       </div>
     </div>

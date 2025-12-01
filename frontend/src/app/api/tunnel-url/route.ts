@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Read the tunnel URL from the file
     const tunnelUrlPath = path.join(process.cwd(), 'tunnel-url.txt')

@@ -10,7 +10,6 @@ import { useOrganization } from "@/contexts/organization-context"
 import { 
   LayoutDashboard, 
   Image, 
-  BookOpen, 
   Palette, 
   Share2, 
   Calendar,
@@ -18,8 +17,7 @@ import {
   BarChart3,
   Settings,
   Menu,
-  X,
-  TestTube
+  X
 } from "lucide-react"
 
 const getNavigationItems = (userRole: string | null, permissions: string[]) => {

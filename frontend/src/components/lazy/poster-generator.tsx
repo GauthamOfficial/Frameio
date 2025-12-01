@@ -92,7 +92,7 @@ export default function PosterGenerator() {
         fabric_type: 'silk', // Default, could be made configurable
         festival: 'general',
         price_range: '₹2999',
-        style: selectedStyle || 'modern',
+        style: (selectedStyle || 'modern') as 'elegant' | 'modern' | 'traditional' | 'bohemian' | 'casual',
         custom_text: prompt,
         offer_details: 'Special offer available',
         generation_type: 'poster'
@@ -156,10 +156,15 @@ export default function PosterGenerator() {
       return
     }
     
+    if (!generatedPoster) {
+      showError("No poster available to schedule")
+      return
+    }
+    
     setIsScheduling(true)
     try {
       const result = await apiClient.schedulePost({
-        platform: scheduleData.platform,
+        platform: scheduleData.platform as 'facebook' | 'instagram' | 'tiktok' | 'whatsapp' | 'twitter' | 'linkedin',
         asset_url: generatedPoster.url,
         caption: scheduleData.caption,
         scheduled_time: scheduleData.scheduledTime,
@@ -343,6 +348,7 @@ export default function PosterGenerator() {
           <CardContent>
             <div className="aspect-[4/5] bg-muted rounded-lg flex items-center justify-center mb-4 overflow-hidden">
               {generatedPoster ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={generatedPoster.url}
                   alt="Generated poster"

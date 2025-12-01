@@ -9,7 +9,7 @@ import { Logo } from "@/components/common/logo"
 import { cn } from "@/lib/utils"
 import { ArrowRight, Palette, Calendar, BarChart3 } from "lucide-react"
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from "next/link"
 
 interface WelcomePageProps {
@@ -133,30 +133,35 @@ export function WelcomePage({ className }: WelcomePageProps) {
               <CardContent className="p-8 relative overflow-hidden aspect-video">
                 {/* Floating Images */}
                 <div className="absolute inset-0 pointer-events-none">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="/Floating IMAGES/1.png" 
                     alt="Floating design 1" 
                     className="absolute w-[50%] h-[50%] md:w-[40%] md:h-[40%] object-contain animate-float-1"
                     style={{ top: '5%', left: '-5%' }}
                   />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="/Floating IMAGES/2.png" 
                     alt="Floating design 2" 
                     className="absolute w-[50%] h-[50%] md:w-[40%] md:h-[40%] object-contain animate-float-2"
                     style={{ top: '5%', right: '-5%' }}
                   />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="/Floating IMAGES/3.png" 
                     alt="Floating design 3" 
                     className="absolute w-[50%] h-[50%] md:w-[40%] md:h-[40%] object-contain animate-float-3"
                     style={{ bottom: '3%', left: '-5%' }}
                   />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="/Floating IMAGES/4.png" 
                     alt="Floating design 4" 
                     className="absolute w-[50%] h-[50%] md:w-[40%] md:h-[40%] object-contain animate-float-4"
                     style={{ bottom: '0.5%', right: '-5%' }}
                   />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="/Floating IMAGES/5.png" 
                     alt="Floating design 5" 

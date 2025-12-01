@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { Image, Calendar, Download, ExternalLink, Loader2, Trash2, ArrowLeft } from "lucide-react"
+import { Calendar, Download, ExternalLink, Loader2, Trash2, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
 
@@ -38,6 +38,7 @@ export default function PosterPreviewPage() {
     if (posterId) {
       fetchPoster()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posterId])
 
   const fetchPoster = async () => {
@@ -104,7 +105,7 @@ export default function PosterPreviewPage() {
       } else {
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
       }
-    } catch (error) {
+    } catch {
       return 'Invalid date'
     }
   }
@@ -210,6 +211,7 @@ export default function PosterPreviewPage() {
         <CardContent className="space-y-6">
           {/* Full Poster Image */}
           <div className="w-full rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={poster.image_url}
               alt={poster.caption || poster.prompt || 'Generated poster'}

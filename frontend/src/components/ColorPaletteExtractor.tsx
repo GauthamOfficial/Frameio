@@ -35,6 +35,7 @@ export default function ColorPaletteExtractor({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [palette, setPalette] = useState<ColorInfo[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [imageLoaded, setImageLoaded] = useState(false);
 
   // Color name mapping for common colors
@@ -65,6 +66,7 @@ export default function ColorPaletteExtractor({
     if (imageUrl) {
       extractColors(imageUrl);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrl]);
 
   /**
@@ -92,7 +94,7 @@ export default function ColorPaletteExtractor({
       };
 
       img.src = url;
-    } catch (error) {
+    } catch {
       showError('Error extracting colors from image');
       setIsExtracting(false);
     }
@@ -153,7 +155,7 @@ export default function ColorPaletteExtractor({
 
         return {
           hex,
-          rgb: [r, g, b],
+          rgb: [r, g, b] as [number, number, number],
           hsl,
           percentage,
           name: colorNames[hex] || getColorName(r, g, b),

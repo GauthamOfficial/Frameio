@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { 
   Image, 
   Calendar, 
@@ -13,7 +12,6 @@ import {
   Facebook, 
   Instagram, 
   MessageCircle,
-  Share2,
   Copy,
   CheckCircle
 } from "lucide-react"
@@ -45,6 +43,7 @@ export default function SocialMediaPage() {
 
   useEffect(() => {
     fetchPosters()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchPosters = async () => {
@@ -149,16 +148,16 @@ export default function SocialMediaPage() {
         return
       }
 
-      let data: any
+      let data: Record<string, unknown>
       try {
         data = JSON.parse(text)
-      } catch (parseError) {
+      } catch {
         console.error('Failed to parse response:', text)
         throw new Error('Invalid response from server')
       }
       
       let postersData: Poster[] = []
-      if (data.success && data.results) {
+      if (data.success && data.results && Array.isArray(data.results)) {
         postersData = data.results
       } else if (Array.isArray(data)) {
         postersData = data
@@ -223,11 +222,13 @@ export default function SocialMediaPage() {
 
   const shareToFacebook = async (poster: Poster) => {
     // Use cloudinary_url (direct image URL) or public_url for sharing
-    const shareableUrl = (poster as any).cloudinary_url || (poster as any).public_url || poster.image_url
+    const posterWithUrls = poster as Poster & { cloudinary_url?: string; public_url?: string };
+    const shareableUrl = posterWithUrls.cloudinary_url || posterWithUrls.public_url || poster.image_url
     const captionText = poster.full_caption || poster.caption || ''
     
     // Format hashtags as string
-    const hashtagsArray = (poster as any).hashtags || []
+    const posterWithHashtags = poster as Poster & { hashtags?: string[] | string };
+    const hashtagsArray = posterWithHashtags.hashtags || []
     const hashtagsStr = Array.isArray(hashtagsArray) 
       ? hashtagsArray.join(' ') 
       : (typeof hashtagsArray === 'string' ? hashtagsArray : '')
@@ -307,7 +308,7 @@ export default function SocialMediaPage() {
           day: 'numeric'
         })
       }
-    } catch (error) {
+    } catch {
       return 'Invalid date'
     }
   }
@@ -342,7 +343,7 @@ export default function SocialMediaPage() {
       {posters.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-            <Image className="h-12 w-12 text-muted-foreground mb-4" />
+            <Image className="h-12 w-12 text-muted-foreground mb-4" aria-label="No posts icon" />
             <p className="text-muted-foreground mb-2">No posts generated yet</p>
             <p className="text-sm text-muted-foreground">
               Create your first poster to see it here
@@ -356,6 +357,7 @@ export default function SocialMediaPage() {
               {/* Image */}
               <div className="aspect-square bg-muted overflow-hidden relative">
                 {poster.image_url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={poster.image_url}
                     alt={poster.caption || poster.prompt || 'Generated poster'}
@@ -377,7 +379,7 @@ export default function SocialMediaPage() {
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                    <Image className="h-12 w-12 text-muted-foreground opacity-50" />
+                    <Image className="h-12 w-12 text-muted-foreground opacity-50" aria-label="No image available" />
                   </div>
                 )}
               </div>

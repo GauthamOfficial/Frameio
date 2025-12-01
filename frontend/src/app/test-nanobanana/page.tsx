@@ -5,7 +5,7 @@ import { nanoBananaService } from '@/lib/ai/nanobanana';
 import NanoBananaTester from '@/lib/ai/test-nanobanana';
 
 export default function TestNanoBananaPage() {
-  const [testResults, setTestResults] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<Record<string, unknown>[]>([]);
   const [isRunning, setIsRunning] = useState(false);
 
   const runTests = async () => {
@@ -14,7 +14,7 @@ export default function TestNanoBananaPage() {
     
     try {
       const results = await NanoBananaTester.runAllTests();
-      setTestResults(results);
+      setTestResults(results as unknown as Record<string, unknown>[]);
     } catch (error) {
       console.error('Test execution failed:', error);
       setTestResults([{
@@ -62,29 +62,36 @@ export default function TestNanoBananaPage() {
           <div className="bg-white border rounded-lg p-4">
             <h2 className="text-xl font-semibold mb-3">Test Results</h2>
             <div className="space-y-3">
-              {testResults.map((result, index) => (
-                <div key={index} className={`p-3 rounded ${
-                  result.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                } border`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-lg ${result.passed ? 'text-green-600' : 'text-red-600'}`}>
-                      {result.passed ? '✅' : '❌'}
-                    </span>
-                    <span className="font-medium">{result.testName}</span>
+              {testResults.map((result, index) => {
+                const passed = typeof result.passed === 'boolean' ? result.passed : false;
+                const testName = typeof result.testName === 'string' ? result.testName : 'Unknown Test';
+                const message = typeof result.message === 'string' ? result.message : '';
+                const details = result.details && typeof result.details === 'object' && result.details !== null ? result.details : null;
+                
+                return (
+                  <div key={index} className={`p-3 rounded ${
+                    passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                  } border`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-lg ${passed ? 'text-green-600' : 'text-red-600'}`}>
+                        {passed ? '✅' : '❌'}
+                      </span>
+                      <span className="font-medium">{testName}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">{message}</p>
+                    {details && (
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-gray-500 hover:text-gray-700">
+                          Show Details
+                        </summary>
+                        <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto">
+                          {JSON.stringify(details, null, 2)}
+                        </pre>
+                      </details>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{result.message}</p>
-                  {result.details && (
-                    <details className="text-xs">
-                      <summary className="cursor-pointer text-gray-500 hover:text-gray-700">
-                        Show Details
-                      </summary>
-                      <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto">
-                        {JSON.stringify(result.details, null, 2)}
-                      </pre>
-                    </details>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -93,12 +100,12 @@ export default function TestNanoBananaPage() {
         <div className="bg-yellow-50 p-4 rounded-lg">
           <h2 className="text-xl font-semibold mb-3">What This Test Does</h2>
           <ul className="list-disc list-inside space-y-2 text-sm">
-            <li><strong>Configuration Test:</strong> Verifies that the service correctly detects when it's not configured</li>
+            <li><strong>Configuration Test:</strong> Verifies that the service correctly detects when it&apos;s not configured</li>
             <li><strong>Fallback Test:</strong> Tests that the service returns a fallback response instead of throwing errors</li>
             <li><strong>Error Handling Test:</strong> Ensures the service handles errors gracefully</li>
           </ul>
           <p className="mt-3 text-sm text-gray-600">
-            The "Failed to fetch" error should no longer occur because the service now checks configuration 
+            The &quot;Failed to fetch&quot; error should no longer occur because the service now checks configuration 
             before making API calls and provides proper fallback responses.
           </p>
         </div>

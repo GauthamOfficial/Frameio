@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -13,9 +12,7 @@ import {
   Share2, 
   Download, 
   X, 
-  Sparkles, 
-  Palette, 
-  RefreshCw,
+  Sparkles,
   AlertCircle,
   CheckCircle,
   Loader2
@@ -25,7 +22,7 @@ import { useToastHelpers } from "@/components/common"
 import { useAppContext } from "@/contexts/app-context"
 import { apiClient } from "@/lib/api-client"
 import { nanoBananaService } from "@/lib/ai/nanobanana"
-import { generateTextilePrompt, extractKeywordsFromInput, suggestPromptImprovements } from "@/lib/ai/promptUtils"
+import { generateTextilePrompt } from "@/lib/ai/promptUtils"
 import ColorPaletteExtractor, { ColorInfo } from "@/components/ColorPaletteExtractor"
 
 interface GeneratedPoster {
@@ -60,6 +57,7 @@ export default function EnhancedPosterGenerator() {
   
   // State management
   const [isGenerating, setIsGenerating] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isScheduling, setIsScheduling] = useState(false)
   const [isPosting, setIsPosting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
@@ -67,15 +65,20 @@ export default function EnhancedPosterGenerator() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [generatedPoster, setGeneratedPoster] = useState<GeneratedPoster | null>(null)
   const [extractedColors, setExtractedColors] = useState<ColorInfo[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [scheduleData, setScheduleData] = useState<ScheduleData>({
     platform: 'instagram',
     scheduledTime: '',
     caption: ''
   })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [aiServiceStatus, setAiServiceStatus] = useState<'available' | 'error'>('available')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [promptSuggestions, setPromptSuggestions] = useState<string[]>([])
   const [generationStep, setGenerationStep] = useState<'idle' | 'refining' | 'generating' | 'completed'>('idle')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [refinedPrompt, setRefinedPrompt] = useState<string>('')
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [imageLoadError, setImageLoadError] = useState<boolean>(false)
@@ -123,7 +126,16 @@ export default function EnhancedPosterGenerator() {
 
     try {
       // Generate enhanced prompt
-      const textilePrompt = generateTextilePrompt(prompt, extractedColors)
+      const colorNames = extractedColors.map(c => c.name || c.hex).filter(Boolean) as string[]
+      const promptParams = {
+        theme: prompt,
+        color: extractedColors[0]?.name || extractedColors[0]?.hex || undefined,
+        fabric: 'cotton',
+        occasion: 'casual',
+        style: 'modern',
+        additionalKeywords: colorNames
+      }
+      const textilePrompt = generateTextilePrompt(promptParams)
       const enhancedPrompt = textilePrompt.enhancedPrompt
       
       console.log('🎨 Enhanced prompt:', enhancedPrompt)
@@ -147,14 +159,14 @@ export default function EnhancedPosterGenerator() {
             const posterData = {
               url: aiResponse.image_url,
               captions: [
-                `Discover our beautiful ${textilePrompt.fabricType} collection`,
-                `Perfect for ${textilePrompt.occasion} celebrations`,
-                `Premium quality ${textilePrompt.style} design`
+                `Discover our beautiful ${promptParams.fabric} collection`,
+                `Perfect for ${promptParams.occasion} celebrations`,
+                `Premium quality ${promptParams.style} design`
               ],
               hashtags: [
-                `#${textilePrompt.fabricType}`,
-                `#${textilePrompt.occasion}`,
-                `#${textilePrompt.style}`,
+                `#${promptParams.fabric}`,
+                `#${promptParams.occasion}`,
+                `#${promptParams.style}`,
                 '#textile',
                 '#fashion'
               ],
@@ -229,7 +241,7 @@ export default function EnhancedPosterGenerator() {
         style: 'modern',
         custom_text: enhancedPrompt,
         offer_details: 'Special offer available',
-        color_palette: extractedColors.map(c => c.name.toLowerCase()),
+        color_palette: extractedColors.map(c => (c.name || c.hex || '').toLowerCase()).filter(Boolean),
         generation_type: 'poster'
       })
       
@@ -278,7 +290,7 @@ export default function EnhancedPosterGenerator() {
     // Additional URL validation
     try {
       new URL(data.poster_url)
-    } catch (urlError) {
+    } catch {
       console.error('❌ Invalid poster URL format:', data.poster_url)
       setGenerationError('Invalid image URL generated. Please try again.')
       setAiServiceStatus('error')
@@ -312,7 +324,7 @@ export default function EnhancedPosterGenerator() {
         prompt: enhancedPrompt,
         generated_at: new Date().toISOString(),
         ai_service: 'backend',
-        unique_id: data.metadata?.unique_id || `gen_${Date.now()}`
+        unique_id: (data.metadata as { unique_id?: string } | undefined)?.unique_id || `gen_${Date.now()}`
       }
     }
     
@@ -482,8 +494,7 @@ export default function EnhancedPosterGenerator() {
               </div>
 
               <ColorPaletteExtractor
-                onColorsExtracted={setExtractedColors}
-                colors={extractedColors}
+                onPaletteExtracted={setExtractedColors}
               />
 
               <div className="flex gap-2">
@@ -555,6 +566,7 @@ export default function EnhancedPosterGenerator() {
               {generatedPoster && !imageLoadError ? (
                   <>
                     {console.log('🖼️ Rendering image with URL:', generatedPoster.url)}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={generatedPoster.url}
                       alt="AI Generated poster"

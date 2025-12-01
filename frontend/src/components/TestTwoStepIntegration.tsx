@@ -15,10 +15,10 @@ import {
   Wand2,
   Image as ImageIcon
 } from "lucide-react"
-import { apiClient } from "@/lib/api-client"
 
 interface TestResult {
   success: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any
   error?: string
   processingTime?: number
@@ -374,6 +374,7 @@ export default function TestTwoStepIntegration() {
                       Loading image...
                     </div>
                   )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     key={`poster-${testResult.data.poster_url.substring(0, 50)}`}
                     src={testResult.data.poster_url} 
