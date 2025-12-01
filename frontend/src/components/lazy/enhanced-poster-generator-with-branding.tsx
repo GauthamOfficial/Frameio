@@ -178,6 +178,9 @@ export default function EnhancedPosterGeneratorWithBranding() {
     // Generate a unique poster ID (in a real app, this would come from the backend)
     const posterId = `poster_${Date.now()}`
     
+    // Import ngrok utility dynamically to avoid SSR issues
+    const { getPosterShareUrl } = await import('@/utils/ngrok')
+    
     const shareText = result.full_caption
     let shareLink = ''
     
@@ -353,7 +356,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
       // Get authentication token
       const token = await getToken()
-      const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {}
+      const authHeaders: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {}
       
       // Multitenancy: pass organization context if available
       try {
@@ -931,9 +934,11 @@ export default function EnhancedPosterGeneratorWithBranding() {
                 <div className="border rounded-lg overflow-hidden relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
-                    src={result.image_url.startsWith('http') 
+                    src={result.image_url?.startsWith('http') 
                       ? result.image_url 
-                      : `${(process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${result.image_url}`} 
+                      : result.image_url 
+                        ? `${(process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${result.image_url}` 
+                        : ''} 
                     alt="Generated Poster" 
                     className="absolute inset-0 w-full h-full object-contain"
                   />

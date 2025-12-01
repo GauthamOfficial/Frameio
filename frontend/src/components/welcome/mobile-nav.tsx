@@ -62,12 +62,12 @@ export function MobileNav({ className }: MobileNavProps) {
               </div>
               
               <div className="space-y-4">
-                <ClerkSignUpButton mode="modal" afterSignUpUrl="/dashboard">
+                <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
                   <Button className="w-full" size="lg">
                     Get Started
                   </Button>
                 </ClerkSignUpButton>
-                <ClerkSignInButton mode="modal" afterSignInUrl="/dashboard">
+                <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
                   <Button variant="outline" className="w-full" size="lg">
                     Login
                   </Button>

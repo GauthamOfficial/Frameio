@@ -19,6 +19,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+interface ShareResponse {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
 interface ShareModalProps {
   poster: {
     id: string;
@@ -27,7 +33,7 @@ interface ShareModalProps {
   };
   onClose: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onShare: (shareData: any) => void;
+  onShare: (shareData: any) => Promise<ShareResponse>;
   isLoading: boolean;
 }
 
@@ -112,7 +118,7 @@ export function ShareModal({ onClose, onShare, isLoading }: ShareModalProps) {
     try {
       const result = await onShare(shareSettings);
       if (result.success) {
-        setShareUrl(result.data?.share_url || '');
+        setShareUrl((result.data as { share_url?: string } | undefined)?.share_url || '');
         setShareStatus('success');
       } else {
         setShareStatus('error');

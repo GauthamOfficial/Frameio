@@ -162,7 +162,9 @@ export default function AIGenerationPage() {
   };
 
   const handleShare = async (shareData: Record<string, unknown>) => {
-    if (!selectedPoster) return;
+    if (!selectedPoster) {
+      return { success: false, error: 'No poster selected' };
+    }
 
     try {
       const result = await shareDesign({
@@ -181,8 +183,11 @@ export default function AIGenerationPage() {
       if (result.success) {
         setShowShareModal(false);
       }
+      
+      return result;
     } catch (error) {
       console.error('Share failed:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   };
 

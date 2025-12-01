@@ -95,12 +95,14 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       }
 
       try {
-        const userProfile = await userApi.getProfile(token)
+        const userProfile = await userApi.getProfile()
         console.log('User profile:', userProfile)
         
         // Extract organization and role from the profile
-        const organizationId = userProfile.current_organization
-        const userRole = userProfile.user_role || 'Designer' // Default role if not specified
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const profile = userProfile as any
+        const organizationId = profile.current_organization || profile.organization_id
+        const userRole = profile.user_role || profile.role || 'Designer' // Default role if not specified
         
         setOrganizationId(organizationId)
         setUserRole(userRole as UserRole)
@@ -142,7 +144,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       } else if ((err as any).response?.status === 404) {
         setError('User profile not found. Please contact support.')
       } else {
-        setError(`Failed to load user data: ${err.message || 'Unknown error'}`)
+        setError(`Failed to load user data: ${err instanceof Error ? err.message : 'Unknown error'}`)
       }
       
       // Set default permissions for testing if backend fails

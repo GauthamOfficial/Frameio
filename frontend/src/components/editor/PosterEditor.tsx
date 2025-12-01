@@ -487,7 +487,7 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
             </div>
 
             {/* Object Controls */}
-            {editorState.selectedObject && (
+            {editorState.selectedObject != null ? (
               <div className="space-y-2">
                 <Label>Selected Object</Label>
                 <div className="space-y-2">
@@ -512,7 +512,7 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Export */}
             <div className="space-y-2">

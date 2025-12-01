@@ -126,7 +126,16 @@ export default function EnhancedPosterGenerator() {
 
     try {
       // Generate enhanced prompt
-      const textilePrompt = generateTextilePrompt(prompt, extractedColors)
+      const colorNames = extractedColors.map(c => c.name || c.hex).filter(Boolean) as string[]
+      const promptParams = {
+        theme: prompt,
+        color: extractedColors[0]?.name || extractedColors[0]?.hex || undefined,
+        fabric: 'cotton',
+        occasion: 'casual',
+        style: 'modern',
+        additionalKeywords: colorNames
+      }
+      const textilePrompt = generateTextilePrompt(promptParams)
       const enhancedPrompt = textilePrompt.enhancedPrompt
       
       console.log('🎨 Enhanced prompt:', enhancedPrompt)
@@ -150,14 +159,14 @@ export default function EnhancedPosterGenerator() {
             const posterData = {
               url: aiResponse.image_url,
               captions: [
-                `Discover our beautiful ${textilePrompt.fabricType} collection`,
-                `Perfect for ${textilePrompt.occasion} celebrations`,
-                `Premium quality ${textilePrompt.style} design`
+                `Discover our beautiful ${promptParams.fabric} collection`,
+                `Perfect for ${promptParams.occasion} celebrations`,
+                `Premium quality ${promptParams.style} design`
               ],
               hashtags: [
-                `#${textilePrompt.fabricType}`,
-                `#${textilePrompt.occasion}`,
-                `#${textilePrompt.style}`,
+                `#${promptParams.fabric}`,
+                `#${promptParams.occasion}`,
+                `#${promptParams.style}`,
                 '#textile',
                 '#fashion'
               ],
@@ -232,7 +241,7 @@ export default function EnhancedPosterGenerator() {
         style: 'modern',
         custom_text: enhancedPrompt,
         offer_details: 'Special offer available',
-        color_palette: extractedColors.map(c => c.name.toLowerCase()),
+        color_palette: extractedColors.map(c => (c.name || c.hex || '').toLowerCase()).filter(Boolean),
         generation_type: 'poster'
       })
       
@@ -315,7 +324,7 @@ export default function EnhancedPosterGenerator() {
         prompt: enhancedPrompt,
         generated_at: new Date().toISOString(),
         ai_service: 'backend',
-        unique_id: data.metadata?.unique_id || `gen_${Date.now()}`
+        unique_id: (data.metadata as { unique_id?: string } | undefined)?.unique_id || `gen_${Date.now()}`
       }
     }
     
@@ -485,8 +494,7 @@ export default function EnhancedPosterGenerator() {
               </div>
 
               <ColorPaletteExtractor
-                onColorsExtracted={setExtractedColors}
-                colors={extractedColors}
+                onPaletteExtracted={setExtractedColors}
               />
 
               <div className="flex gap-2">

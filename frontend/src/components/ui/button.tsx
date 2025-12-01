@@ -40,6 +40,9 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  afterSignInUrl?: string
+  afterSignUpUrl?: string
+  mode?: string
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

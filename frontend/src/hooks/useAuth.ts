@@ -189,12 +189,14 @@ export function useAuth() {
         if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('CORS')) {
           console.warn('Backend may not be accessible. Using Clerk user only:', errorMessage)
           // If we have a Clerk user, use it even if backend is unavailable
-          if (clerkUser && clerkLoaded) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const currentClerkUser = clerkUser as any
+          if (currentClerkUser && clerkLoaded) {
             setAuthState({
               user: {
-                id: clerkUser.id,
-                email: clerkUser.emailAddresses?.[0]?.emailAddress || '',
-                username: clerkUser.username || clerkUser.firstName || '',
+                id: currentClerkUser.id,
+                email: currentClerkUser.emailAddresses?.[0]?.emailAddress || '',
+                username: currentClerkUser.username || currentClerkUser.firstName || '',
               },
               isLoading: false,
               isAuthenticated: true,

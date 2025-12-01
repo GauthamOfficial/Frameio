@@ -2,6 +2,19 @@
 
 import { useEffect, useRef } from 'react'
 
+// Extend Window interface to include ethereum property
+declare global {
+  interface Window {
+    ethereum?: {
+      isMetaMask?: boolean
+      request?: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+      isConnected?: () => boolean
+      [key: string]: unknown
+    }
+    web3?: unknown
+  }
+}
+
 /**
  * MetaMask Suppressor Component
  * Prevents MetaMask extension from auto-connecting and suppresses related errors
@@ -33,7 +46,7 @@ export function MetaMaskSuppressor() {
               if (args.method === 'eth_requestAccounts' || args.method === 'eth_accounts') {
                 throw new Error('MetaMask connection disabled for this application')
               }
-              return originalEthereum.request(args)
+              return originalEthereum.request?.(args)
             },
             isConnected: () => false,
             isMetaMask: false
