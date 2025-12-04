@@ -2,6 +2,7 @@
  * API Client for Frameio Backend
  * Handles all API communication with proper error handling and authentication
  */
+import { API_BASE_URL } from '@/utils/api';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -97,9 +98,13 @@ class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
 
-  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') {
-    // Normalize base URL by removing trailing slashes for consistent joining
-    this.baseUrl = baseUrl.replace(/\/+$/, '');
+  constructor(baseUrl?: string) {
+    // Use provided baseUrl, or fallback to API_BASE_URL from utility
+    if (baseUrl) {
+      this.baseUrl = baseUrl.replace(/\/+$/, '');
+    } else {
+      this.baseUrl = API_BASE_URL.replace(/\/+$/, '');
+    }
   }
 
   setToken(token: string | null) {

@@ -3,6 +3,7 @@
  * Replaces NanoBanana with our new backend AI services
  */
 import { AIErrorHandler, createErrorContext } from './errorHandler';
+import { API_BASE_URL } from '@/utils/api';
 
 export interface GeminiImageResponse {
   success: boolean;
@@ -30,7 +31,7 @@ export class GeminiService {
   private errorHandler: AIErrorHandler;
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+    this.baseUrl = API_BASE_URL.endsWith('/api') ? API_BASE_URL : `${API_BASE_URL}/api`;
     this.errorHandler = AIErrorHandler.getInstance();
   }
 

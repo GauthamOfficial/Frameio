@@ -1,7 +1,7 @@
 /**
  * Open Graph helper utilities for social media sharing
  */
-
+import { API_BASE_URL } from '@/utils/api'
 /**
  * Truncate text to a maximum length, ensuring we don't cut words
  * @param text - Text to truncate
@@ -89,8 +89,8 @@ export function ensureAbsoluteUrl(imageUrl: string, baseUrl?: string): string {
     return imageUrl
   }
   
-  // Make absolute
-  const base = baseUrl || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+  // Make absolute - use utility function
+  const base = baseUrl || API_BASE_URL
   const cleanBase = base.replace(/\/$/, '')
   const cleanPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`
   

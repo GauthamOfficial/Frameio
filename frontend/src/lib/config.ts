@@ -2,10 +2,9 @@
  * Application configuration
  */
 
-// API Configuration
-// Default to localhost:8000 if not set in environment
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-export const API_BASE_URL = baseUrl.replace(/\/$/, '')
+// API Configuration - Import from centralized utility
+import { API_BASE_URL as UTIL_API_BASE_URL } from '@/utils/api'
+export const API_BASE_URL = UTIL_API_BASE_URL.replace(/\/$/, '')
 
 // Helper function to build API endpoints
 // Uses relative URLs if API_BASE_URL is not set (for Next.js proxy)

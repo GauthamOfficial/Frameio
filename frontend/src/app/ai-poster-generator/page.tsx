@@ -53,37 +53,26 @@ export default function AIPosterGeneratorPage() {
         authHeaders['X-Dev-User-ID'] = user.id;
       }
 
-      const response = await fetch('http://localhost:8000/api/ai/ai-poster/generate_poster/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          aspect_ratio: aspectRatio
-        })
-      });
-
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
+      const { apiPost } = await import('@/utils/api');
+      const data = await apiPost('/api/ai/ai-poster/generate_poster/', {
+        prompt: prompt,
+        aspect_ratio: aspectRatio
+      }, {}, token);
       console.log('Generation result:', data);
 
-      if (data.success) {
-        setResult(data);
+      const result = data as GenerationResult;
+      if (result.success) {
+        setResult(result);
         setError(null);
         console.log('✅ Poster generated successfully!');
-        console.log('Image URL:', data.image_url);
-        console.log('Image Path:', data.image_path);
-        console.log('Full Image URL:', data.image_url.startsWith('http') ? data.image_url : `http://localhost:8000${data.image_url}`);
+        console.log('Image URL:', result.image_url);
+        console.log('Image Path:', result.image_path);
+        if (result.image_url) {
+          const { getFullUrl } = await import('@/utils/api');
+          console.log('Full Image URL:', getFullUrl(result.image_url));
+        }
       } else {
-        throw new Error(data.error || 'Generation failed');
+        throw new Error(result.error || 'Generation failed');
       }
     } catch (err) {
       console.error('❌ Generation failed:', err);

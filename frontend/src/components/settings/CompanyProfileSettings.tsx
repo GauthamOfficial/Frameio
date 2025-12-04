@@ -162,7 +162,7 @@ const CompanyProfileSettings: React.FC = () => {
         if (networkError instanceof Error && networkError.name === 'AbortError') {
           showError('Request timed out. Please check your connection and try again.')
         } else if (errorMsg === 'Failed to fetch' || errorMsg.includes('fetch')) {
-          showError('Cannot connect to server. Please ensure the backend is running on http://localhost:8000')
+          showError('Cannot connect to server. Please check your connection and try again.')
         } else {
           showError('Failed to connect to server. Please check your internet connection and try again.')
         }

@@ -9,6 +9,7 @@ import { Image, Calendar, Download, ExternalLink, Loader2, Trash2 } from "lucide
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
 import { useRouter } from "next/navigation"
+import { apiGet, apiDelete, getFullUrl } from "@/utils/api"
 
 interface Poster {
   id: string
@@ -26,6 +27,11 @@ interface Poster {
 interface SavedPostersProps {
   limit?: number
 }
+
+type PostersResponse = 
+  | { success: boolean; results?: Poster[]; error?: string }
+  | { results: Poster[] }
+  | Poster[]
 
 export function SavedPosters({ limit }: SavedPostersProps) {
   const [posters, setPosters] = useState<Poster[]>([])
@@ -46,31 +52,15 @@ export function SavedPosters({ limit }: SavedPostersProps) {
     try {
       setLoading(true)
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      
-      // Ensure URL doesn't have double slashes
-      const baseUrl = apiBase.replace(/\/$/, '')
       const url = limit 
-        ? `${baseUrl}/api/ai/ai-poster/posters/?limit=${limit}`
-        : `${baseUrl}/api/ai/ai-poster/posters/`
+        ? `/api/ai/ai-poster/posters/?limit=${limit}`
+        : `/api/ai/ai-poster/posters/`
       
       console.log('Fetching posters from:', url)
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-      
-      let response: Response
+      let data
       try {
-        response = await fetch(url, {
-          method: 'GET',
-          headers,
-          credentials: 'include'
-        })
+        data = await apiGet(url, {}, token)
       } catch (networkError) {
         // Handle network errors (CORS, connection refused, etc.)
         const networkErrorMessage = networkError instanceof Error 
@@ -78,12 +68,10 @@ export function SavedPosters({ limit }: SavedPostersProps) {
           : 'Network error - check if backend is running'
         
         // If it's a network error, don't show error toast, just set empty array
-        // This allows the UI to show "No posters" instead of an error
         if (networkErrorMessage.includes('Failed to fetch') || 
             networkErrorMessage.includes('NetworkError') ||
             networkErrorMessage.includes('CORS') ||
             networkErrorMessage.includes('network')) {
-          // Only log as warning in development, not as error
           if (process.env.NODE_ENV === 'development') {
             console.warn('Backend may not be accessible, showing empty state:', networkErrorMessage)
           }
@@ -91,152 +79,52 @@ export function SavedPosters({ limit }: SavedPostersProps) {
           setLoading(false)
           return
         }
-        // For other errors, still handle gracefully
         console.warn('Error fetching posters:', networkErrorMessage)
         setPosters([])
         setLoading(false)
-        return
-      }
-
-      console.log('Response status:', response.status, response.statusText)
-
-      // Handle different response scenarios
-      if (!response.ok) {
-        // Try to get error message from response
-        let errorMessage = `Failed to fetch posters (${response.status})`
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let errorData: any = null
-        try {
-          const text = await response.text()
-          if (text) {
-            errorData = JSON.parse(text)
-            // Extract meaningful error message
-            if (errorData.error) {
-              errorMessage = errorData.error
-            } else if (errorData.message) {
-              errorMessage = errorData.message
-            } else if (typeof errorData === 'string') {
-              errorMessage = errorData
-            }
-            
-            // Check for database errors
-            if (errorMessage.includes("doesn't exist") || errorMessage.includes('Table') || errorMessage.includes('database')) {
-              console.warn('Database table may not exist. Run migrations:', errorMessage)
-              // Don't show error to user, just show empty state
-              setPosters([])
-              return
-            }
-            
-            // Only log if there's actual error data
-            if (Object.keys(errorData).length > 0 && errorData.error) {
-              console.error('Error response data:', errorData)
-            }
-          }
-        } catch {
-          // If response is not JSON, use status text
-          errorMessage = response.statusText || errorMessage
-        }
-        
-        // If it's a 404, 204, or 403 (forbidden but no posters), just set empty array
-        if (response.status === 404 || response.status === 204) {
-          console.log('No posters found (404/204), setting empty array')
-          setPosters([])
-          return
-        }
-        
-        // For 403, might be auth issue but could also mean no access to posters
-        if (response.status === 403) {
-          console.log('Access forbidden (403), setting empty array')
-          setPosters([])
-          return
-        }
-        
-        // For database errors (500 with table doesn't exist), show empty state
-        if (response.status >= 500) {
-          // Check if it's a database migration issue
-          if (errorMessage.includes("doesn't exist") || errorMessage.includes('Table') || errorMessage.includes('database')) {
-            console.warn('Database migration needed. Showing empty state:', errorMessage)
-            setPosters([])
-            return
-          }
-          // Only throw for other server errors
-          throw new Error(errorMessage)
-        } else {
-          // For client errors (4xx), just set empty array
-          console.warn('Client error (4xx), setting empty array:', errorMessage)
-          setPosters([])
-          return
-        }
-      }
-
-      // Parse response
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let data: any
-      try {
-        const text = await response.text()
-        if (!text) {
-          console.log('Empty response, setting empty array')
-          setPosters([])
-          return
-        }
-        data = JSON.parse(text)
-      } catch (parseError) {
-        console.error('Failed to parse response as JSON:', parseError)
-        setPosters([])
         return
       }
       
       console.log('Posters response data:', data)
       
       // Handle different response formats
-      if (data.success && data.results) {
+      const response = data as PostersResponse
+      if ('success' in response && response.success && 'results' in response && response.results) {
         // Ensure image URLs are absolute
-        const postersWithFixedUrls = data.results.map((poster: Poster) => {
+        const postersWithFixedUrls = response.results.map((poster: Poster) => {
           if (poster.image_url && !poster.image_url.startsWith('http')) {
-            const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-            const baseUrl = apiBase.replace(/\/$/, '')
-            poster.image_url = poster.image_url.startsWith('/') 
-              ? `${baseUrl}${poster.image_url}`
-              : `${baseUrl}/${poster.image_url}`
+            poster.image_url = getFullUrl(poster.image_url)
           }
           return poster
         })
         console.log('Posters with fixed URLs:', postersWithFixedUrls.map((p: Poster) => ({ id: p.id, image_url: p.image_url })))
         setPosters(postersWithFixedUrls)
-      } else if (Array.isArray(data)) {
+      } else if (Array.isArray(response)) {
         // If response is directly an array
-        const postersWithFixedUrls = data.map((poster: Poster) => {
+        const postersWithFixedUrls = response.map((poster: Poster) => {
           if (poster.image_url && !poster.image_url.startsWith('http')) {
-            const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-            const baseUrl = apiBase.replace(/\/$/, '')
-            poster.image_url = poster.image_url.startsWith('/') 
-              ? `${baseUrl}${poster.image_url}`
-              : `${baseUrl}/${poster.image_url}`
+            poster.image_url = getFullUrl(poster.image_url)
           }
           return poster
         })
         setPosters(postersWithFixedUrls)
-      } else if (data.results && Array.isArray(data.results)) {
+      } else if ('results' in response && response.results && Array.isArray(response.results)) {
         // If results exist but success flag might be missing
-        const postersWithFixedUrls = data.results.map((poster: Poster) => {
+        const postersWithFixedUrls = response.results.map((poster: Poster) => {
           if (poster.image_url && !poster.image_url.startsWith('http')) {
-            const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-            const baseUrl = apiBase.replace(/\/$/, '')
-            poster.image_url = poster.image_url.startsWith('/') 
-              ? `${baseUrl}${poster.image_url}`
-              : `${baseUrl}/${poster.image_url}`
+            poster.image_url = getFullUrl(poster.image_url)
           }
           return poster
         })
         setPosters(postersWithFixedUrls)
-      } else if (data.success === false) {
+      } else if ('success' in response && response.success === false) {
         // If API explicitly returns success: false, check if there's an error
-        if (data.error) {
-          console.warn('API returned error:', data.error)
+        if ('error' in response && response.error) {
+          console.warn('API returned error:', response.error)
         }
         setPosters([])
       } else {
-        console.warn('Unexpected response format:', data)
+        console.warn('Unexpected response format:', response)
         setPosters([])
       }
     } catch (error) {
@@ -316,22 +204,8 @@ export function SavedPosters({ limit }: SavedPostersProps) {
     setIsDeleting(true)
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
       
-      const response = await fetch(`${baseUrl}/api/ai/ai-poster/posters/${posterToDelete.id}/delete/`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to delete poster' }))
-        throw new Error(errorData.error || 'Failed to delete poster')
-      }
+      await apiDelete(`/api/ai/ai-poster/posters/${posterToDelete.id}/delete/`, {}, token)
 
       // Remove the poster from the list
       setPosters(prev => prev.filter(p => p.id !== posterToDelete.id))
@@ -421,12 +295,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                       const target = e.target as HTMLImageElement
                       // Try to fix relative URLs
                       if (poster.image_url && !poster.image_url.startsWith('http')) {
-                        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-                        const baseUrl = apiBase.replace(/\/$/, '')
-                        const fixedUrl = poster.image_url.startsWith('/') 
-                          ? `${baseUrl}${poster.image_url}`
-                          : `${baseUrl}/${poster.image_url}`
-                        target.src = fixedUrl
+                        target.src = getFullUrl(poster.image_url)
                       } else {
                         // Fallback to placeholder
                         target.style.display = 'none'

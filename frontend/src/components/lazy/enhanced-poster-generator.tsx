@@ -25,6 +25,7 @@ import {
 import React, { useState, useRef } from "react"
 import { useUser, useAuth } from '@clerk/nextjs'
 import Image from 'next/image'
+import { apiPost, getFullUrl } from '@/utils/api'
 
 interface GenerationResult {
   success: boolean
@@ -85,11 +86,11 @@ export default function EnhancedPosterGenerator() {
       
       // Add user context for branding (development)
       if (user?.id) {
-        authHeaders['X-Dev-User-ID'] = user.id
+      authHeaders['X-Dev-User-ID'] = user.id
       }
 
-      let response;
-
+      let data;
+      
       if (uploadedImage) {
         // Generate poster with uploaded image
         const formData = new FormData()
@@ -97,52 +98,35 @@ export default function EnhancedPosterGenerator() {
         formData.append('prompt', prompt)
         formData.append('aspect_ratio', aspectRatio)
 
-        response = await fetch('http://localhost:8000/api/ai/ai-poster/edit_poster/', {
-          method: 'POST',
-          headers: authHeaders,
-          body: formData
-        })
+        data = await apiPost('/api/ai/ai-poster/edit_poster/', formData, {}, token)
       } else {
         // Generate poster from text only
-        response = await fetch('http://localhost:8000/api/ai/ai-poster/generate_poster/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...authHeaders
-          },
-          body: JSON.stringify({
-            prompt: prompt,
-            aspect_ratio: aspectRatio
-          })
-        })
+        data = await apiPost('/api/ai/ai-poster/generate_poster/', {
+          prompt: prompt,
+          aspect_ratio: aspectRatio
+        }, {}, token)
       }
-
-      console.log('Response status:', response.status)
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `HTTP ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log('Generation result:', data)
+      const result = data as GenerationResult
+      console.log('Generation result:', result)
       console.log('Caption data available:', {
-        caption: data.caption,
-        full_caption: data.full_caption,
-        hashtags: data.hashtags,
-        emoji: data.emoji,
-        call_to_action: data.call_to_action
+        caption: result.caption,
+        full_caption: result.full_caption,
+        hashtags: result.hashtags,
+        emoji: result.emoji,
+        call_to_action: result.call_to_action
       })
 
-      if (data.success) {
-        setResult(data)
+      if (result.success) {
+        setResult(result)
         setError(null)
         console.log('✅ Poster generated successfully!')
-        console.log('Image URL:', data.image_url)
-        console.log('Image Path:', data.image_path)
-        console.log('Full Image URL:', data.image_url.startsWith('http') ? data.image_url : `http://localhost:8000${data.image_url}`)
+        console.log('Image URL:', result.image_url)
+        console.log('Image Path:', result.image_path)
+        if (result.image_url) {
+          console.log('Full Image URL:', getFullUrl(result.image_url))
+        }
       } else {
-        throw new Error(data.error || 'Generation failed')
+        throw new Error(result.error || 'Generation failed')
       }
     } catch (err) {
       console.error('❌ Generation failed:', err)
@@ -157,9 +141,7 @@ export default function EnhancedPosterGenerator() {
     if (result?.image_url) {
       try {
         // The backend now provides full URLs, but keep fallback for safety
-        const downloadUrl = result.image_url.startsWith('http') 
-          ? result.image_url 
-          : `http://localhost:8000${result.image_url}`
+        const downloadUrl = getFullUrl(result.image_url)
         
         // Fetch the image as a blob to force download
         const response = await fetch(downloadUrl)
@@ -180,9 +162,7 @@ export default function EnhancedPosterGenerator() {
         console.error('Download failed:', error)
         // Fallback to direct link
         const link = document.createElement('a')
-        link.href = result.image_url.startsWith('http') 
-          ? result.image_url 
-          : `http://localhost:8000${result.image_url}`
+        link.href = getFullUrl(result.image_url)
         link.download = result.filename || 'generated-poster.png'
         link.target = '_blank'
         document.body.appendChild(link)
@@ -238,9 +218,9 @@ export default function EnhancedPosterGenerator() {
 
     // Use public URL for Facebook sharing (replace with your cloudflared URL)
     const publicUrl = 'https://YOUR_CLOUDFLARE_URL.trycloudflare.com' // TODO: Replace with actual cloudflared URL
-    const imageUrl = result.image_url.startsWith('http') 
-      ? result.image_url.replace('http://localhost:8000', publicUrl)
-      : `${publicUrl}${result.image_url}`
+    // Use getFullUrl to handle relative URLs, then replace base URL with public URL if needed
+    const fullImageUrl = getFullUrl(result.image_url)
+    const imageUrl = fullImageUrl.replace(/^https?:\/\/[^/]+/, publicUrl)
     
     const shareText = result.full_caption
 
@@ -425,7 +405,7 @@ export default function EnhancedPosterGenerator() {
               <div className="space-y-4">
                 <div className="relative w-full" style={{aspectRatio: aspectRatio.replace(':', ' / ')}}>
                   <Image
-                    src={result.image_url.startsWith('http') ? result.image_url : `http://localhost:8000${result.image_url}`}
+                    src={getFullUrl(result.image_url)}
                     alt="Generated poster"
                     fill
                     className="rounded-md border object-contain"

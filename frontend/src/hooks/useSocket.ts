@@ -20,7 +20,10 @@ export function useSocket() {
       try {
         const token = await getToken();
         
-        const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:8000', {
+        // Use API_BASE_URL for socket connection (socket.io typically uses same base as API)
+        const { API_BASE_URL } = await import('@/utils/api');
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || API_BASE_URL;
+        const newSocket = io(socketUrl, {
           auth: {
             token: token
           },
