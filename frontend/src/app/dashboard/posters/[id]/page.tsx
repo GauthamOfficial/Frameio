@@ -188,9 +188,7 @@ export default function PosterPreviewPage() {
               onError={(e) => {
                 const target = e.target as HTMLImageElement
                 if (poster.image_url && !poster.image_url.startsWith('http')) {
-                  const fixedUrl = getFullUrl(poster.image_url) 
-                    ? `${baseUrl}${poster.image_url}`
-                    : `${baseUrl}/${poster.image_url}`
+                  const fixedUrl = getFullUrl(poster.image_url)
                   target.src = fixedUrl
                 }
               }}

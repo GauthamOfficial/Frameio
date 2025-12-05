@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Calendar, Download, Loader2, Trash2, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
+import { apiGet, apiDelete } from "@/utils/api"
 
 interface BrandingKit {
   id: string
@@ -130,10 +131,7 @@ export default function BrandingKitPreviewPage() {
     try {
       const token = await getToken()
       
-      try {
-        await apiDelete(`/api/ai/branding-kit/${kit.id}/delete/`, undefined, token)
-        throw new Error(errorData.error || 'Failed to delete branding kit')
-      }
+      await apiDelete(`/api/ai/branding-kit/${kit.id}/delete/`, undefined, token)
 
       showSuccess('Branding kit deleted successfully')
       router.push('/dashboard')

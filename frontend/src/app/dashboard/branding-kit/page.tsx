@@ -70,7 +70,7 @@ export default function BrandingKitPage() {
         token
       )
       
-      if (result.success) {
+      if (result.success && result.data) {
         setBrandingData(result.data.branding_kit)
         // Trigger a custom event to refresh the dashboard history
         if (typeof window !== 'undefined') {

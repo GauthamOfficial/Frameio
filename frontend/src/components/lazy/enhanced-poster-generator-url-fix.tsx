@@ -1,6 +1,8 @@
 // Fix for the URL validation issue in enhanced-poster-generator.tsx
 // Replace the URL validation section (around lines 278-287) with this:
 
+import { API_BASE_URL } from '@/utils/api'
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function urlValidationSnippet() {
     // Type declarations for snippet context
@@ -25,10 +27,9 @@ function urlValidationSnippet() {
     // If it's a relative URL, make it absolute
     if (data.poster_url.startsWith('/')) {
       // Import getFullUrl from @/utils/api in the actual component
-      // const { getFullUrl } = require('@/utils/api')
+      // import { getFullUrl } from '@/utils/api'
       // finalImageUrl = getFullUrl(data.poster_url)
       // For this snippet, use API_BASE_URL pattern:
-      const { API_BASE_URL } = require('@/utils/api')
       finalImageUrl = `${API_BASE_URL}${data.poster_url}`
       console.log('🔗 Converted relative URL to absolute:', finalImageUrl)
     }
