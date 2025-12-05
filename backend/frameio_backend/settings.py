@@ -471,5 +471,52 @@ def validate_environment():
         print(f"INFO: Optional environment variables not set: {', '.join(missing_recommended)}")
         print("These are recommended for full functionality.")
 
+# =============================================================================
+# PRODUCTION SETTINGS
+# =============================================================================
+# These settings are applied when DEBUG=False
+if not DEBUG:
+    # Security settings
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000 if SECURE_SSL_REDIRECT else 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True if SECURE_SSL_REDIRECT else False
+    SECURE_HSTS_PRELOAD = True if SECURE_SSL_REDIRECT else False
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # Trust proxy headers (important for Nginx reverse proxy)
+    USE_X_FORWARDED_HOST = True
+    USE_X_FORWARDED_PORT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if SECURE_SSL_REDIRECT else None
+    
+    # Static files (served by Nginx in production, but collectstatic still needed)
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
+    
+    # Media files
+    MEDIA_ROOT = BASE_DIR / 'media'
+    
+    # CORS - restrict in production
+    CORS_ALLOW_ALL_ORIGINS = False
+    # Update these with your actual frontend domain
+    production_origins = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+    if production_origins and production_origins[0]:
+        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in production_origins if origin.strip()]
+    else:
+        # Fallback: allow IP and common domains
+        CORS_ALLOWED_ORIGINS = [
+            "http://13.213.53.199",
+            "https://13.213.53.199",
+        ]
+    
+    # Logging - more detailed in production
+    LOGGING['handlers']['file']['level'] = 'WARNING'
+    LOGGING['root']['level'] = 'WARNING'
+    
+    # Database connection pooling (optional, for better performance)
+    DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
+
 # Run validation
 validate_environment()
