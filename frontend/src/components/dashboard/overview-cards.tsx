@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, Calendar, Heart, Palette, Loader2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { apiGet } from "@/utils/api"
 
 interface OverviewStats {
   generatedPosts: number
@@ -31,34 +32,15 @@ export function OverviewCards() {
     try {
       setLoading(true)
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      
-      // Ensure URL doesn't have double slashes
-      const baseUrl = apiBase.replace(/\/$/, '')
       
       // Fetch generated posters count
       try {
-        const postersResponse = await fetch(`${baseUrl}/api/ai/ai-poster/posters/?limit=1`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          },
-          credentials: 'include'
-        })
-
-        if (postersResponse.ok) {
-          try {
-            const postersData = await postersResponse.json()
-            if (postersData.success) {
-              setStats(prev => ({
-                ...prev,
-                generatedPosts: postersData.count || 0
-              }))
-            }
-          } catch (parseError) {
-            console.warn('Failed to parse posters response:', parseError)
-          }
+        const postersData = await apiGet('/api/ai/ai-poster/posters/?limit=1', {}, token) as { success?: boolean; count?: number }
+        if (postersData.success && postersData.count !== undefined) {
+          setStats(prev => ({
+            ...prev,
+            generatedPosts: postersData.count || 0
+          }))
         }
       } catch (postersError) {
         // Handle network errors for posters fetch gracefully
@@ -68,27 +50,12 @@ export function OverviewCards() {
 
       // Fetch branding kits count
       try {
-        const brandingKitsResponse = await fetch(`${baseUrl}/api/ai/branding-kit/history/?limit=1`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          },
-          credentials: 'include'
-        })
-
-        if (brandingKitsResponse.ok) {
-          try {
-            const brandingKitsData = await brandingKitsResponse.json()
-            if (brandingKitsData.success) {
-              setStats(prev => ({
-                ...prev,
-                brandkitCreated: brandingKitsData.count || 0
-              }))
-            }
-          } catch (parseError) {
-            console.warn('Failed to parse branding kits response:', parseError)
-          }
+        const brandingKitsData = await apiGet('/api/ai/branding-kit/history/?limit=1', {}, token) as { success?: boolean; count?: number }
+        if (brandingKitsData.success && brandingKitsData.count !== undefined) {
+          setStats(prev => ({
+            ...prev,
+            brandkitCreated: brandingKitsData.count || 0
+          }))
         }
       } catch (brandingKitsError) {
         // Handle network errors for branding kits fetch gracefully

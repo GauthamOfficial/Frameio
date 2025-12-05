@@ -49,23 +49,12 @@ export default function BrandingKitPreviewPage() {
     try {
       setLoading(true)
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
       
-      const response = await fetch(`${baseUrl}/api/ai/branding-kit/${kitId}/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch branding kit')
-      }
-
-      const data = await response.json()
+      const data = await apiGet<{ success: boolean; branding_kit?: BrandingKit }>(
+        `/api/ai/branding-kit/${kitId}/`,
+        undefined,
+        token
+      )
       if (data.success && data.branding_kit) {
         setKit(data.branding_kit)
       } else {
@@ -140,20 +129,9 @@ export default function BrandingKitPreviewPage() {
     setIsDeleting(true)
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
       
-      const response = await fetch(`${baseUrl}/api/ai/branding-kit/${kit.id}/delete/`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to delete branding kit' }))
+      try {
+        await apiDelete(`/api/ai/branding-kit/${kit.id}/delete/`, undefined, token)
         throw new Error(errorData.error || 'Failed to delete branding kit')
       }
 

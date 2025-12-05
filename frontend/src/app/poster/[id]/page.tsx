@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ShareButtons } from "@/components/poster/ShareButtons"
+import { apiGet, getFullUrl } from "@/utils/api"
 
 interface PosterData {
   id: string
@@ -31,42 +32,40 @@ interface PosterPageProps {
 // Function to fetch poster data from API
 async function getPosterData(id: string): Promise<PosterData | null> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-    const response = await fetch(`${apiUrl}/api/ai/ai-poster/poster/${id}/`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    const data = await apiGet<{ success: boolean; poster?: PosterData }>(
+      `/api/ai/ai-poster/poster/${id}/`
+    )
     
-    if (!response.ok) {
-      console.error('Failed to fetch poster:', response.status, response.statusText)
-      // Return mock data for testing
-      return {
-        id,
-        image_url: `http://localhost:8000/media/generated_posters/poster_${id}.png`,
-        caption: "Check out this amazing AI-generated poster!",
-        full_caption: "Check out this amazing AI-generated poster! Created with cutting-edge AI technology. #AI #Poster #Design #Innovation",
-        hashtags: ["#AI", "#Poster", "#Design", "#Innovation"],
-        prompt: "Create a modern textile poster for a silk saree brand",
-        aspect_ratio: "4:5",
-        width: 1080,
-        height: 1350,
-        generated_at: new Date().toISOString(),
-        branding_applied: false,
-        logo_added: false,
-        contact_info_added: false
+    if (data.success && data.poster) {
+      // Ensure image URL is absolute
+      if (data.poster.image_url && !data.poster.image_url.startsWith('http')) {
+        data.poster.image_url = getFullUrl(data.poster.image_url)
       }
+      return data.poster
     }
     
-    const data = await response.json()
-    return data.success ? data.poster : null
+    // Return mock data for testing if API doesn't return poster
+    return {
+      id,
+      image_url: getFullUrl(`/media/generated_posters/poster_${id}.png`),
+      caption: "Check out this amazing AI-generated poster!",
+      full_caption: "Check out this amazing AI-generated poster! Created with cutting-edge AI technology. #AI #Poster #Design #Innovation",
+      hashtags: ["#AI", "#Poster", "#Design", "#Innovation"],
+      prompt: "Create a modern textile poster for a silk saree brand",
+      aspect_ratio: "4:5",
+      width: 1080,
+      height: 1350,
+      generated_at: new Date().toISOString(),
+      branding_applied: false,
+      logo_added: false,
+      contact_info_added: false
+    }
   } catch (error) {
     console.error('Error fetching poster data:', error)
     // Return mock data for testing
     return {
       id,
-      image_url: `http://localhost:8000/media/generated_posters/poster_${id}.png`,
+      image_url: getFullUrl(`/media/generated_posters/poster_${id}.png`),
       caption: "Check out this amazing AI-generated poster!",
       full_caption: "Check out this amazing AI-generated poster! Created with cutting-edge AI technology. #AI #Poster #Design #Innovation",
       hashtags: ["#AI", "#Poster", "#Design", "#Innovation"],

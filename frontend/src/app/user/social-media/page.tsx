@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
+import { apiGet, getFullUrl } from "@/utils/api"
 
 interface Poster {
   id: string
@@ -51,55 +52,26 @@ export default function SocialMediaPage() {
     try {
       setLoading(true)
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
-      const url = `${baseUrl}/api/ai/ai-poster/posters/`
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        if (response.status === 404 || response.status === 204) {
-          setPosters([])
-          return
-        }
-        throw new Error(`Failed to fetch posters (${response.status})`)
-      }
-
-      const text = await response.text()
-      if (!text) {
-        setPosters([])
-        return
-      }
-
-      const data = JSON.parse(text)
+      const data = await apiGet<{ success?: boolean; results?: Poster[] } | Poster[]>(
+        '/api/ai/ai-poster/posters/',
+        undefined,
+        token
+      )
       
       let postersData: Poster[] = []
-      if (data.success && data.results) {
-        postersData = data.results
-      } else if (Array.isArray(data)) {
+      if (Array.isArray(data)) {
         postersData = data
-      } else if (data.results && Array.isArray(data.results)) {
+      } else if (data && typeof data === 'object' && 'success' in data && data.success && 'results' in data && Array.isArray(data.results)) {
+        postersData = data.results
+      } else if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
         postersData = data.results
       }
 
       // Ensure image URLs are absolute
       const postersWithFixedUrls = postersData.map((poster: Poster) => {
         if (poster.image_url && !poster.image_url.startsWith('http')) {
-          poster.image_url = poster.image_url.startsWith('/') 
-            ? `${baseUrl}${poster.image_url}`
-            : `${baseUrl}/${poster.image_url}`
+          poster.image_url = getFullUrl(poster.image_url)
         }
         return poster
       })
@@ -282,12 +254,7 @@ export default function SocialMediaPage() {
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       if (poster.image_url && !poster.image_url.startsWith('http')) {
-                        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-                        const baseUrl = apiBase.replace(/\/$/, '')
-                        const fixedUrl = poster.image_url.startsWith('/') 
-                          ? `${baseUrl}${poster.image_url}`
-                          : `${baseUrl}/${poster.image_url}`
-                        target.src = fixedUrl
+                        target.src = getFullUrl(poster.image_url)
                       } else {
                         target.style.display = 'none'
                       }

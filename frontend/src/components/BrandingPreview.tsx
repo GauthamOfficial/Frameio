@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Building2 } from 'lucide-react';
 import Image from 'next/image';
+import { apiGet } from '@/utils/api';
 
 interface CompanyProfile {
   company_name: string;
@@ -36,19 +37,25 @@ export default function BrandingPreview({ className }: BrandingPreviewProps) {
       setError(null);
 
       // Try to get company profile from the backend
-      const response = await fetch('http://localhost:8000/api/users/company-profiles/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCompanyProfile(data);
-      } else {
-        // If no company profile found, create a mock for demonstration
-        console.log('No company profile found, using mock data');
+      try {
+        const data = await apiGet<CompanyProfile>('/api/users/company-profiles/');
+        if (data) {
+          setCompanyProfile(data);
+        } else {
+          // If no company profile found, create a mock for demonstration
+          console.log('No company profile found, using mock data');
+          setCompanyProfile({
+            company_name: 'Your Company Name',
+            logo: null,
+            whatsapp_number: '+1234567890',
+            email: 'contact@yourcompany.com',
+            facebook_username: 'yourcompany',
+            has_complete_profile: false,
+          });
+        }
+      } catch (apiError) {
+        // If API call fails, use mock data
+        console.log('API call failed, using mock data:', apiError);
         setCompanyProfile({
           company_name: 'Your Company Name',
           logo: null,

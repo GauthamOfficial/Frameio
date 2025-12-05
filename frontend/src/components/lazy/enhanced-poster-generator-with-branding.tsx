@@ -26,6 +26,7 @@ import React, { useState, useRef, useEffect } from "react"
 import { useUser, useAuth } from '@clerk/nextjs'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCompanyProfile } from '@/hooks/use-company-profile'
+import { API_BASE_URL, getFullUrl } from '@/utils/api'
 
 interface GenerationResult {
   success: boolean
@@ -382,8 +383,8 @@ export default function EnhancedPosterGeneratorWithBranding() {
       let response;
 
       // Resolve API base robustly and add fallbacks
-      const primaryBase = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
-      const fallbackBases = [primaryBase, 'http://127.0.0.1:8000', 'http://localhost:8000']
+      const primaryBase = API_BASE_URL.replace(/\/$/, '')
+      const fallbackBases = [primaryBase]
         .map(b => b.replace(/\/$/, ''))
         // de-duplicate while preserving order
         .filter((v, i, a) => a.indexOf(v) === i)
@@ -606,7 +607,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
         (err instanceof DOMException && err.name === 'AbortError') || (typeof err === 'string' && err.toLowerCase() === 'timeout')
           ? 'Request timed out. Please try again.'
           : err instanceof TypeError && /Failed to fetch/i.test(String(err.message))
-          ? 'Cannot reach the backend. Ensure it is running on 127.0.0.1:8000 and CORS allows this origin.'
+          ? 'Cannot reach the backend. Please check your connection and ensure CORS is configured correctly.'
           : err instanceof Error
           ? err.message
           : 'Generation failed'
@@ -622,9 +623,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
     if (result?.image_url) {
       try {
         // The backend now provides full URLs, but keep fallback for safety
-        const downloadUrl = result.image_url.startsWith('http') 
-          ? result.image_url 
-          : `http://localhost:8000${result.image_url}`
+        const downloadUrl = getFullUrl(result.image_url)
         
         // Fetch the image as a blob to force download
         const response = await fetch(downloadUrl)
@@ -645,9 +644,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
         console.error('Download failed:', error)
         // Fallback to direct link
         const link = document.createElement('a')
-        link.href = result.image_url.startsWith('http') 
-          ? result.image_url 
-          : `http://localhost:8000${result.image_url}`
+        link.href = getFullUrl(result.image_url)
         link.download = result.filename || 'generated-poster.png'
         link.target = '_blank'
         document.body.appendChild(link)
@@ -934,11 +931,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                 <div className="border rounded-lg overflow-hidden relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
-                    src={result.image_url?.startsWith('http') 
-                      ? result.image_url 
-                      : result.image_url 
-                        ? `${(process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${result.image_url}` 
-                        : ''} 
+                    src={result.image_url ? getFullUrl(result.image_url) : ''} 
                     alt="Generated Poster" 
                     className="absolute inset-0 w-full h-full object-contain"
                   />

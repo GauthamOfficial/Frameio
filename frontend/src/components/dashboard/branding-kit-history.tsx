@@ -9,6 +9,7 @@ import { Palette, Calendar, Download, Loader2, RefreshCw, Trash2 } from "lucide-
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
 import { useRouter } from "next/navigation"
+import { apiGet, apiDelete } from "@/utils/api"
 
 interface BrandingKit {
   id: string
@@ -62,95 +63,43 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
     try {
       setLoading(true)
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      
-      // Ensure URL doesn't have double slashes
-      const baseUrl = apiBase.replace(/\/$/, '')
       const url = limit 
-        ? `${baseUrl}/api/ai/branding-kit/history/?limit=${limit}`
-        : `${baseUrl}/api/ai/branding-kit/history/`
+        ? `/api/ai/branding-kit/history/?limit=${limit}`
+        : `/api/ai/branding-kit/history/`
       
       console.log('Fetching branding kits from:', url)
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-      
-      let response: Response
       try {
-        response = await fetch(url, {
-          method: 'GET',
-          headers,
-          credentials: 'include'
-        })
-      } catch {
-        console.warn('Backend may not be accessible, showing empty state')
-        setBrandingKits([])
-        return
-      }
-
-      console.log('Response status:', response.status, response.statusText)
-
-      // Handle different response scenarios
-      if (!response.ok) {
-        if (response.status === 404 || response.status === 204 || response.status === 403) {
-          console.log('No branding kits found, setting empty array')
+        const data = await apiGet(url, {}, token) as { success?: boolean; results?: BrandingKit[]; count?: number; error?: string } | BrandingKit[]
+        
+        console.log('Branding kits response data:', data)
+        
+        // Handle different response formats
+        if (Array.isArray(data)) {
+          console.log(`Setting ${data.length} branding kits (array format)`)
+          setBrandingKits(data)
+        } else if ('success' in data && data.success && data.results) {
+          console.log(`Setting ${data.results.length} branding kits`)
+          setBrandingKits(data.results)
+        } else if ('results' in data && Array.isArray(data.results)) {
+          console.log(`Setting ${data.results.length} branding kits (results format)`)
+          setBrandingKits(data.results)
+        } else if ('success' in data && data.success === false) {
+          console.warn('API returned success: false', data.error)
+          setBrandingKits([])
+        } else {
+          console.warn('Unexpected response format:', data)
+          setBrandingKits([])
+        }
+      } catch (error) {
+        // Handle network errors gracefully
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('CORS')) {
+          console.warn('Backend may not be accessible, showing empty state')
           setBrandingKits([])
           return
         }
-        
-        if (response.status >= 500) {
-          const text = await response.text()
-          if (text && (text.includes("doesn't exist") || text.includes('Table') || text.includes('database'))) {
-            console.warn('Database migration needed. Showing empty state')
-            setBrandingKits([])
-            return
-          }
-        }
-        
-        throw new Error(`Failed to fetch branding kits (${response.status})`)
-      }
-
-      // Parse response
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let data: any
-      try {
-        const text = await response.text()
-        if (!text) {
-          console.log('Empty response, setting empty array')
-          setBrandingKits([])
-          return
-        }
-        data = JSON.parse(text)
-      } catch (parseError) {
-        console.error('Failed to parse response as JSON:', parseError)
-        setBrandingKits([])
-        return
-      }
-      
-      console.log('Branding kits response data:', data)
-      console.log('Branding kits count:', data.count || data.results?.length || 0)
-      
-      // Handle different response formats
-      if (data.success && data.results) {
-        console.log(`Setting ${data.results.length} branding kits`)
-        setBrandingKits(data.results)
-      } else if (Array.isArray(data)) {
-        console.log(`Setting ${data.length} branding kits (array format)`)
-        setBrandingKits(data)
-      } else if (data.results && Array.isArray(data.results)) {
-        console.log(`Setting ${data.results.length} branding kits (results format)`)
-        setBrandingKits(data.results)
-      } else if (data.success === false) {
-        console.warn('API returned success: false', data.error)
-        setBrandingKits([])
-      } else {
-        console.warn('Unexpected response format:', data)
-        setBrandingKits([])
+        throw error
       }
     } catch (error) {
       console.error('Error fetching branding kits:', error)
@@ -230,22 +179,8 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
     setIsDeleting(true)
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
       
-      const response = await fetch(`${baseUrl}/api/ai/branding-kit/${kitToDelete.id}/delete/`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to delete branding kit' }))
-        throw new Error(errorData.error || 'Failed to delete branding kit')
-      }
+      await apiDelete(`/api/ai/branding-kit/${kitToDelete.id}/delete/`, {}, token)
 
       // Remove the branding kit from the list
       setBrandingKits(prev => prev.filter(k => k.id !== kitToDelete.id))

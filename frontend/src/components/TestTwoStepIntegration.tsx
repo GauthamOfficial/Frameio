@@ -15,6 +15,7 @@ import {
   Wand2,
   Image as ImageIcon
 } from "lucide-react"
+import { apiPost } from "@/utils/api"
 
 interface TestResult {
   success: boolean
@@ -77,12 +78,20 @@ export default function TestTwoStepIntegration() {
       console.log('🚀 Using real backend API with Gemini + NanoBanana...')
       
       // Use test endpoint that doesn't require authentication
-      const response = await fetch('http://localhost:8000/api/test/two-step/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const result = await apiPost<{
+        success: boolean;
+        poster_url?: string;
+        error?: string;
+        metadata?: {
+          refined_prompt?: string;
+          two_step_flow?: boolean;
+        };
+        caption_suggestions?: string[];
+        fallback_url?: string;
+        test_fallback_url?: string;
+      }>(
+        '/api/test/two-step/',
+        {
           custom_text: testParams.customText,
           fabric_type: testParams.fabricType,
           festival: testParams.festival,
@@ -91,14 +100,8 @@ export default function TestTwoStepIntegration() {
           offer_details: testParams.offerDetails,
           color_scheme: testParams.colorScheme,
           generation_type: 'poster'
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
-      
-      const result = await response.json()
+        }
+      )
       
       const endTime = Date.now()
       const processingTime = (endTime - startTime) / 1000

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Calendar, Clock, Image as ImageIcon, Loader2, Edit, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers, ConfirmationModal } from "@/components/common"
+import { apiGet, apiPost, apiPatch, apiDelete, getFullUrl } from "@/utils/api"
 
 interface GeneratedPoster {
   id: string
@@ -81,17 +82,8 @@ export default function SchedulerPage() {
       // Try to get from user profile
       const token = await getToken()
       if (token) {
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-        const baseUrl = apiBase.replace(/\/$/, '')
-        const response = await fetch(`${baseUrl}/api/users/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
+        try {
+          const data = await apiGet('/api/users/', {}, token) as Array<{ current_organization?: string }> | { current_organization?: string }
           const user = Array.isArray(data) ? data[0] : data
           if (user?.current_organization) {
             // Store for future use
@@ -100,6 +92,8 @@ export default function SchedulerPage() {
             }
             return { devOrgId: user.current_organization }
           }
+        } catch (e) {
+          console.warn('Failed to fetch user profile:', e)
         }
       }
     } catch (e) {
@@ -120,121 +114,64 @@ export default function SchedulerPage() {
   const fetchPosters = async () => {
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
-      const url = `${baseUrl}/api/ai/ai-poster/posters/`
+      const url = '/api/ai/ai-poster/posters/'
       
       console.log('Fetching posters from:', url)
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      // Add organization context headers
+      // Build custom headers for organization context
+      const customHeaders: Record<string, string> = {}
       try {
         const orgSlug = (typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null) 
           || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG 
           || null
         if (orgSlug) {
-          headers['X-Organization'] = orgSlug
+          customHeaders['X-Organization'] = orgSlug
         }
         const devOrgId = (typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null)
           || process.env.NEXT_PUBLIC_DEV_ORG_ID 
           || null
         if (devOrgId) {
-          headers['X-Dev-Org-Id'] = devOrgId
+          customHeaders['X-Dev-Org-Id'] = devOrgId
         }
       } catch {}
       
-      let response: Response
       try {
-        response = await fetch(url, {
-          method: 'GET',
-          headers,
-          credentials: 'include',
-          mode: 'cors', // Explicitly set CORS mode
+        const data = await apiGet(url, { headers: customHeaders, credentials: 'include', mode: 'cors' }, token) as { success?: boolean; results?: GeneratedPoster[] } | GeneratedPoster[]
+        
+        let postersData: GeneratedPoster[] = []
+        if (Array.isArray(data)) {
+          postersData = data
+        } else if (data.success && data.results && Array.isArray(data.results)) {
+          postersData = data.results
+        } else if ('results' in data && Array.isArray(data.results)) {
+          postersData = data.results
+        }
+
+        // Ensure image URLs are absolute
+        const postersWithFixedUrls = postersData.map((poster: GeneratedPoster) => {
+          if (poster.image_url && !poster.image_url.startsWith('http')) {
+            poster.image_url = getFullUrl(poster.image_url)
+          }
+          // Also fix public_url if it exists
+          const posterWithUrl = poster as GeneratedPoster & { public_url?: string };
+          if (posterWithUrl.public_url && !posterWithUrl.public_url.startsWith('http')) {
+            posterWithUrl.public_url = getFullUrl(posterWithUrl.public_url)
+          }
+          return poster
         })
+
+        setGeneratedPosters(postersWithFixedUrls)
       } catch (networkError) {
         // Handle network errors gracefully
         console.error('Network error fetching posters:', networkError)
         const errorMsg = networkError instanceof Error ? networkError.message : 'Network error'
         
-        // Check if it's a CORS error
         if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch')) {
-          console.error('CORS or network error - backend might not be running on', baseUrl)
+          console.error('CORS or network error - backend might not be accessible')
         }
         setGeneratedPosters([])
         return
       }
-
-      if (!response.ok) {
-        if (response.status === 404 || response.status === 204) {
-          setGeneratedPosters([])
-          return
-        }
-        
-        // Try to get error message from response
-        let errorMessage = `Failed to fetch posters (${response.status})`
-        try {
-          const errorData = await response.json()
-          if (errorData.error) {
-            errorMessage = errorData.error
-          } else if (errorData.message) {
-            errorMessage = errorData.message
-          }
-        } catch {
-          // If response is not JSON, use status text
-          errorMessage = response.statusText || errorMessage
-        }
-        
-        throw new Error(errorMessage)
-      }
-
-      const text = await response.text()
-      if (!text || text.trim() === '') {
-        setGeneratedPosters([])
-        return
-      }
-
-      let data: Record<string, unknown>
-      try {
-        data = JSON.parse(text)
-      } catch {
-        console.error('Failed to parse response:', text)
-        throw new Error('Invalid response from server')
-      }
-      
-      let postersData: GeneratedPoster[] = []
-      if (data.success && data.results && Array.isArray(data.results)) {
-        postersData = data.results
-      } else if (Array.isArray(data)) {
-        postersData = data
-      } else if (data.results && Array.isArray(data.results)) {
-        postersData = data.results
-      }
-
-      // Ensure image URLs are absolute
-      const postersWithFixedUrls = postersData.map((poster: GeneratedPoster) => {
-        if (poster.image_url && !poster.image_url.startsWith('http')) {
-          poster.image_url = poster.image_url.startsWith('/') 
-            ? `${baseUrl}${poster.image_url}`
-            : `${baseUrl}/${poster.image_url}`
-        }
-        // Also fix public_url if it exists
-        const posterWithUrl = poster as GeneratedPoster & { public_url?: string };
-        if (posterWithUrl.public_url && !posterWithUrl.public_url.startsWith('http')) {
-          posterWithUrl.public_url = posterWithUrl.public_url.startsWith('/') 
-            ? `${baseUrl}${posterWithUrl.public_url}`
-            : `${baseUrl}/${posterWithUrl.public_url}`
-        }
-        return poster
-      })
-
-      setGeneratedPosters(postersWithFixedUrls)
     } catch (error) {
       console.error('Error fetching posters:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to load posters'
@@ -254,102 +191,49 @@ export default function SchedulerPage() {
   const fetchScheduledPosts = async () => {
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
-      const url = `${baseUrl}/api/ai/schedule/`
+      const url = '/api/ai/schedule/'
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      // Add organization context headers
+      // Build custom headers for organization context
+      const customHeaders: Record<string, string> = {}
       try {
         const orgSlug = (typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null) 
           || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG 
           || null
         if (orgSlug) {
-          headers['X-Organization'] = orgSlug
+          customHeaders['X-Organization'] = orgSlug
         }
         const devOrgId = (typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null)
           || process.env.NEXT_PUBLIC_DEV_ORG_ID 
           || null
         if (devOrgId) {
-          headers['X-Dev-Org-Id'] = devOrgId
+          customHeaders['X-Dev-Org-Id'] = devOrgId
         }
       } catch {}
       
-      let response: Response
       try {
-        response = await fetch(url, {
-          method: 'GET',
-          headers,
-          credentials: 'include',
-          mode: 'cors', // Explicitly set CORS mode
-        })
+        const data = await apiGet(url, { headers: customHeaders, credentials: 'include', mode: 'cors' }, token) as ScheduledPost[] | { results?: ScheduledPost[] }
+        
+        let scheduledData: ScheduledPost[] = []
+        if (Array.isArray(data)) {
+          scheduledData = data
+        } else if (data.results && Array.isArray(data.results)) {
+          scheduledData = data.results
+        }
+
+        // Filter out cancelled posts (they're "deleted" from user's perspective)
+        const activePosts = scheduledData.filter(post => post.status !== 'cancelled')
+        setScheduledPosts(activePosts)
       } catch (networkError) {
         // Handle network errors gracefully
         console.error('Network error fetching scheduled posts:', networkError)
         const errorMsg = networkError instanceof Error ? networkError.message : 'Network error'
         
-        // Check if it's a CORS error
         if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch')) {
-          console.error('CORS or network error - backend might not be running on', baseUrl)
+          console.error('CORS or network error - backend might not be accessible')
         }
         setScheduledPosts([])
         return
       }
-
-      if (!response.ok) {
-        if (response.status === 404 || response.status === 204) {
-          setScheduledPosts([])
-          return
-        }
-        
-        // Try to get error message from response
-        let errorMessage = `Failed to fetch scheduled posts (${response.status})`
-        try {
-          const errorData = await response.json()
-          if (errorData.error) {
-            errorMessage = errorData.error
-          } else if (errorData.message) {
-            errorMessage = errorData.message
-          }
-        } catch {
-          // If response is not JSON, use status text
-          errorMessage = response.statusText || errorMessage
-        }
-        
-        throw new Error(errorMessage)
-      }
-
-      const text = await response.text()
-      if (!text || text.trim() === '') {
-        setScheduledPosts([])
-        return
-      }
-
-      let data: Record<string, unknown>
-      try {
-        data = JSON.parse(text)
-      } catch {
-        console.error('Failed to parse response:', text)
-        throw new Error('Invalid response from server')
-      }
-      
-      let scheduledData: ScheduledPost[] = []
-      if (Array.isArray(data)) {
-        scheduledData = data
-      } else if (data.results && Array.isArray(data.results)) {
-        scheduledData = data.results
-      }
-
-      // Filter out cancelled posts (they're "deleted" from user's perspective)
-      const activePosts = scheduledData.filter(post => post.status !== 'cancelled')
-      setScheduledPosts(activePosts)
     } catch (error) {
       console.error('Error fetching scheduled posts:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to load scheduled posts'
@@ -392,31 +276,21 @@ export default function SchedulerPage() {
     setScheduling(true)
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
-      const url = `${baseUrl}/api/ai/schedule/`
+      const url = '/api/ai/schedule/'
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      // Add organization context headers
+      // Build custom headers for organization context
+      const customHeaders: Record<string, string> = {}
       try {
         const orgContext = await getOrganizationContext()
         const orgSlug = orgContext.orgSlug || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
         const devOrgId = orgContext.devOrgId || process.env.NEXT_PUBLIC_DEV_ORG_ID
         
         if (orgSlug) {
-          headers['X-Organization'] = orgSlug
+          customHeaders['X-Organization'] = orgSlug
         }
         if (devOrgId) {
-          headers['X-Dev-Org-Id'] = devOrgId
+          customHeaders['X-Dev-Org-Id'] = devOrgId
         }
-        // Backend will automatically handle organization resolution from user membership if headers not provided
       } catch (e) {
         console.error('Error setting organization headers:', e)
       }
@@ -424,9 +298,7 @@ export default function SchedulerPage() {
       // Ensure asset_url is an absolute URL
       let assetUrl = selectedPoster.public_url || selectedPoster.image_url
       if (assetUrl && !assetUrl.startsWith('http')) {
-        assetUrl = assetUrl.startsWith('/') 
-          ? `${baseUrl}${assetUrl}`
-          : `${baseUrl}/${assetUrl}`
+        assetUrl = getFullUrl(assetUrl)
       }
       
       if (!assetUrl) {
@@ -447,80 +319,8 @@ export default function SchedulerPage() {
         }
       }
       
-      console.log('Scheduling post with data:', {
-        url,
-        headers: Object.keys(headers),
-        body: requestBody
-      })
+      await apiPost(url, requestBody, { headers: customHeaders, credentials: 'include' }, token)
       
-      let response: Response
-      try {
-        response = await fetch(url, {
-          method: 'POST',
-          headers,
-          credentials: 'include',
-          body: JSON.stringify(requestBody)
-        })
-      } catch (networkError) {
-        // Handle network errors (CORS, connection refused, etc.)
-        console.error('Network error scheduling post:', networkError)
-        const errorObj = networkError instanceof Error ? networkError : new Error(String(networkError))
-        
-        let errorMessage = 'Failed to schedule post'
-        if (errorObj.message === 'Failed to fetch' || errorObj.name === 'TypeError') {
-          errorMessage = 'Cannot connect to server. Please ensure the backend is running and accessible.'
-        } else if (errorObj.message.includes('CORS')) {
-          errorMessage = 'CORS error. Please check backend CORS configuration.'
-        } else {
-          errorMessage = `Network error: ${errorObj.message}`
-        }
-        
-        showError(errorMessage)
-        return
-      }
-
-      if (!response.ok) {
-        let errorData: Record<string, unknown> = {}
-        try {
-          const text = await response.text()
-          console.error('Backend error response:', text)
-          if (text) {
-            errorData = JSON.parse(text)
-            console.error('Parsed error data:', errorData)
-          }
-        } catch (e) {
-          console.error('Failed to parse error response:', e)
-        }
-        
-        // Handle validation errors with field details
-        let errorMessage: string = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
-                                   (typeof errorData.error === 'string' ? errorData.error : null) || 
-                                   (typeof errorData.message === 'string' ? errorData.message : null) || 
-                                   `Failed to schedule post (${response.status})`
-        
-        // If detail is an object (field validation errors), format it nicely
-        if (typeof errorData.detail === 'object' && errorData.detail !== null && !Array.isArray(errorData.detail)) {
-          const fieldErrors = Object.entries(errorData.detail as Record<string, unknown>)
-            .map(([field, error]: [string, unknown]) => {
-              const errorText = Array.isArray(error) ? (typeof error[0] === 'string' ? error[0] : String(error[0])) : (typeof error === 'string' ? error : String(error))
-              return `${field}: ${errorText}`
-            })
-            .join(', ')
-          errorMessage = fieldErrors || errorMessage
-        }
-        
-        // Log full error for debugging
-        console.error('Scheduling error:', {
-          status: response.status,
-          errorData,
-          errorMessage
-        })
-        
-        // Show error without throwing to prevent console errors
-        showError(errorMessage)
-        return
-      }
-
       showSuccess("Post scheduled successfully!")
       setShowScheduleModal(false)
       setSelectedPoster(null)
@@ -576,29 +376,20 @@ export default function SchedulerPage() {
     setEditing(true)
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
-      const url = `${baseUrl}/api/ai/schedule/${selectedScheduledPost.id}/`
+      const url = `/api/ai/schedule/${selectedScheduledPost.id}/`
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      // Add organization context headers
+      // Build custom headers for organization context
+      const customHeaders: Record<string, string> = {}
       try {
         const orgContext = await getOrganizationContext()
         const orgSlug = orgContext.orgSlug || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
         const devOrgId = orgContext.devOrgId || process.env.NEXT_PUBLIC_DEV_ORG_ID
         
         if (orgSlug) {
-          headers['X-Organization'] = orgSlug
+          customHeaders['X-Organization'] = orgSlug
         }
         if (devOrgId) {
-          headers['X-Dev-Org-Id'] = devOrgId
+          customHeaders['X-Dev-Org-Id'] = devOrgId
         }
       } catch (e) {
         console.error('Error setting organization headers:', e)
@@ -612,54 +403,8 @@ export default function SchedulerPage() {
         metadata: selectedScheduledPost.metadata || {}
       }
       
-      let response: Response
-      try {
-        response = await fetch(url, {
-          method: 'PATCH',
-          headers,
-          credentials: 'include',
-          body: JSON.stringify(requestBody)
-        })
-      } catch (networkError) {
-        console.error('Network error updating post:', networkError)
-        const errorObj = networkError instanceof Error ? networkError : new Error(String(networkError))
-        let errorMessage = 'Failed to update post'
-        if (errorObj.message === 'Failed to fetch' || errorObj.name === 'TypeError') {
-          errorMessage = 'Cannot connect to server. Please ensure the backend is running and accessible.'
-        }
-        showError(errorMessage)
-        return
-      }
-
-      if (!response.ok) {
-        let errorData: Record<string, unknown> = {}
-        try {
-          const text = await response.text()
-          if (text) {
-            errorData = JSON.parse(text)
-          }
-        } catch (e) {
-          console.error('Failed to parse error response:', e)
-        }
-        
-        let errorMessage: string = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
-                                   (typeof errorData.error === 'string' ? errorData.error : null) || 
-                                   (typeof errorData.message === 'string' ? errorData.message : null) || 
-                                   `Failed to update post (${response.status})`
-        if (typeof errorData.detail === 'object' && errorData.detail !== null && !Array.isArray(errorData.detail)) {
-          const fieldErrors = Object.entries(errorData.detail as Record<string, unknown>)
-            .map(([field, error]: [string, unknown]) => {
-              const errorText = Array.isArray(error) ? error[0] : error
-              return `${field}: ${errorText}`
-            })
-            .join(', ')
-          errorMessage = fieldErrors || errorMessage
-        }
-        
-        showError(errorMessage)
-        return
-      }
-
+      await apiPatch(url, requestBody, { headers: customHeaders, credentials: 'include' }, token)
+      
       showSuccess("Post updated successfully!")
       setShowEditModal(false)
       setSelectedScheduledPost(null)
@@ -692,71 +437,27 @@ export default function SchedulerPage() {
     setShowDeleteConfirm(false)
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
-      const url = `${baseUrl}/api/ai/schedule/${postToDelete.id}/`
+      const url = `/api/ai/schedule/${postToDelete.id}/`
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      // Add organization context headers
+      // Build custom headers for organization context
+      const customHeaders: Record<string, string> = {}
       try {
         const orgContext = await getOrganizationContext()
         const orgSlug = orgContext.orgSlug || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
         const devOrgId = orgContext.devOrgId || process.env.NEXT_PUBLIC_DEV_ORG_ID
         
         if (orgSlug) {
-          headers['X-Organization'] = orgSlug
+          customHeaders['X-Organization'] = orgSlug
         }
         if (devOrgId) {
-          headers['X-Dev-Org-Id'] = devOrgId
+          customHeaders['X-Dev-Org-Id'] = devOrgId
         }
       } catch (e) {
         console.error('Error setting organization headers:', e)
       }
       
-      let response: Response
-      try {
-        response = await fetch(url, {
-          method: 'DELETE',
-          headers,
-          credentials: 'include'
-        })
-      } catch (networkError) {
-        console.error('Network error deleting post:', networkError)
-        const errorObj = networkError instanceof Error ? networkError : new Error(String(networkError))
-        let errorMessage = 'Failed to delete post'
-        if (errorObj.message === 'Failed to fetch' || errorObj.name === 'TypeError') {
-          errorMessage = 'Cannot connect to server. Please ensure the backend is running and accessible.'
-        }
-        showError(errorMessage)
-        return
-      }
-
-      if (!response.ok) {
-        let errorData: Record<string, unknown> = {}
-        try {
-          const text = await response.text()
-          if (text) {
-            errorData = JSON.parse(text)
-          }
-        } catch (e) {
-          console.error('Failed to parse error response:', e)
-        }
-        
-        const errorMessage: string = (typeof errorData.detail === 'string' ? errorData.detail : null) || 
-                                   (typeof errorData.error === 'string' ? errorData.error : null) || 
-                                   (typeof errorData.message === 'string' ? errorData.message : null) || 
-                                   `Failed to delete post (${response.status})`
-        showError(errorMessage)
-        return
-      }
-
+      await apiDelete(url, { headers: customHeaders, credentials: 'include' }, token)
+      
       showSuccess("Post deleted successfully!")
       
       // Refresh scheduled posts

@@ -690,7 +690,7 @@ const CompanyProfileSettings: React.FC = () => {
         showError('Request timed out. Please check your connection and try again.')
       } else if (errorObj.message === 'Failed to fetch') {
         console.error('🌐 Network error - Backend server may not be running or CORS issue')
-        showError('Cannot connect to server. Please ensure the backend is running on http://localhost:8000')
+        showError('Cannot connect to server. Please check your connection and try again.')
       } else if (typeof errorObj.message === 'string' && errorObj.message.includes('CORS')) {
         console.error('🚫 CORS error')
         showError('CORS error. Please check backend CORS configuration.')

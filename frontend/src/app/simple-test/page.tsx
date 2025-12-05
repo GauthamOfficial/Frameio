@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { apiGet, apiPost, getFullUrl } from '@/utils/api';
 
 export default function SimpleTestPage() {
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
@@ -19,45 +20,24 @@ export default function SimpleTestPage() {
       
       // Test 1: Status check
       console.log('1️⃣ Testing status endpoint...');
-      const statusResponse = await fetch('http://localhost:8000/api/ai/ai-poster/status/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!statusResponse.ok) {
-        throw new Error(`Status check failed: ${statusResponse.status}`);
-      }
-
-      const statusData = await statusResponse.json();
+      const statusData = await apiGet('/api/ai/ai-poster/status/');
       console.log('✅ Status check passed:', statusData);
 
       // Test 2: Generate image
       console.log('2️⃣ Testing image generation...');
-      const generateResponse = await fetch('http://localhost:8000/api/ai/ai-poster/generate_poster/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const generateData = await apiPost<{ image_url: string }>(
+        '/api/ai/ai-poster/generate_poster/',
+        {
           prompt: 'Simple test image for debugging',
           aspect_ratio: '1:1'
-        })
-      });
-
-      if (!generateResponse.ok) {
-        const errorText = await generateResponse.text();
-        throw new Error(`Generation failed: ${generateResponse.status} - ${errorText}`);
-      }
-
-      const generateData = await generateResponse.json();
+        }
+      );
       console.log('✅ Generation successful:', generateData);
 
       setResult({
         status: statusData,
         generation: generateData,
-        imageUrl: generateData.image_url.startsWith('http') ? generateData.image_url : `http://localhost:8000${generateData.image_url}`
+        imageUrl: generateData.image_url?.startsWith('http') ? generateData.image_url : getFullUrl(generateData.image_url || '')
       });
 
     } catch (err) {

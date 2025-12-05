@@ -24,8 +24,12 @@ function urlValidationSnippet() {
 
     // If it's a relative URL, make it absolute
     if (data.poster_url.startsWith('/')) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      finalImageUrl = `${baseUrl}${data.poster_url}`
+      // Import getFullUrl from @/utils/api in the actual component
+      // const { getFullUrl } = require('@/utils/api')
+      // finalImageUrl = getFullUrl(data.poster_url)
+      // For this snippet, use API_BASE_URL pattern:
+      const { API_BASE_URL } = require('@/utils/api')
+      finalImageUrl = `${API_BASE_URL}${data.poster_url}`
       console.log('🔗 Converted relative URL to absolute:', finalImageUrl)
     }
 

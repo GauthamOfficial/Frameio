@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { apiPost, getFullUrl } from '@/utils/api';
 
 export default function TestPosterGenerationPage() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -18,25 +19,13 @@ export default function TestPosterGenerationPage() {
     try {
       console.log('🧪 Testing poster generation...');
       
-      const response = await fetch('http://localhost:8000/api/ai/ai-poster/generate_poster/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const data = await apiPost<{ success: boolean; image_url?: string; message?: string; filename?: string }>(
+        '/api/ai/ai-poster/generate_poster/',
+        {
           prompt: 'Beautiful silk saree for Diwali celebrations with gold accents and red colors, high-quality textile poster design',
           aspect_ratio: '4:5'
-        })
-      });
-
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-
-      const data = await response.json();
+        }
+      );
       console.log('✅ Generation successful:', data);
       
       setResult(data);
@@ -131,7 +120,7 @@ export default function TestPosterGenerationPage() {
                   <div className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={imageUrl.startsWith('http') ? imageUrl : `http://localhost:8000${imageUrl}`}
+                      src={imageUrl.startsWith('http') ? imageUrl : getFullUrl(imageUrl)}
                       alt="Generated poster"
                       className="w-full h-auto rounded-md border"
                       onError={(e) => {

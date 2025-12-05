@@ -58,7 +58,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
       
       console.log('Fetching posters from:', url)
       
-      let data
+      let data: unknown
       try {
         data = await apiGet(url, {}, token)
       } catch (networkError) {

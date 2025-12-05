@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Wand2, Eye, Download, RefreshCw } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { apiPost } from "@/utils/api"
 
 interface BrandingKitData {
   logo?: {
@@ -58,32 +59,16 @@ export default function BrandingKitPage() {
     
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-      
-      const response = await fetch(`${baseUrl}/api/ai/branding-kit/generate/`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({
+      const result = await apiPost<{ success: boolean; data?: { branding_kit: BrandingKitData }; error?: string }>(
+        '/api/ai/branding-kit/generate/',
+        {
           prompt: prompt.trim(),
           style: 'modern'
-        }),
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const result = await response.json()
+        },
+        undefined,
+        token
+      )
       
       if (result.success) {
         setBrandingData(result.data.branding_kit)

@@ -23,8 +23,9 @@ QUICK FIX FOR URL VALIDATION ERROR:
 
     // If it's a relative URL, make it absolute
     if (data.poster_url.startsWith('/')) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      finalImageUrl = `${baseUrl}${data.poster_url}`
+      // Use getFullUrl from @/utils/api for environment-aware URL handling
+      import { getFullUrl } from '@/utils/api'
+      finalImageUrl = getFullUrl(data.poster_url)
       console.log('🔗 Converted relative URL to absolute:', finalImageUrl)
     }
 

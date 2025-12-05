@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Calendar, Download, ExternalLink, Loader2, Trash2, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
+import { apiGet, apiDelete, getFullUrl } from "@/utils/api"
 
 interface Poster {
   id: string
@@ -45,31 +46,13 @@ export default function PosterPreviewPage() {
     try {
       setLoading(true)
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
       
-      const response = await fetch(`${baseUrl}/api/ai/ai-poster/posters/${posterId}/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch poster')
-      }
-
-      const data = await response.json()
+      const data = await apiGet(`/api/ai/ai-poster/posters/${posterId}/`, {}, token) as { success?: boolean; poster?: Poster }
       if (data.success && data.poster) {
         // Ensure image_url is absolute
         const posterData = data.poster
         if (posterData.image_url && !posterData.image_url.startsWith('http')) {
-          const fixedUrl = posterData.image_url.startsWith('/') 
-            ? `${baseUrl}${posterData.image_url}`
-            : `${baseUrl}/${posterData.image_url}`
-          posterData.image_url = fixedUrl
+          posterData.image_url = getFullUrl(posterData.image_url)
         }
         setPoster(posterData)
       } else {
@@ -139,22 +122,8 @@ export default function PosterPreviewPage() {
     setIsDeleting(true)
     try {
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
       
-      const response = await fetch(`${baseUrl}/api/ai/ai-poster/posters/${poster.id}/delete/`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to delete poster' }))
-        throw new Error(errorData.error || 'Failed to delete poster')
-      }
+      await apiDelete(`/api/ai/ai-poster/posters/${poster.id}/delete/`, {}, token)
 
       showSuccess('Poster deleted successfully')
       router.push('/dashboard')
@@ -219,9 +188,7 @@ export default function PosterPreviewPage() {
               onError={(e) => {
                 const target = e.target as HTMLImageElement
                 if (poster.image_url && !poster.image_url.startsWith('http')) {
-                  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-                  const baseUrl = apiBase.replace(/\/$/, '')
-                  const fixedUrl = poster.image_url.startsWith('/') 
+                  const fixedUrl = getFullUrl(poster.image_url) 
                     ? `${baseUrl}${poster.image_url}`
                     : `${baseUrl}/${poster.image_url}`
                   target.src = fixedUrl

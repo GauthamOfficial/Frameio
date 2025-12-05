@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
+import { apiGet, getFullUrl } from "@/utils/api"
 
 interface Poster {
   id: string
@@ -50,135 +51,30 @@ export default function SocialMediaPage() {
     try {
       setLoading(true)
       const token = await getToken()
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-      const baseUrl = apiBase.replace(/\/$/, '')
       
-      // Try absolute URL first, fallback to relative if it fails
-      const absoluteUrl = `${baseUrl}/api/ai/ai-poster/posters/`
-      const relativeUrl = '/api/ai/ai-poster/posters/'
-      
-      console.log('Fetching posters from:', absoluteUrl)
-      
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-      
-      let response: Response
-      let url = absoluteUrl
-      let fetchOptions: RequestInit = {
-        method: 'GET',
-        headers,
-        credentials: 'include',
-        mode: 'cors', // Explicitly set CORS mode for absolute URLs
-      }
-      
-      try {
-        response = await fetch(url, fetchOptions)
-        // Check if response is actually ok (not a network error)
-        if (!response.ok && response.status === 0) {
-          throw new Error('Network error: Failed to connect')
-        }
-      } catch (fetchError) {
-        // If absolute URL fails, try relative URL (works with Next.js rewrites)
-        console.warn('Absolute URL failed, trying relative URL via Next.js proxy:', fetchError)
-        try {
-          url = relativeUrl
-          // For relative URLs, use same-origin mode (Next.js will proxy it)
-          fetchOptions = {
-            method: 'GET',
-            headers,
-            credentials: 'include',
-            // Don't set mode for relative URLs - let Next.js handle it
-          }
-          response = await fetch(url, fetchOptions)
-          console.log('Relative URL succeeded via Next.js proxy!')
-        } catch (relativeError) {
-          // Both failed - network error
-          console.error('Network error fetching posters (both absolute and relative failed):', relativeError)
-          const errorMsg = relativeError instanceof Error ? relativeError.message : 'Network error'
-          
-          // Check if it's a CORS error
-          if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch')) {
-            const errorMessage = 'Cannot connect to backend. ' + 
-              (baseUrl.includes('localhost') 
-                ? 'Please ensure the backend server is running on ' + baseUrl
-                : 'Please check your network connection and backend server status.')
-            showError(errorMessage)
-          } else {
-            showError(`Network error: ${errorMsg}`)
-          }
-          setPosters([])
-          setLoading(false)
-          return
-        }
-      }
-
-      if (!response.ok) {
-        if (response.status === 404 || response.status === 204) {
-          setPosters([])
-          setLoading(false)
-          return
-        }
-        
-        // Try to get error message from response
-        let errorMessage = `Failed to fetch posters (${response.status})`
-        try {
-          const errorData = await response.json()
-          if (errorData.error) {
-            errorMessage = errorData.error
-          } else if (errorData.message) {
-            errorMessage = errorData.message
-          }
-        } catch {
-          // If response is not JSON, use status text
-          errorMessage = response.statusText || errorMessage
-        }
-        
-        throw new Error(errorMessage)
-      }
-
-      const text = await response.text()
-      if (!text || text.trim() === '') {
-        setPosters([])
-        setLoading(false)
-        return
-      }
-
-      let data: Record<string, unknown>
-      try {
-        data = JSON.parse(text)
-      } catch {
-        console.error('Failed to parse response:', text)
-        throw new Error('Invalid response from server')
-      }
+      const data = await apiGet<{ success?: boolean; results?: Poster[] } | Poster[]>(
+        '/api/ai/ai-poster/posters/',
+        undefined,
+        token
+      )
       
       let postersData: Poster[] = []
-      if (data.success && data.results && Array.isArray(data.results)) {
-        postersData = data.results
-      } else if (Array.isArray(data)) {
+      if (Array.isArray(data)) {
         postersData = data
-      } else if (data.results && Array.isArray(data.results)) {
+      } else if (data && typeof data === 'object' && 'success' in data && data.success && 'results' in data && Array.isArray(data.results)) {
+        postersData = data.results
+      } else if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
         postersData = data.results
       }
 
       // Ensure image URLs are absolute
-      // Use the URL that worked (absolute or relative) to determine base
-      const effectiveBaseUrl = url.startsWith('/') ? (typeof window !== 'undefined' ? window.location.origin : baseUrl) : baseUrl
       const postersWithFixedUrls = postersData.map((poster: Poster) => {
         if (poster.image_url && !poster.image_url.startsWith('http')) {
-          poster.image_url = poster.image_url.startsWith('/') 
-            ? `${effectiveBaseUrl}${poster.image_url}`
-            : `${effectiveBaseUrl}/${poster.image_url}`
+          poster.image_url = getFullUrl(poster.image_url)
         }
         // Also fix public_url if it exists
         if (poster.public_url && !poster.public_url.startsWith('http')) {
-          poster.public_url = poster.public_url.startsWith('/') 
-            ? `${effectiveBaseUrl}${poster.public_url}`
-            : `${effectiveBaseUrl}/${poster.public_url}`
+          poster.public_url = getFullUrl(poster.public_url)
         }
         return poster
       })
@@ -365,12 +261,7 @@ export default function SocialMediaPage() {
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       if (poster.image_url && !poster.image_url.startsWith('http')) {
-                        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-                        const baseUrl = apiBase.replace(/\/$/, '')
-                        const fixedUrl = poster.image_url.startsWith('/') 
-                          ? `${baseUrl}${poster.image_url}`
-                          : `${baseUrl}/${poster.image_url}`
-                        target.src = fixedUrl
+                        target.src = getFullUrl(poster.image_url)
                       } else {
                         target.style.display = 'none'
                       }
