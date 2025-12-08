@@ -884,7 +884,7 @@ const CompanyProfileSettings: React.FC = () => {
                 value={formData.preferred_logo_position}
                 onValueChange={(value) => handleInputChange('preferred_logo_position', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="logo_position">
                   <SelectValue placeholder="Select logo position" />
                 </SelectTrigger>
                 <SelectContent>

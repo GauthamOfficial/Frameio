@@ -686,10 +686,11 @@ export default function SchedulerPage() {
 
               {/* Platform Selection */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="schedule-platform" className="block text-sm font-medium text-foreground mb-2">
                   Platform
                 </label>
                 <select
+                  id="schedule-platform"
                   value={scheduleData.platform}
                   onChange={(e) => setScheduleData({ ...scheduleData, platform: e.target.value })}
                   className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
@@ -705,10 +706,11 @@ export default function SchedulerPage() {
 
               {/* Scheduled Time */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="schedule-time" className="block text-sm font-medium text-foreground mb-2">
                   Scheduled Time *
                 </label>
                 <input
+                  id="schedule-time"
                   type="datetime-local"
                   value={scheduleData.scheduledTime}
                   onChange={(e) => setScheduleData({ ...scheduleData, scheduledTime: e.target.value })}
@@ -720,10 +722,11 @@ export default function SchedulerPage() {
 
               {/* Caption */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="schedule-caption" className="block text-sm font-medium text-foreground mb-2">
                   Caption *
                 </label>
                 <textarea
+                  id="schedule-caption"
                   value={scheduleData.caption}
                   onChange={(e) => setScheduleData({ ...scheduleData, caption: e.target.value })}
                   className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground min-h-[100px]"
