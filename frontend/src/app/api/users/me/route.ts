@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { API_BASE_URL } from '@/utils/api';
+import { API_BASE_URL, buildApiUrl } from '@/utils/api';
 
 // Simple token getter - in development, use test token
 function getAuthToken(request: NextRequest): string | null {
@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current user from backend
-    const { buildApiUrl } = await import('@/utils/api')
     const response = await fetch(buildApiUrl('/api/users/'), {
       method: 'GET',
       headers: {
@@ -73,7 +72,6 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
 
     // First, get the current user to find their backend user ID
-    const { buildApiUrl } = await import('@/utils/api')
     const getUserResponse = await fetch(buildApiUrl('/api/users/'), {
       method: 'GET',
       headers: {
@@ -117,7 +115,6 @@ export async function PATCH(request: NextRequest) {
     const { email, ...updateData } = body;
 
     // Update the user profile
-    const { buildApiUrl } = await import('@/utils/api')
     const updateResponse = await fetch(buildApiUrl(`/api/users/${currentUser.id}/`), {
       method: 'PATCH',
       headers: {

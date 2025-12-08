@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
-import { API_BASE_URL } from '@/utils/api';
+import { API_BASE_URL, buildApiUrl } from '@/utils/api';
 
 export async function PATCH(
   request: NextRequest,
@@ -29,7 +29,6 @@ export async function PATCH(
     console.log(`[Admin API PATCH] User ID: ${userId}`);
     console.log(`[Admin API PATCH] API_BASE_URL: ${API_BASE_URL}`);
     
-    const { buildApiUrl } = await import('@/utils/api')
     const djangoUrl = buildApiUrl(`/api/users/${userId}/`);
     console.log(`[Admin API PATCH] Django URL: ${djangoUrl}`);
 
@@ -104,7 +103,6 @@ export async function DELETE(
     console.log(`[Admin API DELETE] User ID: ${userId}`);
     console.log(`[Admin API DELETE] API_BASE_URL: ${API_BASE_URL}`);
     
-    const { buildApiUrl } = await import('@/utils/api')
     const djangoUrl = buildApiUrl(`/api/users/${userId}/`);
     console.log(`[Admin API DELETE] Django URL: ${djangoUrl}`);
 

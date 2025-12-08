@@ -18,7 +18,7 @@ interface AuthState {
   token: string | null
 }
 
-import { API_BASE_URL } from '@/utils/api'
+import { API_BASE_URL, buildApiUrl } from '@/utils/api'
 
 // Auth hook that integrates with Clerk
 export function useAuth() {
@@ -79,8 +79,6 @@ export function useAuth() {
     }
     
     try {
-      // Import buildApiUrl helper
-      const { buildApiUrl } = await import('@/utils/api')
       const syncResponse = await fetch(buildApiUrl('/api/users/sync_from_clerk/'), {
         method: 'POST',
         headers: {
@@ -161,8 +159,6 @@ export function useAuth() {
       }
 
       try {
-        // Import buildApiUrl helper
-        const { buildApiUrl } = await import('@/utils/api')
         const response = await fetch(buildApiUrl('/api/users/'), {
           headers: {
             'Authorization': `Bearer ${token}`,

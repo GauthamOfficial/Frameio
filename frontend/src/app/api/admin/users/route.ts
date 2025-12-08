@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
-import { API_BASE_URL } from '@/utils/api';
+import { API_BASE_URL, buildApiUrl } from '@/utils/api';
 
 export async function GET() {
   try {
@@ -19,7 +19,6 @@ export async function GET() {
     // Forward request to Django backend with admin header
     let response: Response;
     try {
-      const { buildApiUrl } = await import('@/utils/api')
       response = await fetch(buildApiUrl('/api/users/'), {
         method: 'GET',
         headers: {

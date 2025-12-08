@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
-import { API_BASE_URL } from '@/utils/api';
+import { API_BASE_URL, buildApiUrl } from '@/utils/api';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
 
     // Forward request to Django backend with admin header
     // Django route: /api/ + users.urls path = /api/admin/analytics/
-    const { buildApiUrl } = await import('@/utils/api')
     const djangoUrl = new URL(buildApiUrl('/api/admin/analytics/'));
     djangoUrl.searchParams.set('timeRange', timeRange);
     djangoUrl.searchParams.set('days', days);
