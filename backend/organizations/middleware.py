@@ -197,6 +197,12 @@ class TenantMiddleware(MiddlewareMixin):
             logger.info(f"TenantMiddleware: Skipping organization permission check in DEBUG mode")
             return None
         
+        # Allow schedule endpoint to handle organization resolution in the view
+        # (it has its own fallback logic)
+        if '/api/ai/schedule' in request.path:
+            logger.info(f"TenantMiddleware: Skipping organization permission check for schedule endpoint: {request.path}")
+            return None
+        
         if not hasattr(request, 'organization') or not request.organization:
             return None
         

@@ -44,9 +44,14 @@ urlpatterns = [
     path('ai-poster/add_text_overlay/', ai_poster_views.add_text_overlay, name='add-text-overlay'),
     path('ai-poster/status/', ai_poster_views.poster_service_status, name='poster-service-status'),
     path('ai-poster/poster/<str:poster_id>/', ai_poster_views.get_poster, name='get-poster'),
-    path('ai-poster/posters/', ai_poster_views.list_posters, name='list-posters'),
-    path('ai-poster/posters/<str:poster_id>/', ai_poster_views.get_poster_by_id, name='get-poster-by-id'),
+    path('ai-poster/poster/<str:poster_id>', ai_poster_views.get_poster, name='get-poster-no-slash'),
+    # Order matters: more specific patterns (with parameters) must come before less specific ones
     path('ai-poster/posters/<str:poster_id>/delete/', ai_poster_views.delete_poster, name='delete-poster'),
+    path('ai-poster/posters/<str:poster_id>/delete', ai_poster_views.delete_poster, name='delete-poster-no-slash'),
+    path('ai-poster/posters/<str:poster_id>/', ai_poster_views.get_poster_by_id, name='get-poster-by-id'),
+    path('ai-poster/posters/<str:poster_id>', ai_poster_views.get_poster_by_id, name='get-poster-by-id-no-slash'),
+    path('ai-poster/posters/', ai_poster_views.list_posters, name='list-posters'),
+    path('ai-poster/posters', ai_poster_views.list_posters, name='list-posters-no-slash'),
     
     # AI Caption Generation URLs
     path('ai-caption/product_caption/', ai_caption_views.generate_product_caption, name='generate-product-caption'),

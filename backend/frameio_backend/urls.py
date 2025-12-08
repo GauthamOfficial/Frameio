@@ -67,6 +67,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", api_status, name="api_status"),
     path("health/", health_check, name="health_check"),
+    path("health", health_check, name="health_check_no_slash"),
     # Deprecated test routes kept as no-ops returning status for compatibility
     path("test/", test_interface, name="test_interface"),
     path("ai-image-generation-test/", ai_image_generation_test, name="ai_image_generation_test"),

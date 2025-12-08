@@ -861,6 +861,13 @@ class CompanyProfileViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(profile)
             return Response(serializer.data)
         except Exception as e:
+            # Handle authentication errors properly
+            from rest_framework.exceptions import AuthenticationFailed
+            if isinstance(e, AuthenticationFailed):
+                return Response(
+                    {'error': str(e), 'detail': 'Failed to retrieve company profile'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
             import traceback
             logger.error(f"Error in CompanyProfileViewSet.list: {str(e)}")
             logger.error(traceback.format_exc())
@@ -1059,6 +1066,13 @@ class CompanyProfileViewSet(viewsets.ModelViewSet):
                 'completion_percentage': self._calculate_completion_percentage(profile)
             })
         except Exception as e:
+            # Handle authentication errors properly
+            from rest_framework.exceptions import AuthenticationFailed
+            if isinstance(e, AuthenticationFailed):
+                return Response(
+                    {'error': str(e), 'detail': 'Failed to retrieve profile status'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
             import traceback
             logger.error(f"Error in CompanyProfileViewSet.status: {str(e)}")
             logger.error(traceback.format_exc())
