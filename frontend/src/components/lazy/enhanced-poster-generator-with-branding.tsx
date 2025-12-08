@@ -417,7 +417,13 @@ export default function EnhancedPosterGeneratorWithBranding() {
           try {
             const cleanBase = base.replace(/\/+$/, '')
             // Ensure path starts with / for proper URL construction
-            const pathWithSlash = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`
+            let pathWithSlash = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`
+            
+            // If base already ends with /api and path starts with /api/, remove /api from path
+            if (cleanBase.endsWith('/api') && pathWithSlash.startsWith('/api/')) {
+              pathWithSlash = pathWithSlash.replace(/^\/api/, '')
+            }
+            
             const absoluteUrl = `${cleanBase}${pathWithSlash}`
             console.log('Attempting absolute URL:', absoluteUrl) // Debug log
             return await attemptFetch(absoluteUrl)

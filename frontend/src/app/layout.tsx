@@ -57,7 +57,6 @@ export default function RootLayout({
             <meta name="ethereum-dapp-metamask" content="false" />
             <meta name="ethereum-dapp-connect" content="false" />
             <meta name="ethereum-dapp-wallet" content="false" />
-            <meta httpEquiv="Content-Security-Policy" content={`script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com ${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API}; object-src 'none';`} />
             <script
               dangerouslySetInnerHTML={{
                 __html: `

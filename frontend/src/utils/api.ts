@@ -10,6 +10,30 @@ export const API_BASE_URL =
     : (process.env.NEXT_PUBLIC_API_URL || 'http://13.213.53.199/api');
 
 /**
+ * Helper function to build full API URLs, handling /api prefix correctly
+ * @param endpoint - API endpoint path (e.g., '/api/users/' or '/users/')
+ * @returns Full URL with proper /api handling
+ */
+export function buildApiUrl(endpoint: string): string {
+  // If endpoint is already absolute, return as-is
+  if (/^https?:\/\//i.test(endpoint)) {
+    return endpoint;
+  }
+  
+  const baseUrl = API_BASE_URL.replace(/\/+$/, '');
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
+  // If baseUrl already ends with /api and endpoint starts with /api/, remove /api from endpoint
+  if (baseUrl.endsWith('/api') && normalizedEndpoint.startsWith('/api/')) {
+    return `${baseUrl}${normalizedEndpoint.replace(/^\/api/, '')}`;
+  }
+  
+  // If baseUrl doesn't end with /api but endpoint starts with /api/, use as-is
+  // If baseUrl ends with /api but endpoint doesn't start with /api/, use as-is
+  return `${baseUrl}${normalizedEndpoint}`;
+}
+
+/**
  * Get authentication token from various sources
  * @param providedToken - Optional token to use (e.g., from Clerk's getToken())
  */

@@ -19,7 +19,8 @@ export async function GET() {
     // Forward request to Django backend with admin header
     let response: Response;
     try {
-      response = await fetch(`${API_BASE_URL}/api/users/`, {
+      const { buildApiUrl } = await import('@/utils/api')
+      response = await fetch(buildApiUrl('/api/users/'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -119,7 +119,12 @@ const CompanyProfileSettings: React.FC = () => {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
         
-        const healthResponse = await fetch(`${API_BASE_URL}/health/`, { 
+        // Build health URL correctly - health endpoint is at root, not under /api
+        const baseUrl = API_BASE_URL.replace(/\/+$/, '')
+        const healthUrl = baseUrl.endsWith('/api') 
+          ? `${baseUrl.replace(/\/api$/, '')}/health/`
+          : `${baseUrl}/health/`
+        const healthResponse = await fetch(healthUrl, { 
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -417,7 +422,12 @@ const CompanyProfileSettings: React.FC = () => {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
         
-        const testResponse = await fetch(`${API_BASE_URL}/health/`, { 
+        // Build health URL correctly - handle case where API_BASE_URL already includes /api
+        const baseUrl = API_BASE_URL.replace(/\/+$/, '')
+        const healthUrl = baseUrl.endsWith('/api') 
+          ? `${baseUrl.replace(/\/api$/, '')}/health/`
+          : `${baseUrl}/health/`
+        const testResponse = await fetch(healthUrl, { 
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'

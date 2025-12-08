@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
 
     // Forward request to Django backend with admin header
     // Django route: /api/ + users.urls path = /api/admin/analytics/
-    const djangoUrl = new URL(`${API_BASE_URL}/api/admin/analytics/`);
+    const { buildApiUrl } = await import('@/utils/api')
+    const djangoUrl = new URL(buildApiUrl('/api/admin/analytics/'));
     djangoUrl.searchParams.set('timeRange', timeRange);
     djangoUrl.searchParams.set('days', days);
 

@@ -79,7 +79,9 @@ export function useAuth() {
     }
     
     try {
-      const syncResponse = await fetch(`${API_BASE_URL}/api/users/sync_from_clerk/`, {
+      // Import buildApiUrl helper
+      const { buildApiUrl } = await import('@/utils/api')
+      const syncResponse = await fetch(buildApiUrl('/api/users/sync_from_clerk/'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +161,9 @@ export function useAuth() {
       }
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/users/`, {
+        // Import buildApiUrl helper
+        const { buildApiUrl } = await import('@/utils/api')
+        const response = await fetch(buildApiUrl('/api/users/'), {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

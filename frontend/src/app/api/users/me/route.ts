@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current user from backend
-    const response = await fetch(`${API_BASE_URL}/api/users/`, {
+    const { buildApiUrl } = await import('@/utils/api')
+    const response = await fetch(buildApiUrl('/api/users/'), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -72,7 +73,8 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
 
     // First, get the current user to find their backend user ID
-    const getUserResponse = await fetch(`${API_BASE_URL}/api/users/`, {
+    const { buildApiUrl } = await import('@/utils/api')
+    const getUserResponse = await fetch(buildApiUrl('/api/users/'), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -115,7 +117,8 @@ export async function PATCH(request: NextRequest) {
     const { email, ...updateData } = body;
 
     // Update the user profile
-    const updateResponse = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}/`, {
+    const { buildApiUrl } = await import('@/utils/api')
+    const updateResponse = await fetch(buildApiUrl(`/api/users/${currentUser.id}/`), {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${token}`,

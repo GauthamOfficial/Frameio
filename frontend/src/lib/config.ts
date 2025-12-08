@@ -10,7 +10,17 @@ export const API_BASE_URL = UTIL_API_BASE_URL.replace(/\/$/, '')
 // Uses relative URLs if API_BASE_URL is not set (for Next.js proxy)
 const buildEndpoint = (path: string): string => {
   if (API_BASE_URL) {
-    return `${API_BASE_URL}${path}`
+    // Remove trailing slash from API_BASE_URL
+    const base = API_BASE_URL.replace(/\/+$/, '')
+    // Ensure path starts with /
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
+    
+    // If base already ends with /api and path starts with /api/, remove /api from path
+    if (base.endsWith('/api') && normalizedPath.startsWith('/api/')) {
+      return `${base}${normalizedPath.replace(/^\/api/, '')}`
+    }
+    
+    return `${base}${normalizedPath}`
   }
   // Use relative URL for Next.js proxy
   return path
