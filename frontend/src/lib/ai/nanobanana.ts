@@ -49,21 +49,12 @@ class NanoBananaService {
     
     // Validate configuration
     if (!this.apiKey || this.apiKey === 'your_api_key_here' || this.apiKey.length < 10) {
-      console.warn('NanoBanana API key not configured. AI image generation will use backend fallback.');
       this.apiKey = '';
     }
     
     if (!this.baseUrl || this.baseUrl.includes('undefined') || 
         (!this.baseUrl.startsWith('http://') && !this.baseUrl.startsWith('https://'))) {
-      console.warn('NanoBanana base URL not configured properly. AI image generation will use backend fallback.');
       this.baseUrl = '';
-    }
-    
-    // Log configuration status
-    if (this.isConfigured()) {
-      console.log('NanoBanana service configured successfully');
-    } else {
-      console.log('NanoBanana service not configured, will use backend fallback');
     }
   }
 
@@ -263,15 +254,6 @@ class NanoBananaService {
                                (this.baseUrl.startsWith('http://') || this.baseUrl.startsWith('https://')));
     
     const isConfigured = hasValidApiKey && hasValidBaseUrl;
-    
-    if (!isConfigured) {
-      console.warn('NanoBanana service not properly configured:', {
-        hasValidApiKey,
-        hasValidBaseUrl,
-        apiKeyLength: this.apiKey?.length || 0,
-        baseUrl: this.baseUrl
-      });
-    }
     
     return isConfigured;
   }

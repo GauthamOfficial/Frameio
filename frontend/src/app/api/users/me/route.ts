@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { API_BASE_URL, buildApiUrl } from '@/utils/api';
+import { buildApiUrl } from '@/utils/api';
 
 // Simple token getter - in development, use test token
 function getAuthToken(request: NextRequest): string | null {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
-import { API_BASE_URL, buildApiUrl } from '@/utils/api';
+import { buildApiUrl } from '@/utils/api';
 
 export async function GET() {
   try {

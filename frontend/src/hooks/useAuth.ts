@@ -18,7 +18,7 @@ interface AuthState {
   token: string | null
 }
 
-import { API_BASE_URL, buildApiUrl } from '@/utils/api'
+import { buildApiUrl } from '@/utils/api'
 
 // Auth hook that integrates with Clerk
 export function useAuth() {
