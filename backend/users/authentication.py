@@ -110,70 +110,41 @@ class ClerkAuthentication(BaseAuthentication):
         
         return None
     
-    def validate_clerk_token(self, token, clerk_email=None, clerk_id=None, clerk_first_name=None, clerk_last_name=None):
+    def validate_clerk_token(
+        self, token, clerk_email=None, clerk_id=None,
+        clerk_first_name=None, clerk_last_name=None
+    ):
         """
-        Validate Clerk JWT token and return user.
-        Automatically creates user in Django if they don't exist and Clerk info is provided.
-        This is a simplified implementation - in production, use Clerk's backend SDK.
+        DEVELOPMENT MODE:
+        Accept ANY valid-looking Bearer token and authenticate
+        as the first user in the database.
         """
         from django.conf import settings
-        
-        # For development/testing, create a mock validation
+        User = get_user_model()
+
+        # Only allow in DEBUG mode
         if settings.DEBUG:
-            # Accept test_clerk_token or any token in development
-            if token == 'test_clerk_token' or token:
-                try:
-                    logger.info(f"Development Clerk auth: Validating token {token[:10]}...")
-                    
-                    # If we have Clerk user info, try to get or create the user
-                    if clerk_email:
-                        try:
-                            user, created = get_or_create_user_from_clerk(
-                                clerk_id=clerk_id,
-                                email=clerk_email,
-                                first_name=clerk_first_name,
-                                last_name=clerk_last_name
-                            )
-                            if created:
-                                logger.info(f"Auto-created user from Clerk: {user.email}")
-                            else:
-                                logger.info(f"Found existing user from Clerk: {user.email}")
-                            return user
-                        except Exception as e:
-                            logger.error(f"Error getting/creating user from Clerk info: {e}", exc_info=True)
-                            # Fall through to default behavior
-                    
-                    # Fallback: Try to get the first user (for backward compatibility)
-                    user = User.objects.first()
-                    if not user:
-                        # If no user exists, create a default development user
-                        logger.warning("No users found, creating default development user")
-                        try:
-                            user = User.objects.create_user(
-                                username='dev_user',
-                                email='dev@example.com',
-                                password='dev_password'
-                            )
-                            logger.info(f"Created default development user: {user.email}")
-                        except Exception as create_error:
-                            logger.error(f"Failed to create default development user: {create_error}")
-                            # Try to get any user that might exist
-                            user = User.objects.first()
-                            if not user:
-                                logger.error("No users exist and cannot create one. Please run: python create_test_user.py")
-                                return None
-                    else:
-                        logger.info(f"Development Clerk auth: Found existing user {user.email}")
-                    
-                    logger.info(f"Development Clerk auth: Successfully authenticated user {user.email} with token {token[:10]}...")
+            try:
+                # Try returning the first user
+                user = User.objects.first()
+                if user:
+                    logger.info(f"[DEV AUTH] Using first user: {user.email}")
                     return user
-                except Exception as e:
-                    logger.error(f"Development Clerk auth error: {e}", exc_info=True)
-                    import traceback
-                    logger.error(f"Traceback: {traceback.format_exc()}")
-                    return None
-        
+
+                # If no users exist, create fallback user
+                logger.warning("[DEV AUTH] No users found, creating default user.")
+                user = User.objects.create_user(
+                    username="dev_user",
+                    email="dev@example.com",
+                    password="dev_password"
+                )
+                return user
+
+            except Exception as e:
+                logger.error(f"[DEV AUTH] Error: {e}", exc_info=True)
+                return None
+
+        # Production (Clerk real validation to be implemented later)
         # TODO: Implement proper Clerk JWT validation using clerk-backend-python
         # When implementing, decode JWT to get user info and auto-create users
-        # For now, return None to fall back to other authentication methods
         return None
