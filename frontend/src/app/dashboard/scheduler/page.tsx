@@ -517,44 +517,44 @@ export default function SchedulerPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Social Media Scheduler</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Social Media Scheduler</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Plan and schedule your textile marketing posts across platforms.
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:gap-8">
         {/* Calendar View - Scheduled Posts */}
         <Card className="textile-hover textile-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="mr-2 h-5 w-5 text-chart-1" />
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center text-lg sm:text-xl">
+              <Calendar className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-chart-1 shrink-0" />
               Scheduled Posts
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             {scheduledPosts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No scheduled posts yet</p>
-                <p className="text-sm mt-2">Schedule a post from your generated posters below</p>
+              <div className="text-center py-6 sm:py-8 text-muted-foreground px-4">
+                <Calendar className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+                <p className="text-sm sm:text-base">No scheduled posts yet</p>
+                <p className="text-xs sm:text-sm mt-2">Schedule a post from your generated posters below</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {scheduledPosts.map((post) => (
-                  <div key={post.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="w-10 h-10 bg-chart-1 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Calendar className="h-5 w-5 text-white" />
+                  <div key={post.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 border border-border rounded-lg">
+                    <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-chart-1 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{post.caption.substring(0, 50)}...</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-sm sm:text-base text-foreground line-clamp-2 sm:truncate">{post.caption.substring(0, 50)}...</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                           {formatTime(post.scheduled_time)} • {post.platform_display || post.platform}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -562,8 +562,8 @@ export default function SchedulerPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getStatusBadgeVariant(post.status)}>
+                    <div className="flex items-center gap-2 sm:gap-2 flex-shrink-0">
+                      <Badge variant={getStatusBadgeVariant(post.status)} className="text-xs">
                         {post.status_display || post.status}
                       </Badge>
                       {/* Only show edit/delete for pending or scheduled posts */}
@@ -573,23 +573,23 @@ export default function SchedulerPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditPost(post)}
-                            className="h-8 w-8 p-0"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                             title="Edit post"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteClick(post)}
                             disabled={deleting === post.id}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
                             title="Delete post"
                           >
                             {deleting === post.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                             ) : (
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             )}
                           </Button>
                         </>
@@ -605,21 +605,21 @@ export default function SchedulerPage() {
 
       {/* Generated Posters */}
       <Card className="textile-hover textile-shadow">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <ImageIcon className="mr-2 h-5 w-5 text-chart-1" />
-            Generated Posters - Ready to Schedule
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center text-lg sm:text-xl">
+            <ImageIcon className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-chart-1 shrink-0" />
+            <span className="truncate">Generated Posters - Ready to Schedule</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           {generatedPosters.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No generated posters yet</p>
-              <p className="text-sm mt-2">Generate posters first to schedule them</p>
+            <div className="text-center py-6 sm:py-8 text-muted-foreground px-4">
+              <ImageIcon className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+              <p className="text-sm sm:text-base">No generated posters yet</p>
+              <p className="text-xs sm:text-sm mt-2">Generate posters first to schedule them</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
               {generatedPosters.map((poster) => (
                 <div key={poster.id} className="border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                   <div className="aspect-square bg-muted relative">
@@ -634,20 +634,20 @@ export default function SchedulerPage() {
                       }}
                     />
                   </div>
-                  <div className="p-4">
-                    <p className="text-sm font-medium text-foreground line-clamp-2 mb-2">
+                  <div className="p-2 sm:p-3 md:p-4">
+                    <p className="text-xs sm:text-sm font-medium text-foreground line-clamp-2 mb-2">
                       {poster.caption || poster.prompt.substring(0, 50)}
                     </p>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span className="text-xs text-muted-foreground">
                         {new Date(poster.created_at).toLocaleDateString()}
                       </span>
                       <Button
                         size="sm"
                         onClick={() => handleSchedulePoster(poster)}
-                        className="bg-textile-accent hover:bg-textile-accent/90 text-[10px] px-1.5 py-0.5 h-6"
+                        className="bg-textile-accent hover:bg-textile-accent/90 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 h-7 sm:h-8 w-full sm:w-auto"
                       >
-                        <Clock className="mr-1 h-2.5 w-2.5" />
+                        <Clock className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                         Schedule
                       </Button>
                     </div>
@@ -661,20 +661,20 @@ export default function SchedulerPage() {
 
       {/* Schedule Modal */}
       <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogClose onClose={() => setShowScheduleModal(false)} />
-          <DialogHeader>
-            <DialogTitle>Schedule Post</DialogTitle>
-            <DialogDescription>
+          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
+            <DialogTitle className="text-lg sm:text-xl">Schedule Post</DialogTitle>
+            <DialogDescription className="text-sm">
               Choose when and where to publish this post
             </DialogDescription>
           </DialogHeader>
           
           {selectedPoster && (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4 px-4 sm:px-6">
               {/* Poster Preview */}
-              <div className="border border-border rounded-lg p-4">
-                <div className="aspect-square w-32 mx-auto bg-muted rounded-lg overflow-hidden">
+              <div className="border border-border rounded-lg p-3 sm:p-4">
+                <div className="aspect-square w-24 sm:w-32 mx-auto bg-muted rounded-lg overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={selectedPoster.image_url}
@@ -686,14 +686,14 @@ export default function SchedulerPage() {
 
               {/* Platform Selection */}
               <div>
-                <label htmlFor="schedule-platform" className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="schedule-platform" className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                   Platform
                 </label>
                 <select
                   id="schedule-platform"
                   value={scheduleData.platform}
                   onChange={(e) => setScheduleData({ ...scheduleData, platform: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
                 >
                   <option value="instagram">Instagram</option>
                   <option value="facebook">Facebook</option>
@@ -706,7 +706,7 @@ export default function SchedulerPage() {
 
               {/* Scheduled Time */}
               <div>
-                <label htmlFor="schedule-time" className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="schedule-time" className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                   Scheduled Time *
                 </label>
                 <input
@@ -714,7 +714,7 @@ export default function SchedulerPage() {
                   type="datetime-local"
                   value={scheduleData.scheduledTime}
                   onChange={(e) => setScheduleData({ ...scheduleData, scheduledTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
                   min={new Date().toISOString().slice(0, 16)}
                   required
                 />
@@ -722,14 +722,14 @@ export default function SchedulerPage() {
 
               {/* Caption */}
               <div>
-                <label htmlFor="schedule-caption" className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="schedule-caption" className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                   Caption *
                 </label>
                 <textarea
                   id="schedule-caption"
                   value={scheduleData.caption}
                   onChange={(e) => setScheduleData({ ...scheduleData, caption: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground min-h-[100px]"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground min-h-[100px]"
                   placeholder="Enter post caption..."
                   required
                 />
@@ -746,27 +746,28 @@ export default function SchedulerPage() {
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 flex-col sm:flex-row gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setShowScheduleModal(false)}
               disabled={scheduling}
+              className="w-full sm:w-auto text-sm sm:text-base"
             >
               Cancel
             </Button>
             <Button
               onClick={handleScheduleSubmit}
               disabled={scheduling || !scheduleData.scheduledTime || !scheduleData.caption.trim()}
-              className="bg-textile-accent hover:bg-textile-accent/90"
+              className="bg-textile-accent hover:bg-textile-accent/90 w-full sm:w-auto text-sm sm:text-base"
             >
               {scheduling ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
                   Scheduling...
                 </>
               ) : (
                 <>
-                  <Clock className="mr-2 h-4 w-4" />
+                  <Clock className="mr-2 h-4 w-4 shrink-0" />
                   Schedule Post
                 </>
               )}
@@ -777,7 +778,7 @@ export default function SchedulerPage() {
 
       {/* Edit Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogClose onClose={() => {
             setShowEditModal(false)
             setSelectedScheduledPost(null)
@@ -787,24 +788,24 @@ export default function SchedulerPage() {
               caption: ''
             })
           }} />
-          <DialogHeader>
-            <DialogTitle>Edit Scheduled Post</DialogTitle>
-            <DialogDescription>
+          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
+            <DialogTitle className="text-lg sm:text-xl">Edit Scheduled Post</DialogTitle>
+            <DialogDescription className="text-sm">
               Update the post details and scheduled time
             </DialogDescription>
           </DialogHeader>
           
           {selectedScheduledPost && (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4 px-4 sm:px-6">
               {/* Platform Selection */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                   Platform
                 </label>
                 <select
                   value={scheduleData.platform}
                   onChange={(e) => setScheduleData({ ...scheduleData, platform: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
                 >
                   <option value="instagram">Instagram</option>
                   <option value="facebook">Facebook</option>
@@ -817,14 +818,14 @@ export default function SchedulerPage() {
 
               {/* Scheduled Time */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                   Scheduled Time *
                 </label>
                 <input
                   type="datetime-local"
                   value={scheduleData.scheduledTime}
                   onChange={(e) => setScheduleData({ ...scheduleData, scheduledTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
                   min={new Date().toISOString().slice(0, 16)}
                   required
                 />
@@ -832,13 +833,13 @@ export default function SchedulerPage() {
 
               {/* Caption */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                   Caption *
                 </label>
                 <textarea
                   value={scheduleData.caption}
                   onChange={(e) => setScheduleData({ ...scheduleData, caption: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground min-h-[100px]"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground min-h-[100px]"
                   placeholder="Enter post caption..."
                   required
                 />
@@ -846,7 +847,7 @@ export default function SchedulerPage() {
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 flex-col sm:flex-row gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -859,22 +860,23 @@ export default function SchedulerPage() {
                 })
               }}
               disabled={editing}
+              className="w-full sm:w-auto text-sm sm:text-base"
             >
               Cancel
             </Button>
             <Button
               onClick={handleEditSubmit}
               disabled={editing || !scheduleData.scheduledTime || !scheduleData.caption.trim()}
-              className="bg-textile-accent hover:bg-textile-accent/90"
+              className="bg-textile-accent hover:bg-textile-accent/90 w-full sm:w-auto text-sm sm:text-base"
             >
               {editing ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
                   Updating...
                 </>
               ) : (
                 <>
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="mr-2 h-4 w-4 shrink-0" />
                   Update Post
                 </>
               )}

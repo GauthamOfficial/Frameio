@@ -675,8 +675,8 @@ export default function EnhancedPosterGeneratorWithBranding() {
           <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2">AI Poster Generator</h1>
         </div>
 
-        <div className="w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full max-w-6xl mx-auto" style={{ minHeight: '500px' }}>
+        <div className="w-full flex justify-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full max-w-6xl" style={{ minHeight: '500px' }}>
         {/* Input Section */}
         <Card>
           <CardHeader className="p-4 sm:p-6">
