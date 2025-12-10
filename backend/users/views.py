@@ -4,7 +4,8 @@ User management views with tenant scoping and role-based permissions.
 from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.utils import timezone
@@ -530,177 +531,66 @@ class CompanyProfileViewSet(viewsets.ModelViewSet):
     """
     queryset = CompanyProfile.objects.all()
     serializer_class = CompanyProfileSerializer
-    # Completely disable authentication and permission checks
-    authentication_classes = []
-    permission_classes = []
+    # Use JWT authentication and require authentication
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
     def dispatch(self, request, *args, **kwargs):
         """
-        Override dispatch to ensure user is set up and permissions are bypassed in DEBUG mode
-        before any other processing happens.
+        Override dispatch - ensure proper authentication is used.
+        No fallback users - always use authenticated user.
         """
         from django.conf import settings
         
-        # In DEBUG mode, set up user and bypass all permission checks
+        # In DEBUG mode, only bypass CSRF but still require authentication
         if settings.DEBUG:
             # Bypass CSRF in DEBUG mode
             setattr(request, '_dont_enforce_csrf_checks', True)
-            
-            # Set up user first if not authenticated
-            if not request.user or not request.user.is_authenticated:
-                from django.contrib.auth import get_user_model
-                User = get_user_model()
-                try:
-                    test_user, created = User.objects.get_or_create(
-                        email='test@example.com',
-                        defaults={
-                            'username': 'test_user',
-                            'first_name': 'Test',
-                            'last_name': 'User'
-                        }
-                    )
-                    request.user = test_user
-                    logger.info(f"CompanyProfileViewSet.dispatch: DEBUG mode - using test user {test_user.email}")
-                except Exception as e:
-                    logger.warning(f"CompanyProfileViewSet.dispatch: Failed to create test user: {e}")
-            
-            # Temporarily override permission classes to empty list for this request
-            original_permission_classes = self.permission_classes
-            self.permission_classes = []
-            logger.info("CompanyProfileViewSet.dispatch: DEBUG mode - bypassing permissions at dispatch level and CSRF")
-            
-            try:
-                # Call parent dispatch
-                return super().dispatch(request, *args, **kwargs)
-            finally:
-                # Restore original permission classes
-                self.permission_classes = original_permission_classes
-        else:
-            # In production, normal dispatch
-            return super().dispatch(request, *args, **kwargs)
+        
+        # Always use normal dispatch - authentication will be handled by authentication classes
+        return super().dispatch(request, *args, **kwargs)
     
     def get_authenticators(self):
         """
-        Override to completely disable authentication in DEBUG mode.
+        Use JWT authentication - always require proper authentication.
         """
-        from django.conf import settings
-        
-        if settings.DEBUG:
-            logger.info("CompanyProfileViewSet.get_authenticators: DEBUG mode - returning empty authenticators list")
-            return []
-        
-        return super().get_authenticators()
+        from rest_framework_simplejwt.authentication import JWTAuthentication
+        return [JWTAuthentication()]
     
     def get_permissions(self):
         """
-        Override permissions to explicitly allow all requests in DEBUG mode.
-        This ensures no permission checks block company profile operations during development.
+        Require authentication but allow any authenticated user to access their own profile.
         """
-        from django.conf import settings
-        from rest_framework.permissions import AllowAny
-        
-        if settings.DEBUG:
-            logger.info("CompanyProfileViewSet.get_permissions: DEBUG mode - using AllowAny permission")
-            return [AllowAny()]
-        
-        # In production, use default permissions
-        return [AllowAny()]  # For now, allow all - can be changed later for production
+        from rest_framework.permissions import IsAuthenticated
+        return [IsAuthenticated()]
     
     def perform_authentication(self, request):
         """
-        Override to ensure authentication works in DEBUG mode.
+        Perform normal authentication - no fallback users.
         """
-        from django.conf import settings
-        
-        # Try normal authentication first
-        try:
-            super().perform_authentication(request)
-        except Exception as e:
-            logger.warning(f"CompanyProfileViewSet.perform_authentication: Authentication failed: {e}")
-            # In DEBUG mode, if authentication fails, set up a test user
-            if settings.DEBUG:
-                from django.contrib.auth import get_user_model
-                User = get_user_model()
-                try:
-                    test_user, created = User.objects.get_or_create(
-                        email='test@example.com',
-                        defaults={
-                            'username': 'test_user',
-                            'first_name': 'Test',
-                            'last_name': 'User'
-                        }
-                    )
-                    request.user = test_user
-                    logger.info(f"CompanyProfileViewSet.perform_authentication: DEBUG mode - using test user {test_user.email}")
-                except Exception as create_error:
-                    logger.warning(f"CompanyProfileViewSet.perform_authentication: Failed to create test user: {create_error}")
-            else:
-                # In production, re-raise the exception
-                raise
+        super().perform_authentication(request)
     
     def initial(self, request, *args, **kwargs):
         """
-        Override initial to set up user before permission checks in DEBUG mode.
+        Normal initial processing - authentication required.
         """
-        from django.conf import settings
-        
-        # In DEBUG mode, ensure user is set up BEFORE calling parent initial
-        # (which will check permissions)
-        if settings.DEBUG and (not request.user or not request.user.is_authenticated):
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            try:
-                test_user, created = User.objects.get_or_create(
-                    email='test@example.com',
-                    defaults={
-                        'username': 'test_user',
-                        'first_name': 'Test',
-                        'last_name': 'User'
-                    }
-                )
-                request.user = test_user
-                logger.info(f"CompanyProfileViewSet.initial: DEBUG mode - using test user {test_user.email}")
-            except Exception as e:
-                logger.warning(f"CompanyProfileViewSet.initial: Failed to create test user: {e}")
-        
-        # Now call parent initial (which will call check_permissions, but our override will bypass it in DEBUG)
         super().initial(request, *args, **kwargs)
     
     def check_permissions(self, request):
         """
-        Override to bypass permission checks in DEBUG mode.
+        Normal permission checks - require authentication.
         """
-        from django.conf import settings
-        from rest_framework.exceptions import PermissionDenied
-        
-        if settings.DEBUG:
-            logger.info("CompanyProfileViewSet.check_permissions: DEBUG mode - bypassing ALL permission checks")
-            # In DEBUG mode, completely skip permission checks
-            # Don't call super() at all - this prevents any permission checks
-            return
-        
-        # In production, perform normal permission checks
-        try:
-            super().check_permissions(request)
-        except PermissionDenied as e:
-            # Log the error but don't let it block in DEBUG mode
-            if settings.DEBUG:
-                logger.warning(f"Permission denied in DEBUG mode (ignoring): {e}")
-                return
-            raise
+        super().check_permissions(request)
     
     def check_object_permissions(self, request, obj):
         """
-        Override to bypass object permission checks in DEBUG mode.
+        Check that user can only access their own company profile.
         """
-        from django.conf import settings
+        # Ensure user can only access their own profile
+        if obj.user != request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You can only access your own company profile.")
         
-        if settings.DEBUG:
-            logger.info("CompanyProfileViewSet.check_object_permissions: DEBUG mode - bypassing object permission checks")
-            # In DEBUG mode, don't call super() to completely bypass object permission checks
-            return
-        
-        # In production, perform normal object permission checks
         super().check_object_permissions(request, obj)
     
     def get_serializer_class(self):
@@ -784,39 +674,24 @@ class CompanyProfileViewSet(viewsets.ModelViewSet):
         return context
     
     def list(self, request, *args, **kwargs):
-        """Get current user's company profile."""
-        from django.conf import settings
-        
-        # In DEBUG mode, ensure user is set up
-        if settings.DEBUG and (not request.user or not request.user.is_authenticated):
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            try:
-                test_user, created = User.objects.get_or_create(
-                    email='test@example.com',
-                    defaults={
-                        'username': 'test_user',
-                        'first_name': 'Test',
-                        'last_name': 'User'
-                    }
-                )
-                request.user = test_user
-                logger.info(f"CompanyProfileViewSet.list: DEBUG mode - using test user {test_user.email}")
-            except Exception as e:
-                logger.warning(f"CompanyProfileViewSet.list: Failed to create test user: {e}")
+        """Get current authenticated user's company profile only."""
+        # Always require authentication
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {'error': 'Authentication required', 'detail': 'Please log in to view your profile'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         
         try:
-            profile = self.get_object()
-            serializer = self.get_serializer(profile)
-            return Response(serializer.data)
+            # Get current user's profile only
+            profile = CompanyProfile.objects.filter(user=request.user).first()
+            if profile:
+                serializer = self.get_serializer(profile)
+                return Response([serializer.data])  # Return as list
+            else:
+                # Return empty list if no profile exists
+                return Response([])
         except Exception as e:
-            # Handle authentication errors properly
-            from rest_framework.exceptions import AuthenticationFailed
-            if isinstance(e, AuthenticationFailed):
-                return Response(
-                    {'error': str(e), 'detail': 'Failed to retrieve company profile'},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
             import traceback
             logger.error(f"Error in CompanyProfileViewSet.list: {str(e)}")
             logger.error(traceback.format_exc())
@@ -833,50 +708,13 @@ class CompanyProfileViewSet(viewsets.ModelViewSet):
         from django.contrib.auth import get_user_model
         User = get_user_model()
         
-        # In DEBUG mode, ALWAYS ensure user is set up (even if authenticated check passes)
-        if settings.DEBUG:
-            if not request.user or not request.user.is_authenticated:
-                logger.info(f"CompanyProfileViewSet.create: DEBUG mode - user not authenticated, setting up test user")
-                try:
-                    test_user, created = User.objects.get_or_create(
-                        email='test@example.com',
-                        defaults={
-                            'username': 'test_user',
-                            'first_name': 'Test',
-                            'last_name': 'User'
-                        }
-                    )
-                    request.user = test_user
-                    logger.info(f"CompanyProfileViewSet.create: DEBUG mode - using test user {test_user.email}")
-                except Exception as e:
-                    logger.error(f"CompanyProfileViewSet.create: Failed to create test user in DEBUG mode: {e}")
-                    # Try to get any user as fallback
-                    try:
-                        user = User.objects.first()
-                        if user:
-                            request.user = user
-                            logger.info(f"CompanyProfileViewSet.create: Using fallback user {user.email}")
-                        else:
-                            logger.error("CompanyProfileViewSet.create: No users exist in database")
-                            return Response(
-                                {'error': 'No users in database', 'detail': 'Please create a user first'},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                            )
-                    except Exception as fallback_error:
-                        logger.error(f"CompanyProfileViewSet.create: Fallback also failed: {fallback_error}")
-                        return Response(
-                            {'error': 'Database error', 'detail': 'Failed to get user'},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                        )
-        
-        # In production, require authentication
-        if not settings.DEBUG:
-            if not request.user or not request.user.is_authenticated:
-                logger.error(f"CompanyProfileViewSet.create: User not authenticated in production")
-                return Response(
-                    {'error': 'Authentication required', 'detail': 'Please log in to save your profile'},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
+        # Always require authentication - no fallback users
+        if not request.user or not request.user.is_authenticated:
+            logger.error(f"CompanyProfileViewSet.create: User not authenticated")
+            return Response(
+                {'error': 'Authentication required', 'detail': 'Please log in to save your profile'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         
         try:
             profile, created = CompanyProfile.objects.get_or_create(
@@ -930,26 +768,20 @@ class CompanyProfileViewSet(viewsets.ModelViewSet):
         """Get current user's company profile."""
         from django.conf import settings
         
-        # In DEBUG mode, ensure user is set up
-        if settings.DEBUG and (not request.user or not request.user.is_authenticated):
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            try:
-                test_user, created = User.objects.get_or_create(
-                    email='test@example.com',
-                    defaults={
-                        'username': 'test_user',
-                        'first_name': 'Test',
-                        'last_name': 'User'
-                    }
-                )
-                request.user = test_user
-                logger.info(f"CompanyProfileViewSet.retrieve: DEBUG mode - using test user {test_user.email}")
-            except Exception as e:
-                logger.warning(f"CompanyProfileViewSet.retrieve: Failed to create test user: {e}")
+        # Always require authentication
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {'error': 'Authentication required', 'detail': 'Please log in to view your profile'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         
         try:
             profile = self.get_object()
+            # Double-check that user can only access their own profile
+            if profile.user != request.user:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("You can only access your own company profile.")
+            
             serializer = self.get_serializer(profile)
             return Response(serializer.data)
         except Exception as e:

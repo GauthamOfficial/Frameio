@@ -5,10 +5,11 @@ Django REST Framework views for poster generation endpoints
 import os
 import time
 import logging
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -25,6 +26,7 @@ ai_poster_service = AIPosterService()
 
 @csrf_exempt
 @api_view(['POST'])
+@authentication_classes([JWTAuthentication])
 @permission_classes([AllowAny])
 def generate_poster(request):
     """
@@ -62,69 +64,87 @@ def generate_poster(request):
             }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         
         # Generate poster using AI service
-        user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+        # Get user from JWT authentication (should be set by JWTAuthentication)
+        user = None
+        
+        # Try to get user from request.user (set by JWTAuthentication)
+        if hasattr(request, 'user'):
+            request_user = request.user
+            # Check if user is authenticated (JWT sets user even if anonymous)
+            if hasattr(request_user, 'is_authenticated') and request_user.is_authenticated:
+                user = request_user
+                logger.info(f"✅ User authenticated via JWT: {user.username} ({user.email})")
+            elif hasattr(request_user, 'id') and request_user.id and not hasattr(request_user, 'is_anonymous'):
+                # Sometimes JWT sets user but is_authenticated might not be set correctly
+                user = request_user
+                logger.info(f"✅ User found from request.user: {user.username} ({user.email})")
         
         # Enhanced debugging for user context
         logger.info(f"=== POSTER GENERATION DEBUG ===")
-        logger.info(f"Request user: {user}")
-        logger.info(f"User authenticated: {hasattr(request, 'user') and request.user.is_authenticated}")
-        logger.info(f"Request headers: {dict(request.META)}")
+        logger.info(f"Request user object: {user}")
+        logger.info(f"Request.user type: {type(getattr(request, 'user', None))}")
+        logger.info(f"Request.user.is_authenticated: {getattr(getattr(request, 'user', None), 'is_authenticated', 'N/A')}")
         
         # Check for authentication headers
         auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-        logger.info(f"Authorization header: {auth_header}")
+        logger.info(f"Authorization header present: {bool(auth_header)}")
         
-        # Try to get user from different authentication methods
-        if not user or not user.is_authenticated:
-            logger.warning("No authenticated user found - trying fallback methods")
+        # If user is not authenticated via JWT, try fallback methods
+        if not user:
+            logger.warning("No authenticated user found from JWT - trying fallback methods")
+            
+            # Try to extract user ID from JWT token manually
+            if auth_header and auth_header.startswith('Bearer '):
+                try:
+                    from rest_framework_simplejwt.tokens import UntypedToken
+                    from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    
+                    token = auth_header.split(' ')[1]
+                    try:
+                        validated_token = UntypedToken(token)
+                        user_id = validated_token.get('user_id')
+                        if user_id:
+                            user = User.objects.get(id=user_id)
+                            logger.info(f"✅ User extracted from JWT token: {user.username} ({user.email})")
+                    except (InvalidToken, TokenError) as e:
+                        logger.warning(f"JWT token validation failed: {e}")
+                    except User.DoesNotExist:
+                        logger.warning(f"User with ID {user_id} from token does not exist")
+                except Exception as e:
+                    logger.warning(f"Error extracting user from JWT token: {e}")
             
             # Check if we can get user from development headers
-            dev_user_id = request.META.get('HTTP_X_DEV_USER_ID')
-            if dev_user_id:
-                try:
-                    from django.contrib.auth import get_user_model
-                    User = get_user_model()
-                    user = User.objects.get(id=dev_user_id)
-                    logger.info(f"Found user from development headers: {user}")
-                except Exception as e:
-                    logger.error(f"Failed to get user from dev headers: {e}")
-            
-            # Fallback: Try to get the first user with a complete company profile
             if not user:
-                try:
-                    from users.models import CompanyProfile
-                    from django.contrib.auth import get_user_model
-                    User = get_user_model()
-                    
-                    # Get the first user with a complete company profile
-                    company_profiles = CompanyProfile.objects.filter(
-                        logo__isnull=False,
-                        company_name__isnull=False
-                    ).exclude(company_name='').exclude(logo='')
-                    
-                    if company_profiles.exists():
-                        user = company_profiles.first().user
-                        logger.info(f"Using fallback user with complete profile: {user.username}")
-                    else:
-                        logger.warning("No users with complete company profiles found")
-                except Exception as e:
-                    logger.error(f"Error in fallback user selection: {e}")
-        else:
-            logger.info(f"Authenticated user found: {user.username} ({user.email})")
-            
-            # Check if user has company profile
+                dev_user_id = request.META.get('HTTP_X_DEV_USER_ID')
+                if dev_user_id:
+                    try:
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                        user = User.objects.get(id=dev_user_id)
+                        logger.info(f"Found user from development headers: {user.username} ({user.email})")
+                    except Exception as e:
+                        logger.error(f"Failed to get user from dev headers: {e}")
+        
+        # Check if user has company profile
+        if user:
             try:
                 from users.models import CompanyProfile
                 company_profile = getattr(user, 'company_profile', None)
                 if company_profile:
-                    logger.info(f"Company profile found: {company_profile.company_name}")
+                    logger.info(f"✅ Company profile found: {company_profile.company_name}")
                     logger.info(f"Has logo: {bool(company_profile.logo)}")
                     logger.info(f"Has contact info: {bool(company_profile.get_contact_info())}")
                     logger.info(f"Profile complete: {company_profile.has_complete_profile}")
+                    if not company_profile.has_complete_profile:
+                        logger.warning(f"⚠️ Profile incomplete - missing: company_name={not company_profile.company_name}, whatsapp={not company_profile.whatsapp_number}")
                 else:
-                    logger.warning("No company profile found for user")
+                    logger.warning(f"⚠️ No company profile found for user {user.username} ({user.email})")
             except Exception as e:
                 logger.error(f"Error checking company profile: {e}")
+        else:
+            logger.warning("⚠️ No user identified - branding will not be applied")
         
         # Pass request context to service for proper URL generation
         ai_poster_service._request = request
@@ -221,11 +241,10 @@ def generate_poster(request):
             logger.info(f"Final response_public_url: {response_public_url}")
             logger.info(f"=== END API RESPONSE DEBUG ===")
             
-            # CRITICAL: Validate that response_public_url is a Cloudinary URL (starts with http)
+            # Validate that response_public_url is a valid HTTP URL
             if not response_public_url or not response_public_url.startswith('http'):
-                logger.error("CRITICAL ERROR: response_public_url is not a Cloudinary URL!")
-                logger.error(f"response_public_url value: {response_public_url}")
-                logger.error("This means Facebook sharing will NOT work!")
+                logger.warning("response_public_url is not a valid HTTP URL")
+                logger.warning(f"response_public_url value: {response_public_url}")
                 # Try to get from result one more time
                 if result.get('public_url') and result.get('public_url').startswith('http'):
                     response_public_url = result.get('public_url')
@@ -233,7 +252,7 @@ def generate_poster(request):
                 else:
                     # Set to empty string - frontend will handle this
                     response_public_url = ''
-                    logger.error("No valid Cloudinary URL found - setting to empty string")
+                    logger.warning("No valid HTTP URL found - setting to empty string")
             
             # Build response dictionary - ALWAYS include public_url and cloudinary_url
             # CRITICAL: Ensure public_url is always set, even if empty (frontend will handle validation)
@@ -243,8 +262,9 @@ def generate_poster(request):
             if final_public_url is None:
                 final_public_url = ''
             
-            # Extract cloudinary_url from result - this should be the direct Cloudinary image URL
-            # Priority: result.cloudinary_url > result.public_url (if not HTML) > result.image_url (if Cloudinary)
+            # Extract cloudinary_url from result - this should be the direct image URL (not HTML page)
+            # For backward compatibility, set cloudinary_url to the image URL
+            # Priority: result.cloudinary_url > result.public_url (if not HTML) > result.image_url
             cloudinary_image_url = result.get('cloudinary_url', '')
             
             # Ensure cloudinary_url is a string (not None)
@@ -256,35 +276,22 @@ def generate_poster(request):
                 logger.info(f"cloudinary_url from result is empty or invalid: {cloudinary_image_url}")
                 logger.info(f"Attempting to extract cloudinary_url from other sources...")
                 
-                # Try 1: Check if public_url is a Cloudinary image URL (not HTML page)
-                if final_public_url and final_public_url.startswith('http') and 'cloudinary' in final_public_url:
-                    if not final_public_url.endswith('.html'):
-                        cloudinary_image_url = final_public_url
-                        logger.info(f"✅ Using public_url as cloudinary_url: {cloudinary_image_url}")
-                    else:
-                        # public_url is HTML page, need to extract the image URL
-                        logger.info("public_url is HTML page, checking other sources...")
-                        # Try to get from result's image_url if it's Cloudinary
-                        image_url = result.get('image_url', '')
-                        if image_url and image_url.startswith('http') and 'cloudinary' in image_url:
-                            cloudinary_image_url = image_url
-                            logger.info(f"✅ Using image_url as cloudinary_url: {cloudinary_image_url}")
-                        # If still empty, try to get from poster object
-                        elif 'poster' in locals() and hasattr(poster, 'public_url') and poster.public_url:
-                            poster_public = poster.public_url
-                            if poster_public and poster_public.startswith('http') and 'cloudinary' in poster_public and not poster_public.endswith('.html'):
-                                cloudinary_image_url = poster_public
-                                logger.info(f"✅ Using poster.public_url as cloudinary_url: {cloudinary_image_url}")
+                # Try 1: Check if public_url is an image URL (not HTML page)
+                if final_public_url and final_public_url.startswith('http') and not final_public_url.endswith('.html'):
+                    cloudinary_image_url = final_public_url
+                    logger.info(f"✅ Using public_url as cloudinary_url: {cloudinary_image_url}")
                 else:
-                    # Try 2: Check if image_url is a Cloudinary URL
+                    # public_url is HTML page, need to extract the image URL
+                    logger.info("public_url is HTML page, checking other sources...")
+                    # Try to get from result's image_url
                     image_url = result.get('image_url', '')
-                    if image_url and image_url.startswith('http') and 'cloudinary' in image_url:
+                    if image_url and image_url.startswith('http'):
                         cloudinary_image_url = image_url
                         logger.info(f"✅ Using image_url as cloudinary_url: {cloudinary_image_url}")
-                    # Try 3: Check poster object
+                    # If still empty, try to get from poster object
                     elif 'poster' in locals() and hasattr(poster, 'public_url') and poster.public_url:
                         poster_public = poster.public_url
-                        if poster_public and poster_public.startswith('http') and 'cloudinary' in poster_public and not poster_public.endswith('.html'):
+                        if poster_public and poster_public.startswith('http') and not poster_public.endswith('.html'):
                             cloudinary_image_url = poster_public
                             logger.info(f"✅ Using poster.public_url as cloudinary_url: {cloudinary_image_url}")
             
@@ -296,9 +303,9 @@ def generate_poster(request):
             
             logger.info(f"Final cloudinary_image_url: {cloudinary_image_url}")
             
-            # Final validation - ensure cloudinary_url is a valid Cloudinary URL
+            # Final validation - ensure cloudinary_url is a valid HTTP URL
             if cloudinary_image_url and not cloudinary_image_url.startswith('http'):
-                logger.error(f"❌ cloudinary_url is not a valid URL: {cloudinary_image_url}")
+                logger.warning(f"cloudinary_url is not a valid URL: {cloudinary_image_url}")
                 cloudinary_image_url = ''
             
             logger.info(f"Final cloudinary_url for response: {cloudinary_image_url}")
@@ -313,8 +320,8 @@ def generate_poster(request):
                 "poster_id": str(poster.id) if 'poster' in locals() else None,
                 "image_path": result.get('image_path'),
                 "image_url": result.get('image_url'),
-                "public_url": final_public_url,  # ALWAYS set public_url (may be empty if Cloudinary upload failed)
-                "cloudinary_url": cloudinary_image_url,  # Direct Cloudinary image URL for sharing
+                "public_url": final_public_url,  # ALWAYS set public_url (may be empty if URL generation failed)
+                "cloudinary_url": cloudinary_image_url,  # Direct image URL for sharing (for backward compatibility)
                 "filename": result.get('filename'),
                 "aspect_ratio": aspect_ratio,
                 "width": result.get('width'),
@@ -333,17 +340,7 @@ def generate_poster(request):
                 "branding_metadata": result.get('branding_metadata', {})
             }
             
-            # Clean up local file after successful Cloudinary upload (optional but recommended)
-            if cloudinary_image_url and cloudinary_image_url.startswith('http'):
-                try:
-                    local_image_path = result.get('image_path')
-                    if local_image_path and default_storage.exists(local_image_path):
-                        logger.info(f"Deleting local file after successful Cloudinary upload: {local_image_path}")
-                        default_storage.delete(local_image_path)
-                        logger.info(f"Local file deleted successfully")
-                except Exception as cleanup_error:
-                    logger.warning(f"Failed to delete local file after upload: {str(cleanup_error)}")
-                    # Don't fail the request if cleanup fails
+            # Keep local files - they are served from our own domain
             
             # Final verification - ensure public_url is ALWAYS present and valid
             logger.info(f"=== FINAL API RESPONSE ===")
@@ -359,27 +356,24 @@ def generate_poster(request):
                 logger.error("CRITICAL ERROR: public_url is None in response_data!")
                 response_data['public_url'] = ''
             
-            # Validate public_url is a Cloudinary URL
+            # Validate public_url is a valid HTTP URL
             current_public_url = response_data.get('public_url', '')
             if current_public_url is None:
                 current_public_url = ''
                 response_data['public_url'] = ''
             
             if not current_public_url:
-                logger.error("CRITICAL ERROR: public_url is empty in final response!")
-                logger.error("Facebook sharing will NOT work for this poster!")
-                logger.error("Possible causes:")
-                logger.error("  1. Cloudinary credentials not configured (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)")
-                logger.error("  2. Cloudinary upload failed - check logs above for errors")
-                logger.error("  3. Network connectivity issues to Cloudinary")
-                logger.error("Check backend logs for Cloudinary upload errors above.")
+                logger.warning("public_url is empty in final response!")
+                logger.warning("Facebook sharing may not work for this poster!")
+                logger.warning("Possible causes:")
+                logger.warning("  1. DOMAIN_URL not configured in environment variables")
+                logger.warning("  2. URL generation failed - check logs above for errors")
             elif not current_public_url.startswith('http'):
-                logger.error(f"CRITICAL ERROR: public_url is not a Cloudinary URL: {current_public_url}")
-                logger.error("Facebook sharing will NOT work for this poster!")
-                logger.error("Check backend logs for Cloudinary upload errors above.")
+                logger.warning(f"public_url is not a valid HTTP URL: {current_public_url}")
+                logger.warning("Facebook sharing may not work for this poster!")
                 # Don't change it - frontend will handle the error
             else:
-                logger.info(f"SUCCESS: public_url is valid Cloudinary URL: {current_public_url}")
+                logger.info(f"SUCCESS: public_url is valid HTTP URL: {current_public_url}")
             
             # Final double-check: ensure public_url and cloudinary_url are always strings and exist
             if 'public_url' not in response_data:
@@ -457,6 +451,7 @@ def generate_poster(request):
 
 @csrf_exempt
 @api_view(['POST'])
+@authentication_classes([JWTAuthentication])
 @permission_classes([AllowAny])
 def edit_poster(request):
     """
@@ -523,55 +518,91 @@ def edit_poster(request):
         
         response = None
         try:
+            # Initialize response to ensure it's always set
+            response = Response({
+                "success": False,
+                "error": "Internal server error"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
             # Get user for branding (same logic as generate_poster)
-            user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+            user = None
+            
+            # Try to get user from request.user (set by JWTAuthentication)
+            if hasattr(request, 'user'):
+                request_user = request.user
+                # Check if user is authenticated (JWT sets user even if anonymous)
+                if hasattr(request_user, 'is_authenticated') and request_user.is_authenticated:
+                    user = request_user
+                    logger.info(f"✅ User authenticated via JWT: {user.username} ({user.email})")
+                elif hasattr(request_user, 'id') and request_user.id and not hasattr(request_user, 'is_anonymous'):
+                    # Sometimes JWT sets user but is_authenticated might not be set correctly
+                    user = request_user
+                    logger.info(f"✅ User found from request.user: {user.username} ({user.email})")
             
             # Enhanced debugging for user context
             logger.info(f"=== EDIT POSTER DEBUG ===")
-            logger.info(f"Request user: {user}")
-            logger.info(f"User authenticated: {hasattr(request, 'user') and request.user.is_authenticated}")
+            logger.info(f"Request user object: {user}")
             
             # Check for authentication headers
             auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-            logger.info(f"Authorization header: {auth_header}")
+            logger.info(f"Authorization header present: {bool(auth_header)}")
             
-            # Try to get user from different authentication methods
-            if not user or not user.is_authenticated:
-                logger.warning("No authenticated user found - trying fallback methods")
+            # If user is not authenticated via JWT, try fallback methods
+            if not user:
+                logger.warning("No authenticated user found from JWT - trying fallback methods")
+                
+                # Try to extract user ID from JWT token manually
+                if auth_header and auth_header.startswith('Bearer '):
+                    try:
+                        from rest_framework_simplejwt.tokens import UntypedToken
+                        from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                        
+                        token = auth_header.split(' ')[1]
+                        try:
+                            validated_token = UntypedToken(token)
+                            user_id = validated_token.get('user_id')
+                            if user_id:
+                                user = User.objects.get(id=user_id)
+                                logger.info(f"✅ User extracted from JWT token: {user.username} ({user.email})")
+                        except (InvalidToken, TokenError) as e:
+                            logger.warning(f"JWT token validation failed: {e}")
+                        except User.DoesNotExist:
+                            logger.warning(f"User with ID {user_id} from token does not exist")
+                    except Exception as e:
+                        logger.warning(f"Error extracting user from JWT token: {e}")
                 
                 # Check if we can get user from development headers
-                dev_user_id = request.META.get('HTTP_X_DEV_USER_ID')
-                if dev_user_id:
-                    try:
-                        from django.contrib.auth import get_user_model
-                        User = get_user_model()
-                        user = User.objects.get(id=dev_user_id)
-                        logger.info(f"Found user from development headers: {user}")
-                    except Exception as e:
-                        logger.error(f"Failed to get user from dev headers: {e}")
-                
-                # Fallback: Try to get the first user with a complete company profile
                 if not user:
-                    try:
-                        from users.models import CompanyProfile
-                        from django.contrib.auth import get_user_model
-                        User = get_user_model()
-                        
-                        # Get the first user with a complete company profile
-                        company_profiles = CompanyProfile.objects.filter(
-                            logo__isnull=False,
-                            company_name__isnull=False
-                        ).exclude(company_name='').exclude(logo='')
-                        
-                        if company_profiles.exists():
-                            user = company_profiles.first().user
-                            logger.info(f"Using fallback user with complete profile: {user.username}")
-                        else:
-                            logger.warning("No users with complete company profiles found")
-                    except Exception as e:
-                        logger.error(f"Error in fallback user selection: {e}")
+                    dev_user_id = request.META.get('HTTP_X_DEV_USER_ID')
+                    if dev_user_id:
+                        try:
+                            from django.contrib.auth import get_user_model
+                            User = get_user_model()
+                            user = User.objects.get(id=dev_user_id)
+                            logger.info(f"Found user from development headers: {user.username} ({user.email})")
+                        except Exception as e:
+                            logger.error(f"Failed to get user from dev headers: {e}")
+            
+            # Check if user has company profile
+            if user:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile:
+                        logger.info(f"✅ Company profile found: {company_profile.company_name}")
+                        logger.info(f"Has logo: {bool(company_profile.logo)}")
+                        logger.info(f"Has contact info: {bool(company_profile.get_contact_info())}")
+                        logger.info(f"Profile complete: {company_profile.has_complete_profile}")
+                        if not company_profile.has_complete_profile:
+                            logger.warning(f"⚠️ Profile incomplete - missing: company_name={not company_profile.company_name}, whatsapp={not company_profile.whatsapp_number}")
+                    else:
+                        logger.warning(f"⚠️ No company profile found for user {user.username} ({user.email})")
+                except Exception as e:
+                    logger.error(f"Error checking company profile: {e}")
             else:
-                logger.info(f"Authenticated user found: {user.username} ({user.email})")
+                logger.warning("⚠️ No user identified - branding will not be applied")
             
             # Generate edited poster using AI service with user for branding
             logger.info(f"Calling generate_with_image with path: {saved_path}")
@@ -642,14 +673,18 @@ def edit_poster(request):
                     response_public_url = poster.public_url
                     logger.info(f"Using public_url from poster object: {response_public_url}")
                 else:
-                    # Fallback to image_url if it's a Cloudinary URL
+                    # Fallback to image_url
                     image_url = result.get('image_url', '')
-                    if image_url and image_url.startswith('http') and 'cloudinary' in image_url:
+                    if image_url and image_url.startswith('http'):
+                        response_public_url = image_url
+                        logger.info(f"Using image_url as public_url: {response_public_url}")
+                    elif image_url:
+                        # If relative, make it absolute
                         if image_url.startswith('/'):
                             response_public_url = f"http://localhost:8000{image_url}"
                         else:
                             response_public_url = image_url
-                        logger.warning(f"WARNING: Using image_url as public_url fallback (Facebook sharing may not work): {response_public_url}")
+                        logger.warning(f"WARNING: Using image_url as public_url fallback: {response_public_url}")
                     else:
                         logger.error("CRITICAL: No public_url or image_url available!")
                         response_public_url = ''  # Set to empty string, will be handled by validation below
@@ -658,11 +693,10 @@ def edit_poster(request):
                 logger.info(f"poster.public_url (if exists): {poster.public_url if 'poster' in locals() and hasattr(poster, 'public_url') else 'N/A'}")
                 logger.info(f"Final response_public_url: {response_public_url}")
                 
-                # CRITICAL: Validate that response_public_url is a Cloudinary URL (starts with http)
+                # Validate that response_public_url is a valid HTTP URL
                 if not response_public_url or not response_public_url.startswith('http'):
-                    logger.error("CRITICAL ERROR: response_public_url is not a Cloudinary URL!")
-                    logger.error(f"response_public_url value: {response_public_url}")
-                    logger.error("This means Facebook sharing will NOT work!")
+                    logger.warning("response_public_url is not a valid HTTP URL")
+                    logger.warning(f"response_public_url value: {response_public_url}")
                     # Try to get from result one more time
                     if result.get('public_url') and result.get('public_url').startswith('http'):
                         response_public_url = result.get('public_url')
@@ -670,7 +704,7 @@ def edit_poster(request):
                     else:
                         # Set to empty string - frontend will handle this
                         response_public_url = ''
-                        logger.error("No valid Cloudinary URL found - setting to empty string")
+                        logger.warning("No valid HTTP URL found - setting to empty string")
                 
                 # Build response dictionary - ALWAYS include public_url and cloudinary_url
                 # CRITICAL: Ensure public_url is always set, even if empty (frontend will handle validation)
@@ -680,8 +714,9 @@ def edit_poster(request):
                 if final_public_url is None:
                     final_public_url = ''
                 
-                # Extract cloudinary_url from result - this should be the direct Cloudinary image URL
-                # Priority: result.cloudinary_url > result.public_url (if not HTML) > result.image_url (if Cloudinary)
+                # Extract cloudinary_url from result - this should be the direct image URL (not HTML page)
+                # For backward compatibility, set cloudinary_url to the image URL
+                # Priority: result.cloudinary_url > result.public_url (if not HTML) > result.image_url
                 cloudinary_image_url = result.get('cloudinary_url', '')
                 
                 # Ensure cloudinary_url is a string (not None)
@@ -693,35 +728,22 @@ def edit_poster(request):
                     logger.info(f"cloudinary_url from result is empty or invalid: {cloudinary_image_url}")
                     logger.info(f"Attempting to extract cloudinary_url from other sources...")
                     
-                    # Try 1: Check if public_url is a Cloudinary image URL (not HTML page)
-                    if final_public_url and final_public_url.startswith('http') and 'cloudinary' in final_public_url:
-                        if not final_public_url.endswith('.html'):
-                            cloudinary_image_url = final_public_url
-                            logger.info(f"✅ Using public_url as cloudinary_url: {cloudinary_image_url}")
-                        else:
-                            # public_url is HTML page, need to extract the image URL
-                            logger.info("public_url is HTML page, checking other sources...")
-                            # Try to get from result's image_url if it's Cloudinary
-                            image_url = result.get('image_url', '')
-                            if image_url and image_url.startswith('http') and 'cloudinary' in image_url:
-                                cloudinary_image_url = image_url
-                                logger.info(f"✅ Using image_url as cloudinary_url: {cloudinary_image_url}")
-                            # If still empty, try to get from poster object
-                            elif 'poster' in locals() and hasattr(poster, 'public_url') and poster.public_url:
-                                poster_public = poster.public_url
-                                if poster_public and poster_public.startswith('http') and 'cloudinary' in poster_public and not poster_public.endswith('.html'):
-                                    cloudinary_image_url = poster_public
-                                    logger.info(f"✅ Using poster.public_url as cloudinary_url: {cloudinary_image_url}")
+                    # Try 1: Check if public_url is an image URL (not HTML page)
+                    if final_public_url and final_public_url.startswith('http') and not final_public_url.endswith('.html'):
+                        cloudinary_image_url = final_public_url
+                        logger.info(f"✅ Using public_url as cloudinary_url: {cloudinary_image_url}")
                     else:
-                        # Try 2: Check if image_url is a Cloudinary URL
+                        # public_url is HTML page, need to extract the image URL
+                        logger.info("public_url is HTML page, checking other sources...")
+                        # Try to get from result's image_url
                         image_url = result.get('image_url', '')
-                        if image_url and image_url.startswith('http') and 'cloudinary' in image_url:
+                        if image_url and image_url.startswith('http'):
                             cloudinary_image_url = image_url
                             logger.info(f"✅ Using image_url as cloudinary_url: {cloudinary_image_url}")
-                        # Try 3: Check poster object
+                        # If still empty, try to get from poster object
                         elif 'poster' in locals() and hasattr(poster, 'public_url') and poster.public_url:
                             poster_public = poster.public_url
-                            if poster_public and poster_public.startswith('http') and 'cloudinary' in poster_public and not poster_public.endswith('.html'):
+                            if poster_public and poster_public.startswith('http') and not poster_public.endswith('.html'):
                                 cloudinary_image_url = poster_public
                                 logger.info(f"✅ Using poster.public_url as cloudinary_url: {cloudinary_image_url}")
                 
@@ -733,9 +755,9 @@ def edit_poster(request):
                 
                 logger.info(f"Final cloudinary_image_url: {cloudinary_image_url}")
                 
-                # Final validation - ensure cloudinary_url is a valid Cloudinary URL
+                # Final validation - ensure cloudinary_url is a valid HTTP URL
                 if cloudinary_image_url and not cloudinary_image_url.startswith('http'):
-                    logger.error(f"❌ cloudinary_url is not a valid URL: {cloudinary_image_url}")
+                    logger.warning(f"cloudinary_url is not a valid URL: {cloudinary_image_url}")
                     cloudinary_image_url = ''
                 
                 logger.info(f"Final cloudinary_url for response: {cloudinary_image_url}")
@@ -750,8 +772,8 @@ def edit_poster(request):
                     "poster_id": str(poster.id) if 'poster' in locals() else None,
                     "image_path": result.get('image_path'),
                     "image_url": result.get('image_url'),
-                    "public_url": final_public_url,  # ALWAYS set public_url (may be empty if Cloudinary upload failed)
-                    "cloudinary_url": cloudinary_image_url,  # Direct Cloudinary image URL for sharing
+                    "public_url": final_public_url,  # ALWAYS set public_url (may be empty if URL generation failed)
+                    "cloudinary_url": cloudinary_image_url,  # Direct image URL for sharing (for backward compatibility)
                     "filename": result.get('filename'),
                     "aspect_ratio": aspect_ratio,
                     "width": result.get('width'),
@@ -783,26 +805,23 @@ def edit_poster(request):
                     logger.error("CRITICAL ERROR: public_url is None in response_data!")
                     response_data['public_url'] = ''
                 
-                # Validate public_url is a Cloudinary URL
+                # Validate public_url is a valid HTTP URL
                 current_public_url = response_data.get('public_url', '')
                 if current_public_url is None:
                     current_public_url = ''
                     response_data['public_url'] = ''
                 
                 if not current_public_url:
-                    logger.error("CRITICAL ERROR: public_url is empty in final response!")
-                    logger.error("Facebook sharing will NOT work for this poster!")
-                    logger.error("Possible causes:")
-                    logger.error("  1. Cloudinary credentials not configured (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)")
-                    logger.error("  2. Cloudinary upload failed - check logs above for errors")
-                    logger.error("  3. Network connectivity issues to Cloudinary")
-                    logger.error("Check backend logs for Cloudinary upload errors above.")
+                    logger.warning("public_url is empty in final response!")
+                    logger.warning("Facebook sharing may not work for this poster!")
+                    logger.warning("Possible causes:")
+                    logger.warning("  1. DOMAIN_URL not configured in environment variables")
+                    logger.warning("  2. URL generation failed - check logs above for errors")
                 elif not current_public_url.startswith('http'):
-                    logger.error(f"CRITICAL ERROR: public_url is not a Cloudinary URL: {current_public_url}")
-                    logger.error("Facebook sharing will NOT work for this poster!")
-                    logger.error("Check backend logs for Cloudinary upload errors above.")
+                    logger.warning(f"public_url is not a valid HTTP URL: {current_public_url}")
+                    logger.warning("Facebook sharing may not work for this poster!")
                 else:
-                    logger.info(f"SUCCESS: public_url is valid Cloudinary URL: {current_public_url}")
+                    logger.info(f"SUCCESS: public_url is valid HTTP URL: {current_public_url}")
                 
                 # Final double-check: ensure public_url and cloudinary_url are always strings and exist
                 if 'public_url' not in response_data:
@@ -847,7 +866,28 @@ def edit_poster(request):
                 
                 logger.info(f"=== END FINAL API RESPONSE (EDIT POSTER) ===")
                 
-                response = Response(response_data, status=status.HTTP_200_OK)
+                # Ensure response_data is JSON-serializable before creating Response
+                try:
+                    import json
+                    # Test if response_data can be serialized
+                    json.dumps(response_data, ensure_ascii=False)
+                    response = Response(response_data, status=status.HTTP_200_OK)
+                except (TypeError, ValueError) as serialization_error:
+                    logger.error(f"Failed to serialize response_data: {str(serialization_error)}")
+                    # Create a safe response without problematic data
+                    safe_response_data = {
+                        "success": True,
+                        "message": "Poster edited successfully",
+                        "image_url": response_data.get('image_url', ''),
+                        "image_path": response_data.get('image_path', ''),
+                        "public_url": response_data.get('public_url', ''),
+                        "cloudinary_url": response_data.get('cloudinary_url', ''),
+                        "error": "Some response data could not be serialized"
+                    }
+                    response = Response(safe_response_data, status=status.HTTP_200_OK)
+                except Exception as response_error:
+                    logger.error(f"Failed to create response: {str(response_error)}")
+                    raise  # Re-raise to be caught by outer exception handler
             else:
                 error_message = result.get('message', 'Failed to edit poster')
                 logger.error(f"Poster editing failed: {error_message}")
@@ -861,11 +901,24 @@ def edit_poster(request):
             error_trace = traceback.format_exc()
             logger.error(f"Error in edit_poster inner block: {str(inner_e)}")
             logger.error(f"Traceback: {error_trace}")
-            # Create error response
-            response = Response({
-                "success": False,
-                "error": str(inner_e) if settings.DEBUG else "Internal server error"
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Create error response with detailed message
+            error_message = str(inner_e) if settings.DEBUG else "Internal server error"
+            try:
+                response = Response({
+                    "success": False,
+                    "error": error_message,
+                    "detail": error_message if settings.DEBUG else "An error occurred while processing your request"
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                response['Content-Type'] = 'application/json'
+            except Exception as response_error:
+                logger.error(f"Failed to create error response: {str(response_error)}")
+                # Use JsonResponse as fallback
+                from django.http import JsonResponse
+                response = JsonResponse({
+                    "success": False,
+                    "error": error_message,
+                    "detail": "An error occurred while processing your request"
+                }, status=500)
                 
         finally:
             # Clean up temporary file
@@ -875,16 +928,29 @@ def edit_poster(request):
             except Exception as e:
                 logger.warning(f"Failed to delete temp file {saved_path}: {str(e)}")
         
-        # Ensure response is always set
+        # Ensure response is always set and properly formatted
         if response is None:
             logger.error("Response was None - creating fallback error response")
-            response = Response({
-                "success": False,
-                "error": "Unexpected error: response was not created"
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                response = Response({
+                    "success": False,
+                    "error": "Unexpected error: response was not created",
+                    "detail": "An unexpected error occurred. Please try again."
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except Exception:
+                from django.http import JsonResponse
+                response = JsonResponse({
+                    "success": False,
+                    "error": "Unexpected error: response was not created",
+                    "detail": "An unexpected error occurred. Please try again."
+                }, status=500)
         
-        # Force content type
-        response['Content-Type'] = 'application/json'
+        # Force content type to ensure JSON
+        try:
+            response['Content-Type'] = 'application/json'
+        except Exception:
+            pass  # Content-Type might already be set
+        
         return response
             
     except Exception as e:

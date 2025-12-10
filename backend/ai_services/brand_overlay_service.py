@@ -57,16 +57,49 @@ class BrandOverlayService:
             # Convert to RGBA for transparency support
             poster_image = poster_image.convert("RGBA")
             
-            # Add logo overlay
+            # Add logo overlay (optional - won't fail if logo is missing)
             logo_metadata = None
+            logo_added = False
             if company_profile.logo:
-                poster_image, logo_metadata = self._add_logo_overlay(poster_image, company_profile)
+                try:
+                    poster_image, logo_metadata = self._add_logo_overlay(poster_image, company_profile)
+                    logo_added = logo_metadata is not None
+                    if logo_added:
+                        logger.info("✅ Logo overlay added successfully")
+                    else:
+                        logger.info("ℹ️ Logo overlay skipped (logo not available or failed to load)")
+                except Exception as logo_error:
+                    logger.warning(f"Logo overlay failed but continuing: {logo_error}")
+                    logo_added = False
             
-            # Add contact information overlay
+            # Add contact information overlay (required for branding)
             contact_info = company_profile.get_contact_info()
             contact_metadata = None
+            contact_added = False
             if contact_info:
-                poster_image, contact_metadata = self._add_contact_overlay(poster_image, contact_info, company_profile)
+                try:
+                    poster_image, contact_metadata = self._add_contact_overlay(poster_image, contact_info, company_profile)
+                    contact_added = contact_metadata is not None
+                    if contact_added:
+                        logger.info("✅ Contact info overlay added successfully")
+                    else:
+                        logger.warning("⚠️ Contact info overlay failed")
+                except Exception as contact_error:
+                    logger.error(f"Contact info overlay failed: {contact_error}")
+                    contact_added = False
+            else:
+                logger.warning("⚠️ No contact information available for overlay")
+            
+            # If neither logo nor contact info was added, this is an error
+            if not logo_added and not contact_added:
+                logger.error("❌ Failed to add both logo and contact info - branding not applied")
+                return {
+                    "status": "error",
+                    "message": "Failed to add logo and contact information overlays",
+                    "image_path": poster_path,
+                    "image_url": default_storage.url(poster_path),
+                    "branding_applied": False
+                }
             
             # Auto-trim any uniform white borders introduced by generation
             try:
@@ -78,14 +111,16 @@ class BrandOverlayService:
             final_path = self._save_final_image(poster_image, output_filename)
             
             if final_path:
-                logger.info(f"Brand overlay added successfully: {final_path}")
+                logger.info(f"✅ Brand overlay added successfully: {final_path}")
+                logger.info(f"   - Logo added: {logo_added}")
+                logger.info(f"   - Contact info added: {contact_added}")
                 return {
                     "status": "success",
                     "image_path": final_path,
                     "image_url": default_storage.url(final_path),
                     "branding_applied": True,
-                    "logo_added": bool(company_profile.logo),
-                    "contact_info_added": bool(contact_info),
+                    "logo_added": logo_added,
+                    "contact_info_added": contact_added,
                     "branding_metadata": {
                         "logo": logo_metadata,
                         "contact": contact_metadata
@@ -174,18 +209,34 @@ class BrandOverlayService:
         try:
             # Check if logo exists and is valid
             if not company_profile.logo or not company_profile.logo.name:
-                logger.warning("No logo found for company profile")
+                logger.info("No logo found for company profile - skipping logo overlay")
                 return poster_image, None
             
-            # Check if logo file exists
-            if not os.path.exists(company_profile.logo.path):
-                logger.warning(f"Logo file not found at path: {company_profile.logo.path}")
-                return poster_image, None
+            # Try to load logo - handle both file system and storage backends
+            logo_image = None
+            logo_name = company_profile.logo.name
             
-            # Load company logo
-            logo_image = self._load_image(company_profile.logo.path)
+            # First, try loading from storage (works for both file system and cloud storage)
+            try:
+                logo_image = self._load_image(logo_name)
+                if logo_image:
+                    logger.info(f"✅ Logo loaded from storage: {logo_name}")
+            except Exception as storage_error:
+                logger.debug(f"Failed to load logo from storage: {storage_error}")
+                # Try alternative: get file path if available
+                try:
+                    if hasattr(company_profile.logo, 'path'):
+                        logo_path = company_profile.logo.path
+                        if os.path.exists(logo_path):
+                            logo_image = Image.open(logo_path)
+                            logger.info(f"✅ Logo loaded from file path: {logo_path}")
+                        else:
+                            logger.warning(f"Logo file not found at path: {logo_path}")
+                except Exception as path_error:
+                    logger.debug(f"Could not get logo path: {path_error}")
+            
             if not logo_image:
-                logger.warning("Failed to load logo image")
+                logger.warning(f"Failed to load logo image - skipping logo overlay")
                 return poster_image, None
             
             # Resize logo by width only, preserving aspect ratio

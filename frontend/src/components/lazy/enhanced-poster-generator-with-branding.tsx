@@ -493,10 +493,17 @@ export default function EnhancedPosterGeneratorWithBranding() {
           // First try to parse as JSON
           const errorData = await response.json()
           console.error('Error response data:', errorData)
-          message = errorData?.error || errorData?.message || errorData?.detail || message
-          // Include more details if available
-          if (errorData?.detail && errorData.detail !== message) {
-            message += `: ${errorData.detail}`
+          
+          // Handle empty object case
+          if (Object.keys(errorData).length === 0) {
+            message = `HTTP ${response.status}: Server returned empty error response. Check backend logs for details.`
+            console.error('Empty error response received - backend may have encountered a serialization error')
+          } else {
+            message = errorData?.error || errorData?.message || errorData?.detail || message
+            // Include more details if available
+            if (errorData?.detail && errorData.detail !== message) {
+              message += `: ${errorData.detail}`
+            }
           }
         } catch {
           // If JSON parsing fails, try as text
