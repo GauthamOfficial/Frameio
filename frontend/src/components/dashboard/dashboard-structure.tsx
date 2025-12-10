@@ -12,11 +12,11 @@ interface DashboardStructureProps {
 
 export function DashboardStructure({ children, className }: DashboardStructureProps) {
   return (
-    <div className="min-h-screen bg-background fabric-texture flex flex-col">
+    <div className="min-h-screen bg-background fabric-texture flex flex-col min-w-[320px]">
       <Sidebar />
       <div className="md:ml-64 flex flex-col flex-1">
         <TopNav />
-        <main className={cn("p-6 flex-1", className)}>
+        <main className={cn("p-3 sm:p-4 md:p-6 flex-1", className)}>
           {children}
         </main>
         <Footer />

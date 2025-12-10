@@ -112,23 +112,23 @@ export function OverviewCards() {
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 min-[475px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
       {overviewData.map((item) => {
         const Icon = item.icon
         return (
           <Card key={item.title} className="textile-hover textile-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate pr-2">
                 {item.title}
               </CardTitle>
               {loading ? (
-                <Loader2 className={`h-4 w-4 ${item.color} animate-spin`} />
+                <Loader2 className={`h-3 w-3 sm:h-4 sm:w-4 ${item.color} animate-spin shrink-0`} />
               ) : (
-                <Icon className={`h-4 w-4 ${item.color}`} />
+                <Icon className={`h-3 w-3 sm:h-4 sm:w-4 ${item.color} shrink-0`} />
               )}
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">{item.value}</div>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{item.value}</div>
               {item.change && (
                 <p className="text-xs text-muted-foreground mt-1">
                   <span className="text-green-600">{item.change}</span> from last month

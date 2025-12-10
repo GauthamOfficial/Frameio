@@ -256,7 +256,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 min-[475px]:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {brandingKits.map((kit) => (
             <div
               key={kit.id}
@@ -307,10 +307,10 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
               </div>
               
               {/* Info Section */}
-              <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+              <div className="p-3 sm:p-4 space-y-2 sm:space-y-3" onClick={(e) => e.stopPropagation()}>
                 {/* Prompt */}
                 <div>
-                  <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-foreground line-clamp-2 mb-1">
                     {kit.prompt || 'No prompt'}
                   </p>
                   {kit.style && (
@@ -322,12 +322,12 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
 
                 {/* Date */}
                 <div className="flex items-center text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {formatDate(kit.created_at)}
+                  <Calendar className="h-3 w-3 mr-1 shrink-0" />
+                  <span className="truncate">{formatDate(kit.created_at)}</span>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
+                <div className="flex gap-1.5 sm:gap-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
                   {kit.logo && (
                     <Button
                       size="sm"
@@ -337,9 +337,9 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
                         `logo-${kit.id}.${kit.logo!.format.toLowerCase()}`,
                         kit.logo!.format
                       )}
-                      className="flex-1 h-8 text-xs"
+                      className="flex-1 h-7 sm:h-8 text-xs px-1.5 sm:px-2"
                     >
-                      <Download className="h-3 w-3 mr-1" />
+                      <Download className="h-3 w-3 mr-1 shrink-0" />
                       Logo
                     </Button>
                   )}
@@ -352,9 +352,9 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
                         `palette-${kit.id}.${kit.color_palette!.format.toLowerCase()}`,
                         kit.color_palette!.format
                       )}
-                      className="flex-1 h-8 text-xs"
+                      className="flex-1 h-7 sm:h-8 text-xs px-1.5 sm:px-2"
                     >
-                      <Download className="h-3 w-3 mr-1" />
+                      <Download className="h-3 w-3 mr-1 shrink-0" />
                       Palette
                     </Button>
                   )}
@@ -362,7 +362,7 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => handleDeleteClick(kit)}
-                    className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="h-7 sm:h-8 w-7 sm:w-8 px-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                     title="Delete branding kit"
                   >
                     <Trash2 className="h-3 w-3" />

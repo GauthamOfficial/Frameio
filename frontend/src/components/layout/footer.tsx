@@ -138,10 +138,10 @@ export function Footer({ className }: FooterProps) {
         <div className="border-t border-border mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-center items-center">
             <p className="text-sm text-muted-foreground">
-              <span className="font-bold">
+               © 2025 <span className="font-bold">
                 <span className="text-[#1B2951]">Frame</span>
                 <span className="text-[#8B2635]">io</span>
-              </span> © 2025 Frameio. All rights reserved.
+              </span>. All rights reserved.
             </p>
           </div>
         </div>

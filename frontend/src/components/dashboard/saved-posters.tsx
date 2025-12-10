@@ -274,7 +274,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 min-[475px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
           {posters.map((poster) => (
             <div
               key={poster.id}
@@ -315,7 +315,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
               </div>
               
               {/* Info Overlay - Always Visible */}
-              <div className="p-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+              <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2" onClick={(e) => e.stopPropagation()}>
                 {/* Caption */}
                 <div>
                   <p className="text-xs font-medium text-foreground line-clamp-2 mb-1">
@@ -329,27 +329,27 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                 </div>
 
                 {/* Date */}
-                <div className="flex items-center text-xs text-muted-foreground mb-2">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {formatDate(poster.created_at)}
+                <div className="flex items-center text-xs text-muted-foreground mb-1.5 sm:mb-2">
+                  <Calendar className="h-3 w-3 mr-1 shrink-0" />
+                  <span className="truncate">{formatDate(poster.created_at)}</span>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-1.5 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
+                <div className="flex gap-1 sm:gap-1.5 pt-1.5 sm:pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleDownload(poster)}
-                    className="flex-1 h-7 text-xs px-2"
+                    className="flex-1 h-7 sm:h-8 text-xs px-1.5 sm:px-2"
                   >
-                    <Download className="h-3 w-3 mr-1" />
+                    <Download className="h-3 w-3 mr-1 shrink-0" />
                     Download
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => window.open(poster.image_url, '_blank')}
-                    className="h-7 w-7 p-0 flex-shrink-0"
+                    className="h-7 sm:h-8 w-7 sm:w-8 p-0 flex-shrink-0"
                     title="Open in new tab"
                   >
                     <ExternalLink className="h-3 w-3" />
@@ -358,7 +358,7 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => handleDeleteClick(poster)}
-                    className="h-7 w-7 p-0 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="h-7 sm:h-8 w-7 sm:w-8 p-0 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                     title="Delete"
                   >
                     <Trash2 className="h-3 w-3" />

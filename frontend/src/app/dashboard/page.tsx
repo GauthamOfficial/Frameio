@@ -60,29 +60,30 @@ export default function DashboardPage() {
 
   return (
     <DashboardErrorBoundary>
-      <div className="space-y-8">
+      <div className="space-y-4 sm:space-y-6 md:space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
               {userRole && (
-                <Badge variant={getRoleBadgeVariant(userRole)} className="text-xs">
+                <Badge variant={getRoleBadgeVariant(userRole)} className="text-xs shrink-0">
                   <User className="mr-1 h-3 w-3" />
                   {userRole}
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Welcome back! Here&apos;s what&apos;s happening with your textile marketing.
             </p>
           </div>
           <Button 
-            className="bg-textile-accent"
+            className="bg-textile-accent w-full sm:w-auto shrink-0 text-sm sm:text-base"
             onClick={() => router.push('/dashboard/poster-generator')}
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Post
+            <Plus className="mr-2 h-4 w-4 shrink-0" />
+            <span className="hidden min-[475px]:inline">Create New Post</span>
+            <span className="min-[475px]:hidden">New Post</span>
           </Button>
         </div>
 
@@ -92,21 +93,21 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <Card className="textile-hover textile-shadow">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-1 min-[475px]:grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
               {getQuickActions().map((action, index) => {
                 const Icon = action.icon
                 return (
                   <Button 
                     key={index}
-                    className="flex-1 min-w-[150px] justify-start" 
+                    className="w-full sm:flex-1 sm:min-w-[150px] justify-start text-sm sm:text-base" 
                     variant="outline"
                     onClick={() => handleQuickAction(action.href)}
                   >
-                    <Icon className="mr-2 h-4 w-4" />
-                    {action.name}
+                    <Icon className="mr-2 h-4 w-4 shrink-0" />
+                    <span className="truncate">{action.name}</span>
                   </Button>
                 )
               })}
