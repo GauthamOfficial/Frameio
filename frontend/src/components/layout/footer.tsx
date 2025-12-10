@@ -11,7 +11,7 @@ export function Footer({ className }: FooterProps) {
   return (
     <footer className={cn("border-t border-border bg-background", className)}>
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-12 max-w-6xl mx-auto">
           {/* CONTACT Section */}
           <div className="flex flex-col space-y-4">
             <h4 className="font-bold text-foreground text-base uppercase tracking-wide">CONTACT</h4>
@@ -83,6 +83,25 @@ export function Footer({ className }: FooterProps) {
             </nav>
           </div>
 
+          {/* LEGAL Section */}
+          <div className="flex flex-col space-y-4">
+            <h4 className="font-bold text-foreground text-base uppercase tracking-wide">LEGAL</h4>
+            <nav className="flex flex-col space-y-2">
+              <Link
+                href="/privacy-policy"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                href="/terms-and-conditions"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+              >
+                Terms & Conditions
+              </Link>
+            </nav>
+          </div>
+
           {/* FOLLOW US Section */}
           <div className="flex flex-col space-y-4">
             <h4 className="font-bold text-foreground text-base uppercase tracking-wide">FOLLOW US</h4>
@@ -114,7 +133,6 @@ export function Footer({ className }: FooterProps) {
               </a>
             </div>
           </div>
-
         </div>
 
         <div className="border-t border-border mt-8 pt-8">
