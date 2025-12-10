@@ -45,7 +45,7 @@ export default function PrivacyPolicyPage() {
           {/* Page Title */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Privacy Policy
+              Privacy Policy for Frameio
             </h1>
             <p className="text-lg text-muted-foreground">
               Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -59,179 +59,133 @@ export default function PrivacyPolicyPage() {
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
               <p className="text-foreground leading-relaxed">
-                Welcome to Frameio. We are committed to protecting your privacy and ensuring you have a positive experience on our platform. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered poster generation service.
+                At Frameio, we respect your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our AI-powered design generation platform.
               </p>
               <p className="text-foreground leading-relaxed mt-4">
-                By using Frameio, you agree to the collection and use of information in accordance with this policy. If you do not agree with our policies and practices, please do not use our service.
+                By using Frameio, you agree to the practices described in this Privacy Policy. If you do not agree, please do not access or use our service.
               </p>
             </CardContent>
           </Card>
 
-          {/* Information We Collect */}
+          {/* Personal Data We Collect */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Information We Collect</CardTitle>
+              <CardTitle className="text-2xl font-bold">1. Personal Data We Collect</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <h3 className="text-lg font-semibold text-foreground mb-3">Personal Information</h3>
               <p className="text-foreground leading-relaxed mb-4">
-                We collect information that you provide directly to us, including:
+                We collect the following information:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Name and contact information (email address, phone number)</li>
-                <li>Account credentials (username, password)</li>
-                <li>Payment information (processed securely through third-party payment processors)</li>
-                <li>Brand identity information (logos, color schemes, design preferences)</li>
-                <li>Content you create or upload (poster designs, images, text)</li>
-              </ul>
-
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-6">Automatically Collected Information</h3>
-              <p className="text-foreground leading-relaxed mb-4">
-                When you access our service, we automatically collect certain information:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Device information (IP address, browser type, operating system)</li>
-                <li>Usage data (pages visited, features used, time spent on platform)</li>
-                <li>Cookies and similar tracking technologies</li>
-                <li>Log files and analytics data</li>
+                <li><strong>Account Information:</strong> Full name, email address, phone number, profile picture, bio, location, website</li>
+                <li><strong>Company Information:</strong> Company name, logo, contact details (WhatsApp, email, Facebook), address, brand colors and preferences</li>
+                <li><strong>Design Data:</strong> AI-generated designs (posters, catalogs, logos), design prompts, templates, and related metadata</li>
+                <li><strong>Usage Data:</strong> IP addresses, browser type, device information, activity logs, and analytics data</li>
+                <li><strong>Authentication Data:</strong> Managed through JWT authentication service</li>
               </ul>
             </CardContent>
           </Card>
 
-          {/* How We Use Information */}
+          {/* How We Use Your Information */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">How We Use Information</CardTitle>
+              <CardTitle className="text-2xl font-bold">2. How We Use Your Information</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
               <p className="text-foreground leading-relaxed mb-4">
-                We use the collected information for various purposes:
+                We use your information to:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>To provide, maintain, and improve our AI poster generation service</li>
-                <li>To process transactions and manage your account</li>
-                <li>To personalize your experience and deliver content relevant to your brand</li>
-                <li>To communicate with you about your account, updates, and promotional offers</li>
-                <li>To analyze usage patterns and optimize our platform performance</li>
-                <li>To detect, prevent, and address technical issues and security threats</li>
-                <li>To comply with legal obligations and enforce our terms of service</li>
+                <li>Provide and improve our AI design generation services</li>
+                <li>Process your design generation requests</li>
+                <li>Store and manage your generated designs</li>
+                <li>Respond to your inquiries and provide customer support</li>
+                <li>Enforce our terms and conditions</li>
+                <li>Analyze usage patterns to improve our platform</li>
               </ul>
             </CardContent>
           </Card>
 
-          {/* Data Storage & Security */}
+          {/* How We Protect Your Information */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Data Storage & Security</CardTitle>
+              <CardTitle className="text-2xl font-bold">3. How We Protect Your Information</CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-slate max-w-none">
+              <p className="text-foreground leading-relaxed">
+                Your data is stored on secure servers with encryption. We use industry-standard security measures, but no internet transmission is 100% secure. We cannot guarantee absolute security.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Sharing Your Personal Data */}
+          <Card className="textile-hover textile-shadow">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">4. Sharing Your Personal Data</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
               <p className="text-foreground leading-relaxed mb-4">
-                We implement industry-standard security measures to protect your information:
+                We may share your information with:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Encryption of data in transit and at rest</li>
-                <li>Secure authentication and access controls</li>
-                <li>Regular security audits and vulnerability assessments</li>
-                <li>Limited access to personal information on a need-to-know basis</li>
-                <li>Secure cloud storage infrastructure with reputable providers</li>
+                <li><strong>Service Providers:</strong> Cloudinary (image storage), Google Gemini AI (design generation), JWT (authentication), and other necessary service providers</li>
+                <li><strong>Business Transfers:</strong> In case of mergers, acquisitions, or business transitions</li>
+                <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
               </ul>
               <p className="text-foreground leading-relaxed mt-4">
-                However, no method of transmission over the Internet or electronic storage is 100% secure. While we strive to use commercially acceptable means to protect your information, we cannot guarantee absolute security.
+                We do not sell your personal information to third parties.
               </p>
             </CardContent>
           </Card>
 
-          {/* Third-party Services */}
+          {/* Data Storage */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Third-party Services</CardTitle>
+              <CardTitle className="text-2xl font-bold">5. Data Storage</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <p className="text-foreground leading-relaxed mb-4">
-                We may use third-party services that collect, monitor, and analyze information to help us operate our platform. These services include:
-              </p>
               <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Payment processors for transaction handling</li>
-                <li>Cloud hosting providers for data storage</li>
-                <li>Analytics services to understand user behavior</li>
-                <li>AI service providers for poster generation features</li>
-                <li>Email service providers for communications</li>
+                <li><strong>Database:</strong> User data and design metadata are stored in MySQL databases</li>
+                <li><strong>Images:</strong> AI-generated designs are stored on Cloudinary cloud storage</li>
+                <li><strong>Authentication:</strong> User authentication is managed by JWT</li>
               </ul>
-              <p className="text-foreground leading-relaxed mt-4">
-                These third parties have access to your information only to perform specific tasks on our behalf and are obligated not to disclose or use it for any other purpose.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* User Rights */}
-          <Card className="textile-hover textile-shadow">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold">User Rights</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-slate max-w-none">
-              <p className="text-foreground leading-relaxed mb-4">
-                You have the following rights regarding your personal information:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li><strong>Access:</strong> Request a copy of the personal information we hold about you</li>
-                <li><strong>Correction:</strong> Request correction of inaccurate or incomplete information</li>
-                <li><strong>Deletion:</strong> Request deletion of your personal information, subject to legal requirements</li>
-                <li><strong>Portability:</strong> Request transfer of your data to another service provider</li>
-                <li><strong>Objection:</strong> Object to processing of your information for certain purposes</li>
-                <li><strong>Withdrawal:</strong> Withdraw consent where processing is based on consent</li>
-              </ul>
-              <p className="text-foreground leading-relaxed mt-4">
-                To exercise these rights, please contact us using the information provided in the Contact Information section below.
-              </p>
             </CardContent>
           </Card>
 
           {/* Cookies */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Cookies</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-slate max-w-none">
-              <p className="text-foreground leading-relaxed mb-4">
-                We use cookies and similar tracking technologies to track activity on our platform and store certain information. Cookies are files with a small amount of data that may include an anonymous unique identifier.
-              </p>
-              <p className="text-foreground leading-relaxed mb-4">
-                Types of cookies we use:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li><strong>Essential Cookies:</strong> Required for the platform to function properly</li>
-                <li><strong>Analytics Cookies:</strong> Help us understand how visitors interact with our platform</li>
-                <li><strong>Preference Cookies:</strong> Remember your settings and preferences</li>
-                <li><strong>Marketing Cookies:</strong> Used to deliver relevant advertisements</li>
-              </ul>
-              <p className="text-foreground leading-relaxed mt-4">
-                You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent. However, if you do not accept cookies, you may not be able to use some portions of our service.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Changes to Policy */}
-          <Card className="textile-hover textile-shadow">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold">Changes to Policy</CardTitle>
+              <CardTitle className="text-2xl font-bold">6. Cookies</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
               <p className="text-foreground leading-relaxed">
-                We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the &quot;Last updated&quot; date. You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page.
+                We use cookies for authentication and analytics. You can manage cookies through your browser settings.
               </p>
             </CardContent>
           </Card>
 
-          {/* Contact Information */}
+          {/* Changes To This Privacy Policy */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Contact Information</CardTitle>
+              <CardTitle className="text-2xl font-bold">7. Changes To This Privacy Policy</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <p className="text-foreground leading-relaxed mb-4">
-                If you have any questions about this Privacy Policy or wish to exercise your rights, please contact us:
+              <p className="text-foreground leading-relaxed">
+                We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated &quot;Last updated&quot; date.
               </p>
-              <div className="space-y-2 text-foreground">
+            </CardContent>
+          </Card>
+
+          {/* Contact Us */}
+          <Card className="textile-hover textile-shadow">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">8. Contact Us</CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-slate max-w-none">
+              <p className="text-foreground leading-relaxed">
+                If you have questions about this Privacy Policy, contact us through our website or support channels.
+              </p>
+              <div className="space-y-2 text-foreground mt-4">
                 <p><strong>Email:</strong> <a href="mailto:startuptsg@gmail.com" className="text-[#8B2635] hover:underline">startuptsg@gmail.com</a></p>
                 <p><strong>Phone:</strong> <a href="tel:0759819250" className="text-[#8B2635] hover:underline">0759819250</a></p>
               </div>

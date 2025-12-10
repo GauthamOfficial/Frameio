@@ -97,7 +97,7 @@ export function Footer({ className }: FooterProps) {
                 href="/terms-and-conditions"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
               >
-                Terms & Conditions
+                Terms of Service
               </Link>
             </nav>
           </div>

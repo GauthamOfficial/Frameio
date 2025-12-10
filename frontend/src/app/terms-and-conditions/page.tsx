@@ -45,116 +45,75 @@ export default function TermsAndConditionsPage() {
           {/* Page Title */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Terms & Conditions
+              Terms of Service for Frameio
             </h1>
             <p className="text-lg text-muted-foreground">
               Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
 
-          {/* Agreement Summary */}
+          {/* Introduction */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Agreement Summary</CardTitle>
+              <CardTitle className="text-2xl font-bold">Introduction</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
               <p className="text-foreground leading-relaxed">
-                These Terms and Conditions (&quot;Terms&quot;) govern your access to and use of Frameio (&quot;Service&quot;), operated by Frameio (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). By accessing or using our Service, you agree to be bound by these Terms. If you disagree with any part of these Terms, you may not access the Service.
-              </p>
-              <p className="text-foreground leading-relaxed mt-4">
-                These Terms constitute a legally binding agreement between you and Frameio. Please read them carefully before using our platform.
+                By using the Frameio service, you agree to be bound by the following terms and conditions. If you do not agree to these terms, please do not use the Service.
               </p>
             </CardContent>
           </Card>
 
-          {/* Eligibility */}
+          {/* Description of Service */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Eligibility</CardTitle>
+              <CardTitle className="text-2xl font-bold">1. Description of Service</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <p className="text-foreground leading-relaxed mb-4">
-                To use Frameio, you must:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Be at least 18 years of age or have parental/guardian consent</li>
-                <li>Have the legal capacity to enter into binding agreements</li>
-                <li>Provide accurate, current, and complete information during registration</li>
-                <li>Maintain the security of your account credentials</li>
-                <li>Comply with all applicable laws and regulations</li>
-                <li>Not be prohibited from using the Service under applicable law</li>
-              </ul>
-              <p className="text-foreground leading-relaxed mt-4">
-                You are responsible for all activities that occur under your account, whether authorized by you or not.
+              <p className="text-foreground leading-relaxed">
+                Frameio is a Software as a Service (SaaS) platform that provides AI-powered design generation services, including the creation of posters, catalogs, logos, and other marketing materials using artificial intelligence.
               </p>
             </CardContent>
           </Card>
 
-          {/* Acceptable Use Rules */}
+          {/* Errors and Inaccuracies */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Acceptable Use Rules</CardTitle>
+              <CardTitle className="text-2xl font-bold">2. Errors and Inaccuracies</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
               <p className="text-foreground leading-relaxed mb-4">
-                When using Frameio, you agree to:
+                While we strive to provide accurate and high-quality AI-generated designs, the Service relies on artificial intelligence which may produce errors, inaccuracies, or results that do not meet your expectations. You acknowledge that:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Use the Service only for lawful purposes and in accordance with these Terms</li>
-                <li>Provide accurate and truthful information when creating content</li>
-                <li>Respect intellectual property rights of others</li>
-                <li>Maintain the confidentiality of your account information</li>
-                <li>Use the Service in a manner that does not interfere with or disrupt the platform</li>
-                <li>Report any security vulnerabilities or breaches to us immediately</li>
-                <li>Comply with all applicable local, state, national, and international laws</li>
+                <li>AI-generated designs should be reviewed before use</li>
+                <li>Frameio is not liable for decisions made based on AI-generated content</li>
+                <li>Design quality may vary and may require manual adjustments</li>
+                <li>We do not guarantee that generated designs will be suitable for your specific use case</li>
               </ul>
             </CardContent>
           </Card>
 
-          {/* Prohibited Actions */}
+          {/* Use of Data */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Prohibited Actions</CardTitle>
+              <CardTitle className="text-2xl font-bold">3. Use of Data</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <p className="text-foreground leading-relaxed mb-4">
-                You are strictly prohibited from:
+              <p className="text-foreground leading-relaxed">
+                By using the Service, you consent to Frameio collecting and using the data you provide, including design prompts, generated designs, and usage patterns, to enhance the Service and improve our AI algorithms. Your data may be anonymized and used for research and development purposes. We do not sell your personally identifiable information to third parties.
               </p>
-              <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Using the Service to create content that is illegal, harmful, or violates any laws</li>
-                <li>Uploading or generating content that infringes on intellectual property rights</li>
-                <li>Creating content that is defamatory, libelous, or violates privacy rights</li>
-                <li>Generating content that promotes hate speech, discrimination, or violence</li>
-                <li>Attempting to reverse engineer, decompile, or extract source code from the Service</li>
-                <li>Using automated systems (bots, scrapers) to access the Service without permission</li>
-                <li>Sharing your account credentials with others or creating multiple accounts to circumvent usage limits</li>
-                <li>Interfering with or disrupting the Service&apos;s security, servers, or networks</li>
-                <li>Using the Service to transmit viruses, malware, or other harmful code</li>
-                <li>Impersonating any person or entity or misrepresenting your affiliation</li>
-              </ul>
             </CardContent>
           </Card>
 
-          {/* AI-Generated Content Rules */}
+          {/* Payment Terms */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">AI-Generated Content Rules</CardTitle>
+              <CardTitle className="text-2xl font-bold">4. Payment Terms</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <p className="text-foreground leading-relaxed mb-4">
-                Frameio uses artificial intelligence to generate poster designs. By using our Service, you acknowledge and agree that:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>AI-generated content may not always be perfect and may require review and editing</li>
-                <li>You are responsible for reviewing and approving all AI-generated content before use</li>
-                <li>AI-generated content should not be used in ways that mislead or deceive others</li>
-                <li>You must ensure AI-generated content complies with all applicable laws and regulations</li>
-                <li>We do not guarantee the accuracy, completeness, or suitability of AI-generated content</li>
-                <li>You should not rely solely on AI-generated content for critical business decisions without human review</li>
-                <li>AI models may produce similar or identical outputs for different users</li>
-              </ul>
-              <p className="text-foreground leading-relaxed mt-4">
-                You are solely responsible for the final content you create and publish using our Service.
+              <p className="text-foreground leading-relaxed">
+                When subscribing to the Service, you agree to pay the fees as outlined in your subscription plan. Failure to make payments may result in suspension or termination of access to the Service. Payments are processed through Stripe and are non-refundable, with no refunds or credits for partially used subscription periods unless otherwise stated.
               </p>
             </CardContent>
           </Card>
@@ -162,59 +121,43 @@ export default function TermsAndConditionsPage() {
           {/* Intellectual Property */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Intellectual Property</CardTitle>
+              <CardTitle className="text-2xl font-bold">5. Intellectual Property</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <h3 className="text-lg font-semibold text-foreground mb-3">Service Ownership</h3>
-              <p className="text-foreground leading-relaxed mb-4">
-                The Service, including its original content, features, and functionality, is owned by Frameio and protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
-              </p>
-
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-6">User-Generated Content</h3>
-              <p className="text-foreground leading-relaxed mb-4">
-                You retain ownership of content you create using our Service. However, by using Frameio, you grant us a worldwide, non-exclusive, royalty-free license to:
-              </p>
               <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Use, store, and process your content to provide and improve the Service</li>
-                <li>Display your content on the platform for your use</li>
-                <li>Use anonymized, aggregated data for analytics and service improvement</li>
+                <li><strong>Your Content:</strong> You retain ownership of designs you create using the Service</li>
+                <li><strong>Service Content:</strong> Frameio retains all rights to the Service, including its technology, software, and proprietary algorithms</li>
+                <li><strong>AI-Generated Content:</strong> Designs generated by our AI service are provided for your use, subject to these Terms</li>
               </ul>
-
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-6">Third-Party Content</h3>
-              <p className="text-foreground leading-relaxed">
-                You are responsible for ensuring that any content you upload or use does not infringe on third-party intellectual property rights. You must obtain all necessary permissions and licenses before using copyrighted material.
-              </p>
             </CardContent>
           </Card>
 
-          {/* Payments & Refunds */}
+          {/* User Responsibilities */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Payments & Refunds</CardTitle>
+              <CardTitle className="text-2xl font-bold">6. User Responsibilities</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <h3 className="text-lg font-semibold text-foreground mb-3">Payment Terms</h3>
               <p className="text-foreground leading-relaxed mb-4">
-                Frameio may offer paid subscription plans or pay-per-use services. By purchasing a subscription or making a payment, you agree to:
+                You agree to:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Pay all fees associated with your chosen plan</li>
-                <li>Provide accurate payment information</li>
-                <li>Authorize us to charge your payment method for recurring subscriptions</li>
-                <li>Understand that prices may change with reasonable notice</li>
+                <li>Use the Service only for lawful purposes</li>
+                <li>Not upload or generate content that is illegal, harmful, or violates third-party rights</li>
+                <li>Maintain the security of your account credentials</li>
+                <li>Be responsible for all activities under your account</li>
               </ul>
+            </CardContent>
+          </Card>
 
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-6">Refund Policy</h3>
+          {/* Changes to the Terms */}
+          <Card className="textile-hover textile-shadow">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">7. Changes to the Terms</CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-slate max-w-none">
               <p className="text-foreground leading-relaxed">
-                Refund policies will be specified at the time of purchase. Generally, refunds may be available for:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-foreground mt-2">
-                <li>Service failures or technical issues preventing use</li>
-                <li>Duplicate charges or billing errors</li>
-                <li>As otherwise required by applicable law</li>
-              </ul>
-              <p className="text-foreground leading-relaxed mt-4">
-                To request a refund, please contact us using the information provided in the Contact section.
+                Frameio reserves the right to update or modify these Terms of Service at any time without prior notice. Continued use of the Service after such changes constitutes your acceptance of the new terms.
               </p>
             </CardContent>
           </Card>
@@ -222,28 +165,11 @@ export default function TermsAndConditionsPage() {
           {/* Termination */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Termination</CardTitle>
+              <CardTitle className="text-2xl font-bold">8. Termination</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <h3 className="text-lg font-semibold text-foreground mb-3">Termination by You</h3>
-              <p className="text-foreground leading-relaxed mb-4">
-                You may terminate your account at any time by contacting us or using account deletion features in your settings.
-              </p>
-
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-6">Termination by Us</h3>
-              <p className="text-foreground leading-relaxed mb-4">
-                We reserve the right to suspend or terminate your account immediately, without prior notice, if you:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Violate these Terms or any applicable laws</li>
-                <li>Engage in fraudulent, abusive, or illegal activity</li>
-                <li>Fail to pay required fees</li>
-                <li>Use the Service in a manner that harms us or other users</li>
-              </ul>
-
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-6">Effect of Termination</h3>
               <p className="text-foreground leading-relaxed">
-                Upon termination, your right to use the Service will immediately cease. We may delete your account data in accordance with our Privacy Policy. Provisions that by their nature should survive termination will remain in effect.
+                Frameio reserves the right to terminate or suspend access to the Service at any time, with or without cause, and with or without notice, particularly in cases of violation of these Terms or payment failure.
               </p>
             </CardContent>
           </Card>
@@ -251,22 +177,11 @@ export default function TermsAndConditionsPage() {
           {/* Limitation of Liability */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Limitation of Liability</CardTitle>
+              <CardTitle className="text-2xl font-bold">9. Limitation of Liability</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
-              <p className="text-foreground leading-relaxed mb-4">
-                TO THE MAXIMUM EXTENT PERMITTED BY LAW:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-foreground">
-                <li>Frameio is provided &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; without warranties of any kind</li>
-                <li>We do not guarantee that the Service will be uninterrupted, error-free, or secure</li>
-                <li>We are not liable for any indirect, incidental, special, consequential, or punitive damages</li>
-                <li>Our total liability shall not exceed the amount you paid us in the 12 months preceding the claim</li>
-                <li>We are not responsible for content created by users or AI-generated content</li>
-                <li>We do not warrant the accuracy, completeness, or usefulness of any information on the Service</li>
-              </ul>
-              <p className="text-foreground leading-relaxed mt-4">
-                Some jurisdictions do not allow the exclusion of certain warranties or limitations of liability, so some of the above limitations may not apply to you.
+              <p className="text-foreground leading-relaxed">
+                Frameio shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service, including but not limited to loss of data, business interruption, or loss of profits.
               </p>
             </CardContent>
           </Card>
@@ -274,31 +189,12 @@ export default function TermsAndConditionsPage() {
           {/* Governing Law */}
           <Card className="textile-hover textile-shadow">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Governing Law</CardTitle>
+              <CardTitle className="text-2xl font-bold">10. Governing Law</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
               <p className="text-foreground leading-relaxed">
-                These Terms shall be governed by and construed in accordance with the laws of [Your Jurisdiction], without regard to its conflict of law provisions. Any disputes arising from or relating to these Terms or the Service shall be subject to the exclusive jurisdiction of the courts located in [Your Jurisdiction].
+                These Terms of Service are governed by the laws of [Your Jurisdiction], without regard to its conflict of law principles.
               </p>
-              <p className="text-foreground leading-relaxed mt-4">
-                If any provision of these Terms is found to be unenforceable or invalid, that provision shall be limited or eliminated to the minimum extent necessary, and the remaining provisions shall remain in full force and effect.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Contact Section */}
-          <Card className="textile-hover textile-shadow">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold">Contact</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-slate max-w-none">
-              <p className="text-foreground leading-relaxed mb-4">
-                If you have any questions about these Terms & Conditions, please contact us:
-              </p>
-              <div className="space-y-2 text-foreground">
-                <p><strong>Email:</strong> <a href="mailto:startuptsg@gmail.com" className="text-[#8B2635] hover:underline">startuptsg@gmail.com</a></p>
-                <p><strong>Phone:</strong> <a href="tel:0759819250" className="text-[#8B2635] hover:underline">0759819250</a></p>
-              </div>
             </CardContent>
           </Card>
         </div>
