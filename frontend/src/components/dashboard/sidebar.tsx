@@ -14,7 +14,6 @@ import {
   Share2, 
   Calendar,
   Library,
-  BarChart3,
   Settings,
   Menu,
   X
@@ -28,7 +27,6 @@ const getNavigationItems = (userRole: string | null, permissions: string[]) => {
     { name: "Social Media Posts", href: "/dashboard/social-media", icon: Share2, permission: "manage_designs" },
     { name: "Scheduler", href: "/dashboard/scheduler", icon: Calendar, permission: "manage_designs" },
     { name: "Templates Library", href: "/dashboard/templates", icon: Library, permission: "view_templates" },
-    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, permission: "view_analytics" },
   ]
 
   // Filter items based on permissions - only show designer-related items
