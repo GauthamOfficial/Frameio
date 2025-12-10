@@ -101,7 +101,7 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 lg:space-y-12">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -114,9 +114,9 @@ export default function TemplatesPage() {
 
       {/* Search and Filters */}
       <Card className="textile-hover textile-shadow">
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-6 space-y-4 pb-8">
           {/* Filter Dropdowns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             {/* Category Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Category</label>
@@ -132,16 +132,6 @@ export default function TemplatesPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {/* Search Bar - Under Category */}
-              <div className="relative mt-2">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search templates..."
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
             </div>
 
             {/* Audience Filter */}
@@ -176,6 +166,20 @@ export default function TemplatesPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Search */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search templates..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </CardContent>

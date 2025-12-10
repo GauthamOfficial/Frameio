@@ -1,8 +1,7 @@
 "use client"
 
-import { Bell, Search } from "lucide-react"
+import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { AuthUserButton } from "@/components/auth/user-button"
 import { useOrganization } from "@/contexts/organization-context"
 import { useUser } from "@/hooks/useAuth"
@@ -22,42 +21,36 @@ export function TopNav({ className }: TopNavProps) {
       "bg-card border-b border-border textile-shadow",
       className
     )}>
-      <div className="flex items-center justify-between px-6 py-4">
-        {/* Search */}
-        <div className="flex-1 max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search"
-              className="pl-10 bg-input border-border focus:ring-2 focus:ring-ring"
-            />
-          </div>
-        </div>
+      <div className="flex items-center px-6 py-4">
+        {/* Left spacer to help center nav */}
+        <div className="flex-1" />
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-6 mx-6">
-          <Link
-            href="/"
-            className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
-          >
-            Home
-          </Link>
-          <Link
-            href="/about"
-            className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
-          >
-            About
-          </Link>
-          <Link
-            href="/contact"
-            className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
-          >
-            Contact Us
-          </Link>
-        </nav>
+        <div className="flex-1 flex justify-center">
+          <nav className="hidden md:flex items-center space-x-6 mx-6">
+            <Link
+              href="/"
+              className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
+            >
+              Home
+            </Link>
+            <Link
+              href="/about"
+              className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
+            >
+              About
+            </Link>
+            <Link
+              href="/contact"
+              className="text-sm font-medium text-[#8B2635] hover:text-[#8B2635]/80 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-[#8B2635]/10"
+            >
+              Contact Us
+            </Link>
+          </nav>
+        </div>
 
         {/* Right side */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 flex-1 justify-end">
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
