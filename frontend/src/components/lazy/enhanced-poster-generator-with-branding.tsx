@@ -670,22 +670,22 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
   try {
     return (
-      <div className="w-full min-w-[320px]">
-        <div className="mb-4 sm:mb-6 md:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2">AI Poster Generator</h1>
+      <div className="space-y-4 sm:space-y-6 md:space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">AI Poster Generator</h1>
         </div>
 
-        <div className="w-full flex justify-center">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full max-w-6xl" style={{ minHeight: '500px' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
         {/* Input Section */}
-        <Card>
+        <Card className="textile-hover textile-shadow">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <span>Generate Poster</span>
-              {isGenerating && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
+            <CardTitle className="text-lg sm:text-xl">
+              Generate Poster
+              {isGenerating && <Loader2 className="inline-block ml-2 h-4 w-4 animate-spin shrink-0" />}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 p-4 sm:p-6">
+          <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
             <div className="space-y-2">
               <Label htmlFor="prompt" className="text-sm sm:text-base">Describe your poster</Label>
               <Textarea
@@ -860,73 +860,91 @@ export default function EnhancedPosterGeneratorWithBranding() {
             <Button 
               onClick={generatePoster} 
               disabled={isGenerating || !prompt.trim()}
-              className="w-full text-sm sm:text-base"
+              className="w-full bg-textile-accent hover:bg-textile-accent/90 text-sm sm:text-base"
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
                   Generating...
                 </>
               ) : (
                 <>
-                  <Wand2 className="h-4 w-4 mr-2" />
+                  <Wand2 className="mr-2 h-4 w-4 shrink-0" />
                   Generate Poster
                 </>
               )}
             </Button>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-                  <span className="text-red-800 text-xs sm:text-sm break-words">{error}</span>
-                </div>
+              <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs sm:text-sm text-red-600 break-words">{error}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Generated Poster Section */}
-        <Card>
+        <Card className="textile-hover textile-shadow">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <CardTitle className="flex items-center text-lg sm:text-xl">
               <span>Generated Poster</span>
               {result && (
-                <div className="ml-auto">
-                  <Badge variant="secondary" className="text-xs">
-                    <CheckCircle className="h-3 w-3 mr-1 shrink-0" />
-                    Ready
-                  </Badge>
-                </div>
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  <CheckCircle className="h-3 w-3 mr-1 shrink-0" />
+                  Ready
+                </Badge>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 sm:p-6">
-              {result ? (
-              <div className="space-y-3 sm:space-y-4">
-                <div className="border rounded-lg overflow-hidden relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={result.image_url ? getFullUrl(result.image_url) : ''} 
-                    alt="Generated Poster" 
-                    className="absolute inset-0 w-full h-full object-contain"
-                  />
+            <div className="space-y-4 sm:space-y-6">
+              {/* Error Display */}
+              {error && (
+                <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-xs sm:text-sm text-red-600 break-words">{error}</p>
                 </div>
-                
-                <div className="space-y-2">
-                  <Button 
-                    onClick={downloadImage}
-                    className="w-full text-sm sm:text-base"
-                    variant="outline"
-                  >
-                    <Download className="h-4 w-4 mr-2 shrink-0" />
-                    Download Image
-                  </Button>
+              )}
+
+              {/* Preview Placeholder */}
+              {!result && (
+                <div className="aspect-square bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
+                  <div className="text-center px-4">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-chart-1 rounded-lg mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+                      <Wand2 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      {prompt ? "Your generated poster will appear here" : "Enter a prompt to generate your poster"}
+                    </p>
+                  </div>
                 </div>
+              )}
+
+              {/* Generated Poster */}
+              {result && (
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="border rounded-lg overflow-hidden relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={result.image_url ? getFullUrl(result.image_url) : ''} 
+                      alt="Generated Poster" 
+                      className="absolute inset-0 w-full h-full object-contain"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button 
+                      onClick={downloadImage}
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-xs sm:text-sm"
+                    >
+                      <Download className="mr-1 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                      Download Image
+                    </Button>
+                  </div>
 
 
-                {/* AI Generated Caption and Hashtags Section */}
-                {result && (
+                  {/* AI Generated Caption and Hashtags Section */}
                   <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
@@ -949,7 +967,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 sm:space-y-6">
                         {/* AI Generated Caption and Hashtags as Single Text */}
                         {(result.caption || result.full_caption || result.hashtags) ? (() => {
                           const parsedCaption = parseCaption(result.caption || result.full_caption || '')
@@ -971,9 +989,9 @@ export default function EnhancedPosterGeneratorWithBranding() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => copyToClipboard(fullText, 'all')}
-                                    className="h-6 px-2 shrink-0"
+                                    className="h-6 w-6 sm:h-7 sm:w-7 p-0 shrink-0"
                                   >
-                                    <Copy className="h-3 w-3" />
+                                    <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                                   </Button>
                                 </CardTitle>
                               </CardHeader>
@@ -1013,7 +1031,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                           </CardHeader>
                           <CardContent className="pt-0 p-4 sm:p-6">
                             <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-lg border mb-3 sm:mb-4">
-                              <p className="text-xs text-gray-600 mb-2 sm:mb-3">Share your poster and AI-generated content:</p>
+                              <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Share your poster and AI-generated content:</p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <Button
                                   variant="outline"
@@ -1033,7 +1051,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                                 onClick={shareToClipboard}
                                 className="w-full text-xs sm:text-sm"
                               >
-                                <Share2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                                <Share2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
                                 <span className="hidden sm:inline">
                                   {copiedItem === 'share' ? 'Copied to Clipboard!' : 'Copy All Content to Clipboard'}
                                 </span>
@@ -1046,20 +1064,11 @@ export default function EnhancedPosterGeneratorWithBranding() {
                         </Card>
                       </div>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-48 sm:h-64 bg-gray-50 rounded-lg">
-                <div className="text-center px-4">
-                  <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm sm:text-base text-gray-500">Your generated poster will appear here</p>
                 </div>
-              </div>
-            )}
+                )}
+            </div>
           </CardContent>
         </Card>
-
-          </div>
         </div>
       </div>
     )
