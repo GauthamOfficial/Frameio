@@ -10,11 +10,7 @@ import {
   Download, 
   ExternalLink, 
   Loader2, 
-  Facebook, 
-  Instagram, 
-  MessageCircle,
-  Copy,
-  CheckCircle
+  Facebook
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"
@@ -101,14 +97,6 @@ export default function SocialMediaPage() {
     }
   }
 
-  const shareToWhatsApp = (poster: Poster) => {
-    const shareText = poster.full_caption || poster.caption || ''
-    const shareUrl = typeof window !== 'undefined' ? window.location.origin + `/poster/${poster.id}` : ''
-    const whatsappText = `${shareText}\n\n${shareUrl}`
-    const whatsappLink = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`
-    window.open(whatsappLink, '_blank')
-  }
-
   const shareToFacebook = async (poster: Poster) => {
     // Use cloudinary_url (direct image URL) or public_url for sharing
     const posterWithUrls = poster as Poster & { cloudinary_url?: string; public_url?: string };
@@ -143,13 +131,6 @@ export default function SocialMediaPage() {
       : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`
     
     window.open(shareLink, '_blank')
-  }
-
-  const shareToInstagram = (poster: Poster) => {
-    const shareText = poster.full_caption || poster.caption || ''
-    const shareUrl = typeof window !== 'undefined' ? window.location.origin + `/poster/${poster.id}` : ''
-    const instagramText = `${shareText}\n\n${shareUrl}`
-    copyToClipboard(instagramText, `instagram-${poster.id}`)
   }
 
   const handleDownload = async (poster: Poster) => {
@@ -330,42 +311,12 @@ export default function SocialMediaPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => shareToWhatsApp(poster)}
-                      className="w-full"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-1 text-green-600" />
-                      <span className="text-xs">WhatsApp</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
                       onClick={() => shareToFacebook(poster)}
                       className="w-full"
                     >
                       <Facebook className="h-4 w-4 mr-1 text-blue-600" />
-                      <span className="text-xs">Facebook</span>
+                      <span className="text-xs">Share</span>
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => shareToInstagram(poster)}
-                      className="w-full"
-                    >
-                      {copiedItem === `instagram-${poster.id}` ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
-                          <span className="text-xs">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Instagram className="h-4 w-4 mr-1 text-pink-600" />
-                          <span className="text-xs">Instagram</span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       size="sm"
                       variant="outline"

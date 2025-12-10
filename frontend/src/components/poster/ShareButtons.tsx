@@ -5,10 +5,6 @@ import { Button } from "@/components/ui/button"
 import { 
   Download, 
   Facebook, 
-  Twitter, 
-  Instagram, 
-  MessageCircle,
-  Mail,
   Copy,
   CheckCircle
 } from "lucide-react"
@@ -48,75 +44,48 @@ export function ShareButtons({ poster, pageUrl }: ShareButtonsProps) {
     }
   }
 
-  const shareToSocialMedia = async (platform: string) => {
+  const shareToFacebook = async () => {
     const shareText = poster.full_caption
-    const shareUrl = pageUrl
 
+    // Use the cloudinary_url (direct image URL) or public_url for sharing
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const shareableUrl = (poster as any).cloudinary_url || poster.public_url || poster.image_url
+    const captionText = shareText || poster.caption || ''
+    
+    // Format hashtags as string
+    const hashtagsArray = poster.hashtags || []
+    const hashtagsStr = Array.isArray(hashtagsArray) 
+      ? hashtagsArray.join(' ') 
+      : (typeof hashtagsArray === 'string' ? hashtagsArray : '')
+    
+    // Combine caption and hashtags for the quote parameter
+    const fullShareText = captionText 
+      ? (hashtagsStr ? `${captionText}\n\n${hashtagsStr}` : captionText)
+      : hashtagsStr
+    
+    // Ensure the URL is absolute and publicly accessible (must be Cloudinary URL)
+    if (!shareableUrl || !shareableUrl.startsWith('http')) {
+      console.error('❌ ERROR: Cannot share to Facebook - cloudinary_url is missing or not a public URL!')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error('cloudinary_url:', (poster as any).cloudinary_url)
+      console.error('public_url:', poster.public_url)
+      console.error('image_url:', poster.image_url)
+      alert('Unable to share to Facebook: Poster was not uploaded to Cloudinary. Please check backend logs.')
+      return
+    }
+    
+    const sharePageUrl = shareableUrl
+    
+    // Facebook sharer with Cloudinary image URL AND quote parameter containing caption + hashtags
+    // The quote parameter will pre-fill the text field with caption and hashtags
     let shareLink = ''
-    
-    switch (platform) {
-      case 'facebook':
-        // Use the cloudinary_url (direct image URL) or public_url for sharing
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const shareableUrl = (poster as any).cloudinary_url || poster.public_url || poster.image_url
-        const captionText = shareText || poster.caption || ''
-        
-        // Format hashtags as string
-        const hashtagsArray = poster.hashtags || []
-        const hashtagsStr = Array.isArray(hashtagsArray) 
-          ? hashtagsArray.join(' ') 
-          : (typeof hashtagsArray === 'string' ? hashtagsArray : '')
-        
-        // Combine caption and hashtags for the quote parameter
-        const fullShareText = captionText 
-          ? (hashtagsStr ? `${captionText}\n\n${hashtagsStr}` : captionText)
-          : hashtagsStr
-        
-        // Ensure the URL is absolute and publicly accessible (must be Cloudinary URL)
-        if (!shareableUrl || !shareableUrl.startsWith('http')) {
-          console.error('❌ ERROR: Cannot share to Facebook - cloudinary_url is missing or not a public URL!')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          console.error('cloudinary_url:', (poster as any).cloudinary_url)
-          console.error('public_url:', poster.public_url)
-          console.error('image_url:', poster.image_url)
-          alert('Unable to share to Facebook: Poster was not uploaded to Cloudinary. Please check backend logs.')
-          return
-        }
-        
-        const sharePageUrl = shareableUrl
-        
-        // Facebook sharer with Cloudinary image URL AND quote parameter containing caption + hashtags
-        // The quote parameter will pre-fill the text field with caption and hashtags
-        if (fullShareText) {
-          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}&quote=${encodeURIComponent(fullShareText)}`
-        } else {
-          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`
-        }
-        
-        window.open(
-          shareLink,
-          '_blank'
-        )
-        return
-      case 'twitter':
-        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
-        break
-      case 'instagram':
-        copyToClipboard(`${shareText}\n\n${shareUrl}`, 'instagram')
-        return
-      case 'whatsapp':
-        shareLink = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n\n${shareUrl}`)}`
-        break
-      case 'email':
-        shareLink = `mailto:?subject=${encodeURIComponent('Check out this AI-generated poster!')}&body=${encodeURIComponent(`${shareText}\n\n${shareUrl}`)}`
-        break
-      default:
-        return
+    if (fullShareText) {
+      shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}&quote=${encodeURIComponent(fullShareText)}`
+    } else {
+      shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`
     }
     
-    if (shareLink) {
-      window.open(shareLink, '_blank')
-    }
+    window.open(shareLink, '_blank')
   }
 
   const shareToClipboard = async () => {
@@ -136,56 +105,10 @@ export function ShareButtons({ poster, pageUrl }: ShareButtonsProps) {
       <Button 
         variant="outline" 
         className="w-full justify-start"
-        onClick={() => shareToSocialMedia('facebook')}
+        onClick={shareToFacebook}
       >
         <Facebook className="w-4 h-4 mr-2 text-blue-600" />
         Share on Facebook
-      </Button>
-      
-      <Button 
-        variant="outline" 
-        className="w-full justify-start"
-        onClick={() => shareToSocialMedia('twitter')}
-      >
-        <Twitter className="w-4 h-4 mr-2 text-blue-400" />
-        Share on Twitter
-      </Button>
-      
-      <Button 
-        variant="outline" 
-        className="w-full justify-start"
-        onClick={() => shareToSocialMedia('instagram')}
-      >
-        <Instagram className="w-4 h-4 mr-2 text-pink-600" />
-        {copiedItem === 'instagram' ? (
-          <>
-            <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-            Copied to Clipboard!
-          </>
-        ) : (
-          <>
-            <Copy className="w-4 h-4 mr-2" />
-            Copy for Instagram
-          </>
-        )}
-      </Button>
-      
-      <Button 
-        variant="outline" 
-        className="w-full justify-start"
-        onClick={() => shareToSocialMedia('whatsapp')}
-      >
-        <MessageCircle className="w-4 h-4 mr-2 text-green-600" />
-        Share on WhatsApp
-      </Button>
-      
-      <Button 
-        variant="outline" 
-        className="w-full justify-start"
-        onClick={() => shareToSocialMedia('email')}
-      >
-        <Mail className="w-4 h-4 mr-2 text-gray-600" />
-        Share via Email
       </Button>
       
       <Button 

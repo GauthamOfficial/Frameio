@@ -17,10 +17,7 @@ import {
   Sparkles,
   Share2,
   ExternalLink,
-  Facebook,
-  Twitter,
-  Instagram,
-  Mail
+  Facebook
 } from "lucide-react"
 import React, { useState, useRef, useEffect } from "react"
 import { useUser, useAuth } from '@/hooks/useAuth'
@@ -173,118 +170,82 @@ export default function EnhancedPosterGeneratorWithBranding() {
     }
   }
 
-  const shareToSocialMedia = async (platform: string) => {
+  const shareToFacebook = async () => {
     if (!result?.image_url || !result?.full_caption) return
 
-    // Generate a unique poster ID (in a real app, this would come from the backend)
-    const posterId = `poster_${Date.now()}`
-    
-    // Import ngrok utility dynamically to avoid SSR issues
-    const { getPosterShareUrl } = await import('@/utils/ngrok')
-    
     const shareText = result.full_caption
+    
+    // Use cloudinary_url (direct image URL) or public_url for sharing
+    // Priority: cloudinary_url > public_url > image_url (if Cloudinary)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let shareableUrl = (result as any).cloudinary_url
+    if (!shareableUrl || !shareableUrl.startsWith('http')) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      shareableUrl = (result as any).public_url
+    }
+    if (!shareableUrl || !shareableUrl.startsWith('http')) {
+      // Last resort: check if image_url is a Cloudinary URL
+      const imageUrl = result.image_url
+      if (imageUrl && imageUrl.startsWith('http') && imageUrl.includes('cloudinary')) {
+        shareableUrl = imageUrl
+      }
+    }
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const captionText = shareText || (result as any).caption || ''
+    
+    // Format hashtags as string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hashtagsArray = (result as any).hashtags || []
+    const hashtagsStr = Array.isArray(hashtagsArray) 
+      ? hashtagsArray.join(' ') 
+      : (typeof hashtagsArray === 'string' ? hashtagsArray : '')
+    
+    // Combine caption and hashtags for the quote parameter
+    const fullShareText = captionText 
+      ? (hashtagsStr ? `${captionText}\n\n${hashtagsStr}` : captionText)
+      : hashtagsStr
+    
+    // CRITICAL: shareableUrl must be a Cloudinary URL (starts with http)
+    // Local URLs won't work for Facebook sharing
+    if (!shareableUrl) {
+      console.error('❌ ERROR: Cannot share to Facebook - no Cloudinary URL available!')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error('cloudinary_url:', (result as any).cloudinary_url)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error('public_url:', (result as any).public_url)
+      console.error('image_url:', result.image_url)
+      console.error('Please check backend logs for Cloudinary upload errors.')
+      alert('Unable to share to Facebook: Poster was not uploaded to Cloudinary. Please check backend logs.')
+      return
+    }
+    
+    if (!shareableUrl.startsWith('http')) {
+      console.error('❌ ERROR: Cannot share to Facebook - URL is not a Cloudinary URL!')
+      console.error('shareableUrl:', shareableUrl)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error('cloudinary_url:', (result as any).cloudinary_url)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error('public_url:', (result as any).public_url)
+      console.error('Please check backend logs for Cloudinary upload errors.')
+      alert('Unable to share to Facebook: Poster URL is not publicly accessible. Please check backend logs.')
+      return
+    }
+    
+    // Ensure the URL is absolute and publicly accessible (should already be from Cloudinary)
+    const sharePageUrl = shareableUrl
+    
+    // Facebook sharer with Cloudinary image URL AND quote parameter containing caption + hashtags
+    // The quote parameter will pre-fill the text field with caption and hashtags
     let shareLink = ''
-    
-    switch (platform) {
-      case 'facebook': {
-        // Use cloudinary_url (direct image URL) or public_url for sharing
-        // Priority: cloudinary_url > public_url > image_url (if Cloudinary)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let shareableUrl = (result as any).cloudinary_url
-        if (!shareableUrl || !shareableUrl.startsWith('http')) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          shareableUrl = (result as any).public_url
-        }
-        if (!shareableUrl || !shareableUrl.startsWith('http')) {
-          // Last resort: check if image_url is a Cloudinary URL
-          const imageUrl = result.image_url
-          if (imageUrl && imageUrl.startsWith('http') && imageUrl.includes('cloudinary')) {
-            shareableUrl = imageUrl
-          }
-        }
-        
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const captionText = shareText || (result as any).caption || ''
-        
-        // Format hashtags as string
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const hashtagsArray = (result as any).hashtags || []
-        const hashtagsStr = Array.isArray(hashtagsArray) 
-          ? hashtagsArray.join(' ') 
-          : (typeof hashtagsArray === 'string' ? hashtagsArray : '')
-        
-        // Combine caption and hashtags for the quote parameter
-        const fullShareText = captionText 
-          ? (hashtagsStr ? `${captionText}\n\n${hashtagsStr}` : captionText)
-          : hashtagsStr
-        
-        // CRITICAL: shareableUrl must be a Cloudinary URL (starts with http)
-        // Local URLs won't work for Facebook sharing
-        if (!shareableUrl) {
-          console.error('❌ ERROR: Cannot share to Facebook - no Cloudinary URL available!')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          console.error('cloudinary_url:', (result as any).cloudinary_url)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          console.error('public_url:', (result as any).public_url)
-          console.error('image_url:', result.image_url)
-          console.error('Please check backend logs for Cloudinary upload errors.')
-          alert('Unable to share to Facebook: Poster was not uploaded to Cloudinary. Please check backend logs.')
-          return
-        }
-        
-        if (!shareableUrl.startsWith('http')) {
-          console.error('❌ ERROR: Cannot share to Facebook - URL is not a Cloudinary URL!')
-          console.error('shareableUrl:', shareableUrl)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          console.error('cloudinary_url:', (result as any).cloudinary_url)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          console.error('public_url:', (result as any).public_url)
-          console.error('Please check backend logs for Cloudinary upload errors.')
-          alert('Unable to share to Facebook: Poster URL is not publicly accessible. Please check backend logs.')
-          return
-        }
-        
-        // Ensure the URL is absolute and publicly accessible (should already be from Cloudinary)
-        const sharePageUrl = shareableUrl
-        
-        // Facebook sharer with Cloudinary image URL AND quote parameter containing caption + hashtags
-        // The quote parameter will pre-fill the text field with caption and hashtags
-        if (fullShareText) {
-          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}&quote=${encodeURIComponent(fullShareText)}`
-        } else {
-          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`
-        }
-        
-        // Open Facebook share dialog in a new tab
-        window.open(shareLink, '_blank')
-        return
-      }
-      case 'twitter': {
-        const twitterUrl = await getPosterShareUrl(posterId)
-        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(twitterUrl)}`
-        break
-      }
-      case 'instagram': {
-        // Instagram doesn't support direct sharing, copy to clipboard
-        const instagramUrl = await getPosterShareUrl(posterId)
-        copyToClipboard(`${shareText}\n\n${instagramUrl}`, 'instagram')
-        return
-      }
-      case 'whatsapp': {
-        const whatsappUrl = await getPosterShareUrl(posterId)
-        shareLink = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + whatsappUrl)}`
-        break
-      }
-      case 'email': {
-        const emailUrl = await getPosterShareUrl(posterId)
-        shareLink = `mailto:?subject=Check out this poster&body=${encodeURIComponent(shareText + '\n\n' + emailUrl)}`
-        break
-      }
+    if (fullShareText) {
+      shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}&quote=${encodeURIComponent(fullShareText)}`
+    } else {
+      shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`
     }
     
-    if (shareLink) {
-      window.open(shareLink, '_blank')
-    }
+    // Open Facebook share dialog in a new tab
+    window.open(shareLink, '_blank')
   }
 
   const shareToClipboard = async () => {
@@ -1055,47 +1016,11 @@ export default function EnhancedPosterGeneratorWithBranding() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => shareToSocialMedia('facebook')}
+                                  onClick={shareToFacebook}
                                   className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
                                 >
                                   <Facebook className="h-4 w-4 text-blue-600" />
-                                  Facebook
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => shareToSocialMedia('twitter')}
-                                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
-                                >
-                                  <Twitter className="h-4 w-4 text-blue-400" />
-                                  Twitter
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => shareToSocialMedia('instagram')}
-                                  className="flex items-center gap-2 hover:bg-pink-50 hover:border-pink-300"
-                                >
-                                  <Instagram className="h-4 w-4 text-pink-600" />
-                                  {copiedItem === 'instagram' ? 'Copied!' : 'Instagram'}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => shareToSocialMedia('whatsapp')}
-                                  className="flex items-center gap-2 hover:bg-green-50 hover:border-green-300"
-                                >
-                                  <ExternalLink className="h-4 w-4 text-green-600" />
-                                  WhatsApp
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => shareToSocialMedia('email')}
-                                  className="flex items-center gap-2 col-span-2 hover:bg-gray-50 hover:border-gray-300"
-                                >
-                                  <Mail className="h-4 w-4 text-gray-600" />
-                                  Email
+                                  Share on Facebook
                                 </Button>
                               </div>
                             </div>

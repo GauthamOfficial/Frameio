@@ -16,11 +16,7 @@ import {
   MessageSquare,
   Sparkles,
   Share2,
-  ExternalLink,
-  Facebook,
-  Twitter,
-  Instagram,
-  Mail
+  Facebook
 } from "lucide-react"
 import React, { useState, useRef } from "react"
 import { useUser, useAuth } from '@/hooks/useAuth'
@@ -213,7 +209,7 @@ export default function EnhancedPosterGenerator() {
     }
   }
 
-  const shareToSocialMedia = (platform: string) => {
+  const shareToFacebook = () => {
     if (!result?.image_url || !result?.full_caption) return
 
     // Use public URL for Facebook sharing (replace with your cloudflared URL)
@@ -224,36 +220,10 @@ export default function EnhancedPosterGenerator() {
     
     const shareText = result.full_caption
 
-    let shareLink = ''
-    
-    switch (platform) {
-      case 'facebook':
-        // Copy image URL and caption for manual sharing
-        const facebookText = `${shareText}\n\nImage URL: ${imageUrl}`
-        copyToClipboard(facebookText, 'facebook')
-        alert('Copied to clipboard! Paste this into Facebook:\n\n' + facebookText)
-        return
-      case 'twitter':
-        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(imageUrl)}`
-        break
-      case 'instagram':
-        // Instagram doesn't support direct sharing via URL, so we'll copy to clipboard
-        const instagramText = `${shareText}\n\n${imageUrl}`
-        copyToClipboard(instagramText, 'instagram')
-        return
-      case 'whatsapp':
-        shareLink = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n\n${imageUrl}`)}`
-        break
-      case 'email':
-        shareLink = `mailto:?subject=${encodeURIComponent('Check out this AI-generated poster!')}&body=${encodeURIComponent(`${shareText}\n\n${imageUrl}`)}`
-        break
-      default:
-        return
-    }
-    
-    if (shareLink) {
-      window.open(shareLink, '_blank', 'width=600,height=400')
-    }
+    // Copy image URL and caption for manual sharing
+    const facebookText = `${shareText}\n\nImage URL: ${imageUrl}`
+    copyToClipboard(facebookText, 'facebook')
+    alert('Copied to clipboard! Paste this into Facebook:\n\n' + facebookText)
   }
 
   const shareToClipboard = async () => {
@@ -628,47 +598,11 @@ export default function EnhancedPosterGenerator() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => shareToSocialMedia('facebook')}
+                                  onClick={shareToFacebook}
                                   className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
                                 >
                                   <Facebook className="h-4 w-4 text-blue-600" />
-                                  Facebook
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => shareToSocialMedia('twitter')}
-                                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
-                                >
-                                  <Twitter className="h-4 w-4 text-blue-400" />
-                                  Twitter
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => shareToSocialMedia('instagram')}
-                                  className="flex items-center gap-2 hover:bg-pink-50 hover:border-pink-300"
-                                >
-                                  <Instagram className="h-4 w-4 text-pink-600" />
-                                  {copiedItem === 'instagram' ? 'Copied!' : 'Instagram'}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => shareToSocialMedia('whatsapp')}
-                                  className="flex items-center gap-2 hover:bg-green-50 hover:border-green-300"
-                                >
-                                  <ExternalLink className="h-4 w-4 text-green-600" />
-                                  WhatsApp
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => shareToSocialMedia('email')}
-                                  className="flex items-center gap-2 col-span-2 hover:bg-gray-50 hover:border-gray-300"
-                                >
-                                  <Mail className="h-4 w-4 text-gray-600" />
-                                  Email
+                                  Share on Facebook
                                 </Button>
                               </div>
                             </div>

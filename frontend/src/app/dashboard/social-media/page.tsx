@@ -9,9 +9,7 @@ import {
   Download, 
   ExternalLink, 
   Loader2, 
-  Facebook, 
-  Instagram, 
-  MessageCircle,
+  Facebook,
   Copy,
   CheckCircle
 } from "lucide-react"
@@ -108,14 +106,6 @@ export default function SocialMediaPage() {
     }
   }
 
-  const shareToWhatsApp = (poster: Poster) => {
-    const shareText = poster.full_caption || poster.caption || ''
-    const shareUrl = typeof window !== 'undefined' ? window.location.origin + `/poster/${poster.id}` : ''
-    const whatsappText = `${shareText}\n\n${shareUrl}`
-    const whatsappLink = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`
-    window.open(whatsappLink, '_blank')
-  }
-
   const shareToFacebook = async (poster: Poster) => {
     // Use cloudinary_url (direct image URL) or public_url for sharing
     const posterWithUrls = poster as Poster & { cloudinary_url?: string; public_url?: string };
@@ -150,13 +140,6 @@ export default function SocialMediaPage() {
       : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePageUrl)}`
     
     window.open(shareLink, '_blank')
-  }
-
-  const shareToInstagram = (poster: Poster) => {
-    const shareText = poster.full_caption || poster.caption || ''
-    const shareUrl = typeof window !== 'undefined' ? window.location.origin + `/poster/${poster.id}` : ''
-    const instagramText = `${shareText}\n\n${shareUrl}`
-    copyToClipboard(instagramText, `instagram-${poster.id}`)
   }
 
   const handleDownload = async (poster: Poster) => {
@@ -317,16 +300,7 @@ export default function SocialMediaPage() {
 
                 {/* Share Buttons */}
                 <div className="space-y-1.5 pt-2 border-t">
-                  <div className="grid grid-cols-3 gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => shareToWhatsApp(poster)}
-                      className="w-full h-7 text-xs px-1"
-                      title="Share to WhatsApp"
-                    >
-                      <MessageCircle className="h-3 w-3 text-green-600" />
-                    </Button>
+                  <div className="grid grid-cols-2 gap-1">
                     <Button
                       size="sm"
                       variant="outline"
@@ -334,33 +308,8 @@ export default function SocialMediaPage() {
                       className="w-full h-7 text-xs px-1"
                       title="Share to Facebook"
                     >
-                      <Facebook className="h-3 w-3 text-blue-600" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => shareToInstagram(poster)}
-                      className="w-full h-7 text-xs px-1"
-                      title="Copy for Instagram"
-                    >
-                      {copiedItem === `instagram-${poster.id}` ? (
-                        <CheckCircle className="h-3 w-3 text-green-600" />
-                      ) : (
-                        <Instagram className="h-3 w-3 text-pink-600" />
-                      )}
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDownload(poster)}
-                      className="w-full h-7 text-xs px-1"
-                      title="Download"
-                    >
-                      <Download className="h-3 w-3 mr-1" />
-                      <span className="text-xs">Download</span>
+                      <Facebook className="h-3 w-3 text-blue-600 mr-1" />
+                      <span className="text-xs">Share</span>
                     </Button>
                     <Button
                       size="sm"
@@ -371,6 +320,18 @@ export default function SocialMediaPage() {
                     >
                       <ExternalLink className="h-3 w-3 mr-1" />
                       <span className="text-xs">View</span>
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownload(poster)}
+                      className="w-full h-7 text-xs px-1"
+                      title="Download"
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      <span className="text-xs">Download</span>
                     </Button>
                   </div>
                 </div>
