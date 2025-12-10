@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import TestTwoStepIntegration from '@/components/TestTwoStepIntegration'
 
 export default function TestIntegrationPage() {
@@ -16,7 +16,9 @@ export default function TestIntegrationPage() {
           </p>
         </div>
         
-        <TestTwoStepIntegration />
+        <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+          <TestTwoStepIntegration />
+        </Suspense>
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { login } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,7 +12,6 @@ import { useAuthModal } from '@/contexts/auth-modal-context'
 import { Eye, EyeOff } from 'lucide-react'
 
 export function SignInModal() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { showSuccess, showError } = useToastHelpers()
   const { showSignIn, closeSignIn, switchToSignUp } = useAuthModal()
@@ -115,7 +114,7 @@ export function SignInModal() {
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">
-          <span className="text-muted-foreground">Don't have an account? </span>
+          <span className="text-muted-foreground">Don&apos;t have an account? </span>
           <button
             type="button"
             onClick={switchToSignUp}

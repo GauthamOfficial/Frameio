@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { useApp } from "@/contexts/app-context"
 import { GlobalLoading } from "@/components/common"
 import { SignInModal } from "@/components/auth/sign-in-modal"
@@ -16,7 +17,9 @@ export function AppLayoutWrapper({ children }: AppLayoutWrapperProps) {
     <>
       {children}
       <GlobalLoading isVisible={isGlobalLoading} />
-      <SignInModal />
+      <Suspense fallback={null}>
+        <SignInModal />
+      </Suspense>
       <SignUpModal />
     </>
   )

@@ -96,14 +96,21 @@ export default function CollaborationPage() {
 
   // Mock data for demonstration
   useEffect(() => {
+    const getUserName = (): string => {
+      if (!user) return 'You';
+      if (user.first_name || user.last_name) {
+        return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || 'You';
+      }
+      return user.username || user.email || 'You';
+    };
+
     const mockParticipants: Participant[] = [
       {
         id: userId || '1',
-        name: user?.fullName || 'You',
-        email: user?.primaryEmailAddress?.emailAddress || 'you@example.com',
+        name: getUserName(),
+        email: user?.email || 'you@example.com',
         role: 'owner',
-        isOnline: true,
-        avatar: user?.imageUrl
+        isOnline: true
       },
       {
         id: '2',

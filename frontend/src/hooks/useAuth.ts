@@ -9,7 +9,6 @@ import {
   getAccessToken,
   type User 
 } from '@/lib/auth'
-import { buildApiUrl } from '@/utils/api'
 
 interface AuthState {
   user: User | null

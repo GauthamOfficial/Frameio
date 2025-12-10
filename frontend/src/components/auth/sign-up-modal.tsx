@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { register } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,7 +11,6 @@ import { useAuthModal } from '@/contexts/auth-modal-context'
 import { Eye, EyeOff } from 'lucide-react'
 
 export function SignUpModal() {
-  const router = useRouter()
   const { showSuccess, showError } = useToastHelpers()
   const { showSignUp, closeSignUp, switchToSignIn } = useAuthModal()
   const [formData, setFormData] = useState({

@@ -10,7 +10,9 @@ import {
   Download, 
   ExternalLink, 
   Loader2, 
-  Facebook
+  Facebook,
+  CheckCircle,
+  Copy
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useToastHelpers } from "@/components/common"

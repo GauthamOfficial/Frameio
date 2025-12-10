@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { nanoBananaService } from '@/lib/ai/nanobanana';
 import NanoBananaTester from '@/lib/ai/test-nanobanana';
 
-export default function TestNanoBananaPage() {
+function TestNanoBananaContent() {
   const [testResults, setTestResults] = useState<Record<string, unknown>[]>([]);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -111,6 +111,14 @@ export default function TestNanoBananaPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TestNanoBananaPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto p-6 text-center">Loading...</div>}>
+      <TestNanoBananaContent />
+    </Suspense>
   );
 }
 

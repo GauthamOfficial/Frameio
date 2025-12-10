@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { apiClient } from '@/lib/api-client';
 
-export default function TestAPIStatusPage() {
+function TestAPIStatusContent() {
   const [status, setStatus] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -88,6 +88,14 @@ export default function TestAPIStatusPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TestAPIStatusPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto p-6 text-center">Loading...</div>}>
+      <TestAPIStatusContent />
+    </Suspense>
   );
 }
 

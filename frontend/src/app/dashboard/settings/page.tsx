@@ -5,8 +5,7 @@ import { useUser } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useOrganization } from "@/contexts/organization-context"
 import { 
-  User, 
-  Lock
+  User
 } from "lucide-react"
 import CompanyProfileSettings from "@/components/settings/CompanyProfileSettings"
 

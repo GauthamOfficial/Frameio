@@ -663,12 +663,18 @@ export default function SchedulerPage() {
       <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
         <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogClose onClose={() => setShowScheduleModal(false)} />
-          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
-            <DialogTitle className="text-lg sm:text-xl">Schedule Post</DialogTitle>
-            <DialogDescription className="text-sm">
-              Choose when and where to publish this post
-            </DialogDescription>
-          </DialogHeader>
+          <div className="px-4 sm:px-6 pt-4 sm:pt-6">
+            <DialogHeader>
+              <div className="text-lg sm:text-xl">
+                <DialogTitle>Schedule Post</DialogTitle>
+              </div>
+              <div className="text-sm">
+                <DialogDescription>
+                  Choose when and where to publish this post
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+          </div>
           
           {selectedPoster && (
             <div className="space-y-3 sm:space-y-4 px-4 sm:px-6">
@@ -746,33 +752,37 @@ export default function SchedulerPage() {
             </div>
           )}
 
-          <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 flex-col sm:flex-row gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowScheduleModal(false)}
-              disabled={scheduling}
-              className="w-full sm:w-auto text-sm sm:text-base"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleScheduleSubmit}
-              disabled={scheduling || !scheduleData.scheduledTime || !scheduleData.caption.trim()}
-              className="bg-textile-accent hover:bg-textile-accent/90 w-full sm:w-auto text-sm sm:text-base"
-            >
-              {scheduling ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
-                  Scheduling...
-                </>
-              ) : (
-                <>
-                  <Clock className="mr-2 h-4 w-4 shrink-0" />
-                  Schedule Post
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+            <DialogFooter>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowScheduleModal(false)}
+                  disabled={scheduling}
+                  className="w-full sm:w-auto text-sm sm:text-base"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleScheduleSubmit}
+                  disabled={scheduling || !scheduleData.scheduledTime || !scheduleData.caption.trim()}
+                  className="bg-textile-accent hover:bg-textile-accent/90 w-full sm:w-auto text-sm sm:text-base"
+                >
+                  {scheduling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                      Scheduling...
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="mr-2 h-4 w-4 shrink-0" />
+                      Schedule Post
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -788,12 +798,18 @@ export default function SchedulerPage() {
               caption: ''
             })
           }} />
-          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
-            <DialogTitle className="text-lg sm:text-xl">Edit Scheduled Post</DialogTitle>
-            <DialogDescription className="text-sm">
-              Update the post details and scheduled time
-            </DialogDescription>
-          </DialogHeader>
+          <div className="px-4 sm:px-6 pt-4 sm:pt-6">
+            <DialogHeader>
+              <div className="text-lg sm:text-xl">
+                <DialogTitle>Edit Scheduled Post</DialogTitle>
+              </div>
+              <div className="text-sm">
+                <DialogDescription>
+                  Update the post details and scheduled time
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+          </div>
           
           {selectedScheduledPost && (
             <div className="space-y-3 sm:space-y-4 px-4 sm:px-6">
@@ -847,41 +863,45 @@ export default function SchedulerPage() {
             </div>
           )}
 
-          <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 flex-col sm:flex-row gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowEditModal(false)
-                setSelectedScheduledPost(null)
-                setScheduleData({
-                  platform: 'instagram',
-                  scheduledTime: '',
-                  caption: ''
-                })
-              }}
-              disabled={editing}
-              className="w-full sm:w-auto text-sm sm:text-base"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleEditSubmit}
-              disabled={editing || !scheduleData.scheduledTime || !scheduleData.caption.trim()}
-              className="bg-textile-accent hover:bg-textile-accent/90 w-full sm:w-auto text-sm sm:text-base"
-            >
-              {editing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Edit className="mr-2 h-4 w-4 shrink-0" />
-                  Update Post
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+            <DialogFooter>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setSelectedScheduledPost(null)
+                    setScheduleData({
+                      platform: 'instagram',
+                      scheduledTime: '',
+                      caption: ''
+                    })
+                  }}
+                  disabled={editing}
+                  className="w-full sm:w-auto text-sm sm:text-base"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleEditSubmit}
+                  disabled={editing || !scheduleData.scheduledTime || !scheduleData.caption.trim()}
+                  className="bg-textile-accent hover:bg-textile-accent/90 w-full sm:w-auto text-sm sm:text-base"
+                >
+                  {editing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="mr-2 h-4 w-4 shrink-0" />
+                      Update Post
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
