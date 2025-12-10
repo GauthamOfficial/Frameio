@@ -254,6 +254,18 @@ const CompanyProfileSettings: React.FC = () => {
           if (data && typeof data === 'object' && data.status === 'ok' && data.data) {
             data = data.data
           }
+          
+          // Handle array response (backend returns [profile_data])
+          if (Array.isArray(data)) {
+            if (data.length > 0) {
+              data = data[0]  // Extract first item from array
+              console.log('✅ Extracted profile from array:', data)
+            } else {
+              // Empty array means no profile exists yet
+              data = {}
+              console.log('ℹ️ Empty array received - no profile exists yet')
+            }
+          }
         } else {
           // Empty response - use empty object as fallback
           data = {}
