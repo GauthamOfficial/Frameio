@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 import logging
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -390,6 +391,58 @@ else:
     if DEBUG:
         print("INFO: EMAIL_HOST_PASSWORD not set. Using console email backend for development.")
 
+# Custom UTF-8 StreamHandler for Windows compatibility
+class UTF8StreamHandler(logging.StreamHandler):
+    """StreamHandler that uses UTF-8 encoding to handle Unicode characters."""
+    def __init__(self, stream=None):
+        super().__init__(stream)
+        # Reopen stream with UTF-8 encoding if it's sys.stdout or sys.stderr
+        if stream is sys.stdout or stream is sys.stderr:
+            # On Windows, we need to reconfigure the stream encoding
+            if hasattr(stream, 'reconfigure'):
+                try:
+                    stream.reconfigure(encoding='utf-8', errors='replace')
+                except (AttributeError, ValueError):
+                    # If reconfigure fails, we'll handle encoding in emit
+                    pass
+    
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = self.stream
+            # Ensure UTF-8 encoding
+            if hasattr(stream, 'buffer'):
+                # For text streams, write to underlying buffer with UTF-8
+                stream.buffer.write(msg.encode('utf-8', errors='replace'))
+                stream.buffer.write(self.terminator.encode('utf-8', errors='replace'))
+                stream.buffer.flush()
+            else:
+                # Fallback: try to write directly
+                stream.write(msg + self.terminator)
+                stream.flush()
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            # If encoding still fails, replace problematic characters
+            try:
+                msg = self.format(record)
+                # Replace emoji and other problematic Unicode characters
+                safe_msg = msg.encode('ascii', errors='replace').decode('ascii')
+                stream = self.stream
+                if hasattr(stream, 'buffer'):
+                    stream.buffer.write(safe_msg.encode('utf-8', errors='replace'))
+                    stream.buffer.write(self.terminator.encode('utf-8', errors='replace'))
+                    stream.buffer.flush()
+                else:
+                    stream.write(safe_msg + self.terminator)
+                    stream.flush()
+            except Exception:
+                self.handleError(record)
+        except Exception:
+            self.handleError(record)
+
+def utf8_console_handler():
+    """Factory function to create UTF-8 console handler."""
+    return UTF8StreamHandler(sys.stdout)
+
 # Logging configuration
 LOGGING = {
     'version': 1,
@@ -406,10 +459,11 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': BASE_DIR / 'logs' / 'django.log',
             'formatter': 'verbose',
+            'encoding': 'utf-8',  # Ensure file handler uses UTF-8
         },
         'console': {
             'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
+            '()': utf8_console_handler,  # Use custom UTF-8 handler
             'formatter': 'verbose',
         },
     },
