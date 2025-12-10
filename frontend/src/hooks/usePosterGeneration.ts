@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GenerationRequest {
   prompt: string;

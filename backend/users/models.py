@@ -8,14 +8,9 @@ import uuid
 
 class User(AbstractUser):
     """
-    Custom user model with Clerk integration and multi-tenant support.
+    Custom user model with JWT authentication and multi-tenant support.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Clerk integration fields
-    clerk_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
-    clerk_created_at = models.DateTimeField(blank=True, null=True)
-    clerk_updated_at = models.DateTimeField(blank=True, null=True)
     
     # Profile information
     avatar = models.ImageField(upload_to='users/avatars/', blank=True, null=True)
@@ -163,7 +158,7 @@ class UserActivity(models.Model):
 
 class UserProfile(models.Model):
     """
-    Extended user profile model that extends Clerk user with additional fields.
+    Extended user profile model with additional fields for user preferences and settings.
     """
     user = models.OneToOneField(
         User, 

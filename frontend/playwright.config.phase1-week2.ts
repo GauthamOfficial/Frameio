@@ -58,7 +58,7 @@ export default defineConfig({
               origin: 'http://localhost:3000',
               localStorage: [
                 {
-                  name: 'clerk-db-jwt',
+                  name: 'auth_token',
                   value: 'mock-jwt-token'
                 },
                 {
@@ -91,7 +91,7 @@ export default defineConfig({
               origin: 'http://localhost:3000',
               localStorage: [
                 {
-                  name: 'clerk-db-jwt',
+                  name: 'auth_token',
                   value: 'mock-jwt-token'
                 },
                 {
@@ -120,7 +120,7 @@ export default defineConfig({
               origin: 'http://localhost:3000',
               localStorage: [
                 {
-                  name: 'clerk-db-jwt',
+                  name: 'auth_token',
                   value: 'mock-jwt-token'
                 },
                 {
@@ -150,7 +150,7 @@ export default defineConfig({
               origin: 'http://localhost:3000',
               localStorage: [
                 {
-                  name: 'clerk-db-jwt',
+                  name: 'auth_token',
                   value: 'mock-jwt-token'
                 },
                 {
@@ -179,7 +179,7 @@ export default defineConfig({
               origin: 'http://localhost:3000',
               localStorage: [
                 {
-                  name: 'clerk-db-jwt',
+                  name: 'auth_token',
                   value: 'mock-jwt-token'
                 },
                 {

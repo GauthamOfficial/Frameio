@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AuthUserButton } from "@/components/auth/user-button"
 import { useOrganization } from "@/contexts/organization-context"
-import { useUser } from "@clerk/nextjs"
+import { useUser } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
@@ -68,7 +68,7 @@ export function TopNav({ className }: TopNavProps) {
           <div className="flex items-center space-x-3">
             <div className="text-right">
               <p className="text-sm font-medium text-foreground">
-                {user?.firstName ? user.firstName : user?.fullName || 'User'}
+                {user?.first_name || user?.username || user?.email || 'User'}
               </p>
               {userRole && !isLoading && (
                 <p className="text-xs text-muted-foreground">

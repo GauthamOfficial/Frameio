@@ -35,7 +35,7 @@ export function buildApiUrl(endpoint: string): string {
 
 /**
  * Get authentication token from various sources
- * @param providedToken - Optional token to use (e.g., from Clerk's getToken())
+ * @param providedToken - Optional token to use (e.g., JWT token)
  */
 async function getAuthToken(providedToken?: string | null): Promise<string | null> {
   // Use provided token if available
@@ -100,7 +100,7 @@ function buildUrl(endpoint: string): string {
 
 /**
  * Build request headers with authentication and dev headers
- * @param providedToken - Optional token to use (e.g., from Clerk's getToken())
+ * @param providedToken - Optional token to use (e.g., JWT token)
  */
 async function buildHeaders(customHeaders: Record<string, string> = {}, providedToken?: string | null): Promise<Record<string, string>> {
   const token = await getAuthToken(providedToken);
@@ -141,7 +141,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
  * GET request helper
  * @param path - API endpoint path (e.g., '/api/users/')
  * @param options - Fetch options
- * @param token - Optional authentication token (e.g., from Clerk's getToken())
+ * @param token - Optional authentication token (e.g., JWT token)
  */
 export async function apiGet<T = unknown>(
   path: string,
@@ -165,7 +165,7 @@ export async function apiGet<T = unknown>(
  * @param path - API endpoint path (e.g., '/api/users/')
  * @param body - Request body (will be JSON stringified unless FormData)
  * @param options - Fetch options
- * @param token - Optional authentication token (e.g., from Clerk's getToken())
+ * @param token - Optional authentication token (e.g., JWT token)
  */
 export async function apiPost<T = unknown>(
   path: string,

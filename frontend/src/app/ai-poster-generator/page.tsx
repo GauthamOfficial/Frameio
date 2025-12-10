@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
-import { useUser, useAuth } from '@clerk/nextjs';
+import { useUser, useAuth } from '@/hooks/useAuth';
 import { getFullUrl } from '@/utils/api';
 
 interface GenerationResult {

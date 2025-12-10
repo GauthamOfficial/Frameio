@@ -135,7 +135,7 @@ test.describe('Backend API Profile Endpoints', () => {
   test('should respond to GET /api/company-profiles/', async ({ request }) => {
     const response = await request.get('http://localhost:8000/api/company-profiles/', {
       headers: {
-        'Authorization': 'Bearer test_clerk_token'
+        'Authorization': 'Bearer test_jwt_token'
       }
     });
     
@@ -158,7 +158,7 @@ test.describe('Backend API Profile Endpoints', () => {
     
     const response = await request.post('http://localhost:8000/api/company-profiles/', {
       headers: {
-        'Authorization': 'Bearer test_clerk_token',
+        'Authorization': 'Bearer test_jwt_token',
         'Content-Type': 'application/json'
       },
       data: profileData
@@ -173,7 +173,7 @@ test.describe('Backend API Profile Endpoints', () => {
   test('should handle profile status endpoint', async ({ request }) => {
     const response = await request.get('http://localhost:8000/api/company-profiles/status/', {
       headers: {
-        'Authorization': 'Bearer test_clerk_token'
+        'Authorization': 'Bearer test_jwt_token'
       }
     });
     
@@ -237,7 +237,7 @@ test.describe('End-to-End Profile Saving Flow', () => {
     // Step 5: Verify the profile was saved by checking the API directly
     const apiResponse = await request.get('http://localhost:8000/api/company-profiles/', {
       headers: {
-        'Authorization': 'Bearer test_clerk_token'
+        'Authorization': 'Bearer test_jwt_token'
       }
     });
     

@@ -26,7 +26,7 @@ async function globalSetup(config: FullConfig) {
     console.log('🔌 Testing API endpoints...');
     const apiResponse = await page.request.get('http://localhost:8000/api/company-profiles/', {
       headers: {
-        'Authorization': 'Bearer test_clerk_token'
+        'Authorization': 'Bearer test_jwt_token'
       }
     });
     

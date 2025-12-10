@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Download, Share2, Edit3, Sparkles, Image as ImageIcon, AlertCircle, CheckCircle } from 'lucide-react';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/useAuth';
 import { usePosterGeneration } from '@/hooks/usePosterGeneration';
 import { useExportDesign } from '@/hooks/useExportDesign';
 import { useCollaboration } from '@/hooks/useCollaboration';

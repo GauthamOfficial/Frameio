@@ -13,17 +13,19 @@ console.log('================================================\n');
 
 // Feature verification checklist
 const featureChecklist = {
-  'Clerk Authentication Integration': {
+  'JWT Authentication Integration': {
     requirements: [
       'Sign in and sign up buttons on homepage',
       'Automatic redirect to dashboard when authenticated',
       'User profile button in navigation',
-      'Protected routes implementation'
+      'Protected routes implementation',
+      'JWT token management'
     ],
     files: [
       'src/components/welcome/welcome-page.tsx',
       'src/components/auth/protected-route.tsx',
-      'src/components/auth/user-button.tsx'
+      'src/components/auth/user-button.tsx',
+      'src/lib/auth.ts'
     ],
     status: 'pending'
   },
@@ -246,7 +248,7 @@ function generateVerificationReport(results) {
   report += `The following test categories are implemented:\n\n`;
   
   const testCategories = [
-    'Clerk Authentication Integration',
+    'JWT Authentication Integration',
     'Role-Based UI Rendering', 
     'Organization Context',
     'User Management UI (Admin Only)',

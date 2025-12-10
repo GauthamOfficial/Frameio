@@ -5,15 +5,19 @@ import { ToastProvider } from '@/components/common'
 import { AppProvider } from '@/contexts/app-context'
 import { OrganizationProvider } from '@/contexts/organization-context'
 
-// Mock Clerk
-jest.mock('@clerk/nextjs', () => ({
+// Mock Auth hooks
+jest.mock('@/hooks/useAuth', () => ({
   useUser: () => ({
     user: { id: 'test-user', email: 'test@example.com' },
-    isLoaded: true
+    isLoaded: true,
+    isSignedIn: true
   }),
   useAuth: () => ({
+    user: { id: 'test-user', email: 'test@example.com' },
     getToken: jest.fn().mockResolvedValue('mock-token'),
-    signOut: jest.fn()
+    signOut: jest.fn(),
+    isLoaded: true,
+    isSignedIn: true
   })
 }))
 

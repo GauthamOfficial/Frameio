@@ -11,8 +11,7 @@ export const handleChunkErrors = () => {
       error?.name === 'ChunkLoadError' ||
       error?.message?.includes('Loading chunk') ||
       error?.message?.includes('failed') ||
-      event.target instanceof HTMLElement && 
-      (event.target as HTMLElement & { src?: string }).src?.includes('clerk')
+      false // Additional error checks can be added here
     ) {
       console.warn('Chunk loading error detected, attempting recovery:', error?.message || 'Unknown chunk error')
       
@@ -36,8 +35,7 @@ export const handleChunkErrors = () => {
     if (
       error?.message?.includes('Loading chunk') ||
       error?.message?.includes('ChunkLoadError') ||
-      error?.message?.includes('clerk') ||
-      error?.stack?.includes('clerk')
+      false // Additional error checks can be added here
     ) {
       console.warn('Chunk loading promise rejection detected:', error.message)
       
@@ -69,7 +67,7 @@ export const handleChunkErrors = () => {
       if (
         errorMessage.includes('Loading chunk') ||
         errorMessage.includes('ChunkLoadError') ||
-        args[0]?.toString().includes('clerk')
+        false // Additional error checks can be added here
       ) {
         console.warn('Fetch error for chunk, attempting recovery:', errorMessage)
         

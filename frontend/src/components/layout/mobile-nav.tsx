@@ -6,7 +6,7 @@ import { SignInButton } from "@/components/auth/sign-in-button"
 import { SignUpButton } from "@/components/auth/sign-up-button"
 import { AuthUserButton } from "@/components/auth/user-button"
 import { Logo } from "@/components/common/logo"
-import { useUser } from '@clerk/nextjs'
+import { useUser } from '@/hooks/useAuth'
 import { cn } from "@/lib/utils"
 
 interface MobileNavProps {

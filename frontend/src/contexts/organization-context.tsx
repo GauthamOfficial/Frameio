@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { useUser, useAuth } from '@clerk/nextjs'
+import { useUser, useAuth } from '@/hooks/useAuth'
 import { userApi, testApi } from '@/lib/api'
 import { useApp } from './app-context'
 

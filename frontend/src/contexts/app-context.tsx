@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
-import { useUser, useAuth } from '@clerk/nextjs'
+import { useUser, useAuth } from '@/hooks/useAuth'
 import { setAuthToken } from '@/lib/api'
 // Removed circular dependency - toast helpers will be used directly in components
 

@@ -9,9 +9,11 @@ function getAuthToken(request: NextRequest): string | null {
     return authHeader.split(' ')[1];
   }
   
-  // In development, use test token
+  // In development, check localStorage for token
   if (process.env.NODE_ENV === 'development') {
-    return 'test_clerk_token';
+    // This is a server-side route, so we can't access localStorage directly
+    // The token should come from the Authorization header
+    return null;
   }
   
   return null;

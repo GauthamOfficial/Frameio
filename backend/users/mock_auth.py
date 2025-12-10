@@ -1,6 +1,6 @@
 """
 Mock authentication service for development and testing.
-This provides a fallback when Clerk authentication is not available.
+This provides a fallback for development environments.
 """
 
 from django.contrib.auth import get_user_model

@@ -1,42 +1,68 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
-// Clerk-protected routes (user routes only)
-const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/ai-poster-generator(.*)',
-  '/settings(.*)',
-]);
-
-// Admin routes should be excluded from Clerk
-const isPublicRoute = createRouteMatcher([
-  '/admin(.*)',
-  '/api/admin(.*)',
-  '/',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-]);
-
-export default clerkMiddleware(async (auth, req: NextRequest) => {
-  // Only protect non-admin routes
-  if (!isPublicRoute(req) && isProtectedRoute(req)) {
-    const authResult = await auth();
-    if (!authResult.userId) {
-      // Redirect to sign-in if not authenticated
-      const signInUrl = new URL('/sign-in', req.url);
-      signInUrl.searchParams.set('redirect_url', req.nextUrl.pathname);
-      return NextResponse.redirect(signInUrl);
-    }
-  }
-  return NextResponse.next();
-});
-
-export const config = {
-  matcher: [
-    // Skip Next.js internals and all static files
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
-  ],
+const isPublicRoute = (pathname: string): boolean => {
+  const publicRoutes = [
+    "/",
+    "/sign-in",
+    "/sign-up",
+    "/api/webhooks",
+    "/poster",
+    "/admin/login",
+  ];
+  
+  return publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(route + "/")
+  );
 };
 
+export default function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Handle admin routes with custom authentication
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    // Admin API routes - allow through
+    if (pathname.startsWith('/api/admin')) {
+      return NextResponse.next();
+    }
+
+    // Admin login route - redirect if already authenticated
+    if (pathname === '/admin/login') {
+      const authToken = req.cookies.get('auth_token');
+      if (authToken) {
+        return NextResponse.redirect(new URL('/admin', req.url));
+      }
+      return NextResponse.next();
+    }
+
+    // Protected admin pages - redirect to login if not authenticated
+    if (pathname.startsWith('/admin')) {
+      const authToken = req.cookies.get('auth_token');
+      if (!authToken) {
+        return NextResponse.redirect(new URL('/admin/login', req.url));
+      }
+      return NextResponse.next();
+    }
+  }
+
+  // Allow public routes to pass through
+  if (isPublicRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Check for authentication token
+  const authToken = req.cookies.get('auth_token')?.value || 
+                    req.headers.get('authorization')?.replace('Bearer ', '');
+
+  if (!authToken) {
+    // Check localStorage is not available in middleware, so redirect to sign-in
+    const signInUrl = new URL('/sign-in', req.url);
+    signInUrl.searchParams.set('redirect_url', pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+};

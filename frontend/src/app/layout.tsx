@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider } from '@clerk/nextjs';
-import { dark } from '@clerk/themes';
 import { SimpleErrorBoundary } from "@/components/simple-error-boundary";
-import { ClerkErrorBoundary } from "@/components/auth/clerk-error-boundary";
 import { AppProvider } from "@/contexts/app-context";
 import { OrganizationProvider } from "@/contexts/organization-context";
 import { ToastProvider } from "@/components/common";
@@ -37,64 +34,48 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkErrorBoundary>
-      <ClerkProvider
-        appearance={{
-          baseTheme: dark,
-          variables: {
-            colorPrimary: '#3b82f6',
-          },
-        }}
-        publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-        afterSignInUrl="/dashboard"
-        afterSignUpUrl="/dashboard"
-        signInUrl="/sign-in"
-        signUpUrl="/sign-up"
+    <html lang="en">
+      <head>
+        <meta name="ethereum-dapp-url-bar" content="false" />
+        <meta name="ethereum-dapp-metamask" content="false" />
+        <meta name="ethereum-dapp-connect" content="false" />
+        <meta name="ethereum-dapp-wallet" content="false" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Prevent MetaMask from auto-connecting
+              if (typeof window !== 'undefined') {
+                window.ethereum = undefined;
+                window.web3 = undefined;
+                
+                // Override any wallet detection
+                Object.defineProperty(window, 'ethereum', {
+                  value: undefined,
+                  writable: false,
+                  configurable: false
+                });
+              }
+            `,
+          }}
+        />
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <html lang="en">
-          <head>
-            <meta name="ethereum-dapp-url-bar" content="false" />
-            <meta name="ethereum-dapp-metamask" content="false" />
-            <meta name="ethereum-dapp-connect" content="false" />
-            <meta name="ethereum-dapp-wallet" content="false" />
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  // Prevent MetaMask from auto-connecting
-                  if (typeof window !== 'undefined') {
-                    window.ethereum = undefined;
-                    window.web3 = undefined;
-                    
-                    // Override any wallet detection
-                    Object.defineProperty(window, 'ethereum', {
-                      value: undefined,
-                      writable: false,
-                      configurable: false
-                    });
-                  }
-                `,
-              }}
-            />
-          </head>
-          <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-          >
-            <SimpleErrorBoundary>
-              <MetaMaskSuppressor />
-              <ToastProvider>
-                <AppProvider>
-                  <OrganizationProvider>
-                    <AppLayoutWrapper>
-                      {children}
-                    </AppLayoutWrapper>
-                  </OrganizationProvider>
-                </AppProvider>
-              </ToastProvider>
-            </SimpleErrorBoundary>
-          </body>
-        </html>
-      </ClerkProvider>
-    </ClerkErrorBoundary>
+        <SimpleErrorBoundary>
+          <MetaMaskSuppressor />
+          <ToastProvider>
+            <AppProvider>
+              <OrganizationProvider>
+                <AppLayoutWrapper>
+                  {children}
+                </AppLayoutWrapper>
+              </OrganizationProvider>
+            </AppProvider>
+          </ToastProvider>
+        </SimpleErrorBoundary>
+      </body>
+    </html>
   );
 }
 

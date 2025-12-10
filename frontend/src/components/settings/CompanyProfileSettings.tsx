@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { useUser, useAuth } from '@clerk/nextjs'
+import { useUser, useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
+import { getAuthHeader } from '@/lib/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -68,33 +69,16 @@ const CompanyProfileSettings: React.FC = () => {
   })
 
   useEffect(() => {
-    console.log('🔍 useEffect triggered')
-    console.log('User:', user ? 'Present' : 'Missing')
-    console.log('getToken:', typeof getToken === 'function' ? 'Present' : 'Missing')
-    
-    // Check if Clerk is properly configured
-    const clerkConfigured = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && 
-                           process.env.NEXT_PUBLIC_CLERK_FRONTEND_API
-    console.log('Clerk configured:', clerkConfigured)
-    
-    if (user && typeof getToken === 'function') {
-      console.log('✅ Loading profile...')
-      loadProfile()
-    } else if (!clerkConfigured) {
-      console.log('⚠️ Clerk not configured, using development mode')
-      // In development mode without Clerk, still try to load profile
+    if (user) {
       loadProfile()
     } else {
-      console.log('❌ Missing user or getToken')
       setLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, getToken])
+  }, [user])
 
   const loadProfile = async () => {
-    // Allow loading profile even without user in development mode
-    if (!user && process.env.NODE_ENV === 'production') {
-      console.log('❌ No user available in production mode')
+    if (!user) {
       setLoading(false)
       return
     }
@@ -103,15 +87,13 @@ const CompanyProfileSettings: React.FC = () => {
       setLoading(true)
       const token = await getToken()
       
-      // Debug logging
-      console.log('🔍 Loading profile...')
-      console.log('API Endpoint:', API_ENDPOINTS.COMPANY_PROFILES)
-      console.log('Token:', token ? 'Present' : 'Missing')
-      console.log('User:', user?.emailAddresses?.[0]?.emailAddress)
+      if (!token) {
+        console.warn('No authentication token available')
+        setLoading(false)
+        return
+      }
       
-      // Fallback to development token if Clerk token is not available
-      const authToken = token || 'test_clerk_token'
-      console.log('Using token:', authToken ? 'Present' : 'Missing')
+      const authHeader = getAuthHeader()
       
       // Test backend connectivity first (optional - don't block if it fails)
       try {
@@ -153,7 +135,7 @@ const CompanyProfileSettings: React.FC = () => {
         response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${authToken}`,
+            'Authorization': authHeader || '',
             'Content-Type': 'application/json'
           },
           signal: controller.signal
@@ -323,8 +305,11 @@ const CompanyProfileSettings: React.FC = () => {
     if (!user) return
     
     try {
-      const token = await getToken()
-      const authToken = token || 'test_clerk_token'
+      const authHeader = getAuthHeader()
+      if (!authHeader) {
+        console.warn('No authentication token available')
+        return
+      }
       
       console.log('🔍 Loading profile status...')
       console.log('Status endpoint:', API_ENDPOINTS.COMPANY_PROFILES_STATUS)
@@ -335,7 +320,7 @@ const CompanyProfileSettings: React.FC = () => {
       const response = await fetch(API_ENDPOINTS.COMPANY_PROFILES_STATUS, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${authToken}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         },
         signal: controller.signal
@@ -409,11 +394,14 @@ const CompanyProfileSettings: React.FC = () => {
     try {
       setSaving(true)
       
-      const token = await getToken()
-      const authToken = token || 'test_clerk_token'
+      const authHeader = getAuthHeader()
+      if (!authHeader) {
+        showError('Authentication required. Please sign in again.')
+        setSaving(false)
+        return
+      }
       
       console.log('💾 Saving profile...')
-      console.log('Using token:', authToken ? 'Present' : 'Missing')
       console.log('API Endpoint:', API_ENDPOINTS.COMPANY_PROFILES)
       
       // Test connectivity first (optional - don't block if it fails)
@@ -484,7 +472,7 @@ const CompanyProfileSettings: React.FC = () => {
         response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${authToken}`
+            'Authorization': authHeader
           },
           body: formDataToSend,
           signal: controller.signal
@@ -505,7 +493,7 @@ const CompanyProfileSettings: React.FC = () => {
         response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${authToken}`,
+            'Authorization': authHeader,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(jsonData),

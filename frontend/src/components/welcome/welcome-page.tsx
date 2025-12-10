@@ -1,8 +1,9 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { SignInButton as ClerkSignInButton, SignUpButton as ClerkSignUpButton, useUser } from '@clerk/nextjs'
+import { useUser } from '@/hooks/useAuth'
+import { SignInButton } from '@/components/auth/sign-in-button'
+import { SignUpButton } from '@/components/auth/sign-up-button'
 import { MobileNav } from "@/components/welcome/mobile-nav"
 import { Footer } from "@/components/layout/footer"
 import { Logo } from "@/components/common/logo"
@@ -83,16 +84,12 @@ export function WelcomePage({ className }: WelcomePageProps) {
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
               <div className="hidden md:flex items-center space-x-4">
-                <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
-                  <Button variant="ghost" size="sm">
-                    Sign In
-                  </Button>
-                </ClerkSignInButton>
-                <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
-                  <Button size="sm">
-                    Get Started
-                  </Button>
-                </ClerkSignUpButton>
+                <SignInButton variant="ghost" size="sm">
+                  Sign In
+                </SignInButton>
+                <SignUpButton size="sm">
+                  Get Started
+                </SignUpButton>
               </div>
               <MobileNav />
             </div>
@@ -112,17 +109,13 @@ export function WelcomePage({ className }: WelcomePageProps) {
               Frameio helps you create beautiful, professional posters that highlight your fabrics, styles, and seasonal collections instantly.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
-                <Button size="lg" className="text-lg">
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </ClerkSignUpButton>
-              <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
-                <Button variant="outline" size="lg" className="text-lg">
-                  Login
-                </Button>
-              </ClerkSignInButton>
+              <SignUpButton size="lg" className="text-lg">
+                Get Started
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </SignUpButton>
+              <SignInButton variant="outline" size="lg" className="text-lg">
+                Login
+              </SignInButton>
             </div>
             
           </div>
@@ -221,12 +214,10 @@ export function WelcomePage({ className }: WelcomePageProps) {
               Join hundreds of textile shops already using Frameio to create stunning marketing materials.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
-                <Button size="lg" className="bg-textile-accent hover:bg-textile-accent/90">
-                  Start Your Free Trial
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </ClerkSignUpButton>
+              <SignUpButton size="lg" className="bg-textile-accent hover:bg-textile-accent/90">
+                Start Your Free Trial
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </SignUpButton>
             </div>
           </div>
         </div>

@@ -24,7 +24,6 @@ from .permissions import (
     CanManageUsers, get_user_organization_permissions, IsAdminRequest,
     IsAuthenticatedOrAdmin, IsOrganizationMemberOrAdmin, CanManageUsersOrAdmin
 )
-from .clerk_utils import get_or_create_user_from_clerk
 from organizations.models import OrganizationMember, OrganizationInvitation
 
 logger = logging.getLogger(__name__)
@@ -424,56 +423,6 @@ class UserViewSet(viewsets.ModelViewSet):
         
         return Response(permissions)
     
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def sync_from_clerk(self, request):
-        """
-        Sync user from Clerk to Django database.
-        This endpoint is called when a user signs in via Clerk (e.g., Google OAuth).
-        It automatically creates the user in Django if they don't exist.
-        """
-        email = request.data.get('email')
-        clerk_id = request.data.get('clerk_id') or request.data.get('id')
-        first_name = request.data.get('first_name') or request.data.get('firstName')
-        last_name = request.data.get('last_name') or request.data.get('lastName')
-        username = request.data.get('username')
-        image_url = request.data.get('image_url') or request.data.get('imageUrl')
-        verified = request.data.get('verified', request.data.get('emailVerified', True))
-        
-        if not email:
-            return Response(
-                {'error': 'Email is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            user, created = get_or_create_user_from_clerk(
-                clerk_id=clerk_id,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                username=username,
-                image_url=image_url,
-                verified=verified
-            )
-            
-            if created:
-                logger.info(f"New user synced from Clerk: {user.email}")
-            else:
-                logger.info(f"Existing user synced from Clerk: {user.email}")
-            
-            serializer = self.get_serializer(user)
-            return Response({
-                'user': serializer.data,
-                'created': created,
-                'message': 'User synced successfully'
-            }, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
-            
-        except Exception as e:
-            logger.error(f"Error syncing user from Clerk: {e}", exc_info=True)
-            return Response(
-                {'error': f'Failed to sync user: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):

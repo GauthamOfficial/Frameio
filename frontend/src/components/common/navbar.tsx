@@ -1,6 +1,6 @@
 "use client"
 
-import { UserButton } from "@clerk/nextjs"
+import { AuthUserButton } from "@/components/auth/user-button"
 import { useOrganization } from "@/contexts/organization-context"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -68,14 +68,7 @@ export function Navbar({
               <User className="w-3 h-3" />
               <span>{userRole}</span>
             </Badge>
-            <UserButton 
-              afterSignOutUrl="/"
-              appearance={{
-                elements: {
-                  avatarBox: "w-8 h-8"
-                }
-              }}
-            />
+            <AuthUserButton />
           </div>
         </div>
       </div>

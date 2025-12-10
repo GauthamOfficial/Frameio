@@ -13,23 +13,19 @@ class UserAdmin(BaseUserAdmin):
     """
     list_display = [
         'email', 'username', 'first_name', 'last_name', 'is_verified', 
-        'is_active', 'is_staff', 'created_at', 'last_active', 'clerk_id'
+        'is_active', 'is_staff', 'created_at', 'last_active'
     ]
     list_filter = [
         'is_active', 'is_staff', 'is_superuser', 'is_verified', 
         'created_at', 'last_active', 'theme', 'language'
     ]
-    search_fields = ['email', 'username', 'first_name', 'last_name', 'clerk_id']
+    search_fields = ['email', 'username', 'first_name', 'last_name']
     ordering = ['-created_at']
     readonly_fields = ['id', 'created_at', 'updated_at', 'last_active']
     
     fieldsets = (
         ('Basic Information', {
             'fields': ('id', 'username', 'email', 'first_name', 'last_name')
-        }),
-        ('Clerk Integration', {
-            'fields': ('clerk_id', 'clerk_created_at', 'clerk_updated_at'),
-            'classes': ('collapse',)
         }),
         ('Profile Information', {
             'fields': ('avatar', 'phone_number', 'bio', 'location', 'website'),

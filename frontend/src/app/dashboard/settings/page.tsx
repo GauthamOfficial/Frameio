@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useUser } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useOrganization } from "@/contexts/organization-context"
 import { 
@@ -14,8 +14,6 @@ export default function SettingsPage() {
   const { user } = useUser()
   const { isLoading: orgLoading } = useOrganization()
   const [loading, setLoading] = useState(true)
-  const [clerkConfigured, setClerkConfigured] = useState(false)
-
   // Profile settings (kept for future use)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [profileData, setProfileData] = useState({
@@ -27,23 +25,16 @@ export default function SettingsPage() {
 
 
   useEffect(() => {
-    // Check if Clerk is configured
-    const isClerkConfigured = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && 
-                             process.env.NEXT_PUBLIC_CLERK_FRONTEND_API
-    setClerkConfigured(!!isClerkConfigured)
-    
     if (user && !orgLoading) {
       // Load user data
       setProfileData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.primaryEmailAddress?.emailAddress || '',
-        phone: user.phoneNumbers?.[0]?.phoneNumber || ''
+        firstName: user.first_name || '',
+        lastName: user.last_name || '',
+        email: user.email || '',
+        phone: user.phone_number || ''
       })
       setLoading(false)
-    } else if (!isClerkConfigured) {
-      // In development mode without Clerk, just set loading to false
-      console.log('⚠️ Clerk not configured, running in development mode')
+    } else if (!user && !orgLoading) {
       setLoading(false)
     }
   }, [user, orgLoading])
@@ -72,23 +63,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Clerk Configuration Warning */}
-      {!clerkConfigured && (
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-yellow-800">
-              <Lock className="h-5 w-5 mr-2" />
-              Development Mode
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-yellow-700">
-              Clerk authentication is not configured. You&apos;re running in development mode. 
-              To enable full authentication features, run: <code className="bg-yellow-100 px-2 py-1 rounded">node setup-clerk-env.js</code>
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-6">
         {/* Profile Settings */}

@@ -3,7 +3,9 @@ from django.http import JsonResponse
 from rest_framework.routers import DefaultRouter
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.views import TokenRefreshView
 from .views import UserViewSet, UserProfileViewSet, UserActivityViewSet, CompanyProfileViewSet
+from .auth_views import CustomTokenObtainPairView, register, logout, me
 from . import google_analytics_views
 
 # TEST ENDPOINT - completely bypasses DRF
@@ -20,6 +22,12 @@ router.register(r'company-profiles', CompanyProfileViewSet, basename='company-pr
 urlpatterns = [
     path('test/', test_endpoint, name='test'),
     path('', include(router.urls)),
+    # Authentication endpoints (under /api/users/auth/)
+    path('users/auth/register/', register, name='register'),
+    path('users/auth/login/', CustomTokenObtainPairView.as_view(), name='login'),
+    path('users/auth/logout/', logout, name='logout'),
+    path('users/auth/me/', me, name='me'),
+    path('users/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     # Google Analytics endpoints
     path('admin/analytics/', google_analytics_views.google_analytics_all, name='google-analytics-all'),
     path('admin/analytics/overview/', google_analytics_views.google_analytics_overview, name='google-analytics-overview'),

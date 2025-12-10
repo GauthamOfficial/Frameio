@@ -99,16 +99,16 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com https://sound-mule-24.clerk.accounts.dev",
-              "worker-src 'self' blob:", // Allow blob workers for Clerk
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "worker-src 'self' blob:",
               "child-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",
               // Image sources: production API + localhost for development
               `img-src 'self' data: blob: https: ${apiProtocol}://${apiHost}${apiUrlObj.port ? `:${apiUrlObj.port}` : ''}${process.env.NODE_ENV === 'development' ? ' http://localhost:8000 http://127.0.0.1:8000' : ''}`,
               "font-src 'self' data:",
               // Connect sources: production API + localhost for development
-              `connect-src 'self' https://clerk.com https://*.clerk.com https://sound-mule-24.clerk.accounts.dev ${apiProtocol}://${apiHost}${apiUrlObj.port ? `:${apiUrlObj.port}` : ''}${process.env.NODE_ENV === 'development' ? ' http://localhost:8000 http://127.0.0.1:8000 ws://localhost:3000' : ''}`,
-              "frame-src 'self' https://clerk.com https://*.clerk.com",
+              `connect-src 'self' ${apiProtocol}://${apiHost}${apiUrlObj.port ? `:${apiUrlObj.port}` : ''}${process.env.NODE_ENV === 'development' ? ' http://localhost:8000 http://127.0.0.1:8000 ws://localhost:3000' : ''}`,
+              "frame-src 'self'",
             ].join('; '),
           },
         ],
@@ -126,18 +126,7 @@ const nextConfig: NextConfig = {
         canvas: path.resolve(__dirname, 'webpack-canvas-stub.js'),
       };
       
-      config.optimization.splitChunks = {
-        ...config.optimization.splitChunks,
-        cacheGroups: {
-          ...config.optimization.splitChunks?.cacheGroups,
-          clerk: {
-            test: /[\\/]node_modules[\\/]@clerk[\\/]/,
-            name: 'clerk',
-            chunks: 'all',
-            priority: 20,
-          },
-        },
-      }
+      // Webpack configuration for client-side builds
     } else {
       // Server-side: stub canvas to prevent SSR errors
       config.resolve.alias = {
@@ -147,9 +136,9 @@ const nextConfig: NextConfig = {
     }
     return config
   },
-  // Add experimental features for better chunk loading
+  // Experimental features
   experimental: {
-    optimizePackageImports: ['@clerk/nextjs', '@clerk/themes'],
+    // Add any experimental features here
   },
 };
 

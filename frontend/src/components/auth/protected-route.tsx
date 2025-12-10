@@ -1,6 +1,6 @@
 "use client"
 
-import { useUser } from '@clerk/nextjs'
+import { useUser } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Loading } from '@/components/loading'
@@ -15,7 +15,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
-      router.push('/')
+      router.push('/sign-in')
     }
   }, [isSignedIn, isLoaded, router])
 

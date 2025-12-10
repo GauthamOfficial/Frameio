@@ -19,7 +19,7 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react';
-import { useAuth, useUser } from '@clerk/nextjs';
+import { useAuth, useUser } from '@/hooks/useAuth';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import { useSocket } from '@/hooks/useSocket';
 import { CollaborationCanvas } from '@/components/collaboration/CollaborationCanvas';

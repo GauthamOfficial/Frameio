@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@clerk/nextjs'
+import { useAuth } from '@/hooks/useAuth'
 import { companyProfileService, CompanyProfile, ProfileStatus } from '@/lib/company-profile-service'
 
 export interface UseCompanyProfileReturn {

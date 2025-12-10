@@ -23,7 +23,7 @@ import {
   Mail
 } from "lucide-react"
 import React, { useState, useRef, useEffect } from "react"
-import { useUser, useAuth } from '@clerk/nextjs'
+import { useUser, useAuth } from '@/hooks/useAuth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCompanyProfile } from '@/hooks/use-company-profile'
 import { API_BASE_URL, getFullUrl } from '@/utils/api'

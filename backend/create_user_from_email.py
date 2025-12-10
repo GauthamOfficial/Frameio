@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Script to create a Django user from an email address.
-Use this when a user has signed up via Clerk but doesn't appear in the admin panel.
+Useful for creating users manually or migrating existing user data.
 """
 import os
 import sys
@@ -63,18 +63,20 @@ def create_user_from_email(email, first_name=None, last_name=None):
         print(f"   Last Name: {last_name}")
     
     try:
-        # Create user without password (since they authenticate via Clerk)
+        # Create user with a temporary password (user should set their own password)
+        import secrets
+        temp_password = secrets.token_urlsafe(16)
         user = User.objects.create_user(
             username=username,
             email=email,
-            password=None,  # No password needed for Clerk-authenticated users
+            password=temp_password,
             first_name=first_name or '',
             last_name=last_name or '',
             is_active=True,
-            is_verified=True,  # Assume verified if they signed up via Clerk
+            is_verified=True,
         )
         
-        # Set password to unusable (since they use Clerk)
+        # Set password to unusable - user should reset password via normal flow
         user.set_unusable_password()
         user.save()
         

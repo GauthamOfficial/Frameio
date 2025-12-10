@@ -58,6 +58,8 @@ INSTALLED_APPS = [
     
     # Third-party apps
     "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
     
@@ -187,7 +189,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django REST Framework configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'users.authentication.ClerkAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'users.authentication.DevelopmentAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
@@ -288,28 +290,24 @@ CORS_ALLOW_METHODS = [
     'PUT',
 ]
 
-# Clerk configuration
-CLERK_PUBLISHABLE_KEY = os.getenv('CLERK_PUBLISHABLE_KEY')
-CLERK_SECRET_KEY = os.getenv('CLERK_SECRET_KEY')
-NEXT_PUBLIC_CLERK_FRONTEND_API = os.getenv('NEXT_PUBLIC_CLERK_FRONTEND_API')
+# JWT Configuration
+from datetime import timedelta
 
-# Validate Clerk configuration
-CLERK_CONFIGURED = bool(CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_FRONTEND_API)
-
-if not CLERK_CONFIGURED:
-    if DEBUG:
-        print("WARNING: Clerk configuration is incomplete. Authentication will not work properly.")
-        print("Please set the following environment variables:")
-        print("- CLERK_PUBLISHABLE_KEY")
-        print("- CLERK_SECRET_KEY") 
-        print("- NEXT_PUBLIC_CLERK_FRONTEND_API")
-    else:
-        raise ValueError(
-            "Clerk configuration is incomplete. Please set the following environment variables:\n"
-            "- CLERK_PUBLISHABLE_KEY\n"
-            "- CLERK_SECRET_KEY\n"
-            "- NEXT_PUBLIC_CLERK_FRONTEND_API"
-        )
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+}
 
 # Arcjet configuration
 ARCJET_KEY = os.getenv('ARCJET_KEY', '')
@@ -458,8 +456,6 @@ def validate_environment():
     # Optional but recommended variables
     recommended_vars = {
         'GEMINI_API_KEY': GEMINI_API_KEY,
-        'CLERK_PUBLISHABLE_KEY': CLERK_PUBLISHABLE_KEY,
-        'CLERK_SECRET_KEY': CLERK_SECRET_KEY,
     }
     
     missing_recommended = []

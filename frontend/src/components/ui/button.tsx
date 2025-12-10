@@ -40,24 +40,13 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
-  afterSignInUrl?: string
-  afterSignUpUrl?: string
-  mode?: string
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ({ className, variant, size, asChild: _asChild = false, ...props }, ref) => {
-    // Filter out Clerk-specific props that shouldn't be passed to DOM
-    const {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      afterSignInUrl: _afterSignInUrl,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      afterSignUpUrl: _afterSignUpUrl,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      mode: _mode,
-      ...domProps
-    } = props
+    // Filter out non-DOM props
+    const { ...domProps } = props
 
     return (
       <button

@@ -23,7 +23,7 @@ import {
   Mail
 } from "lucide-react"
 import React, { useState, useRef } from "react"
-import { useUser, useAuth } from '@clerk/nextjs'
+import { useUser, useAuth } from '@/hooks/useAuth'
 import Image from 'next/image'
 import { apiPost, getFullUrl } from '@/utils/api'
 

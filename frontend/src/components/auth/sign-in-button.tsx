@@ -1,27 +1,22 @@
 "use client"
 
-import { SignInButton as ClerkSignInButton } from '@clerk/nextjs'
-import { Button } from "@/components/ui/button"
+import { useRouter } from 'next/navigation'
+import { Button, type ButtonProps } from "@/components/ui/button"
 
-interface SignInButtonProps {
+interface SignInButtonProps extends Omit<ButtonProps, 'onClick'> {
   children?: React.ReactNode
-  className?: string
 }
 
-export function SignInButton({ children, className }: SignInButtonProps) {
-  if (children) {
-    return (
-      <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
-        {children}
-      </ClerkSignInButton>
-    )
+export function SignInButton({ children, className, variant = "ghost", size = "sm", ...props }: SignInButtonProps) {
+  const router = useRouter()
+
+  const handleClick = () => {
+    router.push('/sign-in')
   }
 
   return (
-    <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
-      <Button variant="ghost" size="sm" className={className}>
-        Sign In
-      </Button>
-    </ClerkSignInButton>
+    <Button onClick={handleClick} variant={variant} size={size} className={className} {...props}>
+      {children || "Sign In"}
+    </Button>
   )
 }

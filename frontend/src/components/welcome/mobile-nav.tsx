@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { SignInButton as ClerkSignInButton, SignUpButton as ClerkSignUpButton, useUser } from '@clerk/nextjs'
+import { useUser } from '@/hooks/useAuth'
+import { SignInButton } from '@/components/auth/sign-in-button'
+import { SignUpButton } from '@/components/auth/sign-up-button'
 import { Logo } from "@/components/common/logo"
 import { cn } from "@/lib/utils"
 
@@ -62,16 +64,12 @@ export function MobileNav({ className }: MobileNavProps) {
               </div>
               
               <div className="space-y-4">
-                <ClerkSignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
-                  <Button className="w-full" size="lg">
-                    Get Started
-                  </Button>
-                </ClerkSignUpButton>
-                <ClerkSignInButton mode="modal" fallbackRedirectUrl="/dashboard">
-                  <Button variant="outline" className="w-full" size="lg">
-                    Login
-                  </Button>
-                </ClerkSignInButton>
+                <SignUpButton className="w-full" size="lg">
+                  Get Started
+                </SignUpButton>
+                <SignInButton variant="outline" className="w-full" size="lg">
+                  Login
+                </SignInButton>
               </div>
             </div>
           </div>
