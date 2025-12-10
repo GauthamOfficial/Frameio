@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SimpleErrorBoundary } from "@/components/simple-error-boundary";
 import { AppProvider } from "@/contexts/app-context";
 import { OrganizationProvider } from "@/contexts/organization-context";
+import { AuthModalProvider } from "@/contexts/auth-modal-context";
 import { ToastProvider } from "@/components/common";
 import { AppLayoutWrapper } from "@/components/layout/app-layout-wrapper";
 import MetaMaskSuppressor from "@/components/MetaMaskSuppressor";
@@ -67,9 +68,11 @@ export default function RootLayout({
           <ToastProvider>
             <AppProvider>
               <OrganizationProvider>
-                <AppLayoutWrapper>
-                  {children}
-                </AppLayoutWrapper>
+                <AuthModalProvider>
+                  <AppLayoutWrapper>
+                    {children}
+                  </AppLayoutWrapper>
+                </AuthModalProvider>
               </OrganizationProvider>
             </AppProvider>
           </ToastProvider>
