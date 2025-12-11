@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { API_BASE_URL } from '@/utils/api'
-import { getAccessToken, refreshAccessToken, setAuthToken as setAuthTokenUtil, clearAuth } from './auth'
+import { getAccessToken, refreshAccessToken, clearAuth } from './auth'
 
 // Create axios instance with default config
 const api = axios.create({
