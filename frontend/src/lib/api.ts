@@ -1,5 +1,6 @@
-import axios, { AxiosError, AxiosResponse } from 'axios'
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { API_BASE_URL } from '@/utils/api'
+import { getAccessToken, refreshAccessToken, setAuthToken as setAuthTokenUtil, clearAuth } from './auth'
 
 // Create axios instance with default config
 const api = axios.create({
@@ -24,17 +25,23 @@ export const setAuthToken = (token: string | null) => {
 
 export const getAuthToken = () => authToken
 
-// Add request interceptor for error handling
+// Add request interceptor to attach token
 api.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     console.log(`Making API request to: ${config.baseURL}${config.url}`)
+    
+    // Add auth token if available
+    const token = getAccessToken()
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
     
     // Add development headers for testing
     if (typeof window !== 'undefined') {
       const devUserId = localStorage.getItem('dev-user-id')
       const devOrgId = localStorage.getItem('dev-org-id')
       
-      if (devUserId && devOrgId) {
+      if (devUserId && devOrgId && config.headers) {
         config.headers['X-Dev-User-ID'] = devUserId
         config.headers['X-Dev-Org-ID'] = devOrgId
         console.log('Added development headers:', { devUserId, devOrgId })
@@ -49,13 +56,15 @@ api.interceptors.request.use(
   }
 )
 
-// Add response interceptor for error handling
+// Add response interceptor for error handling and automatic token refresh
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     console.log(`API response received: ${response.status}`)
     return response
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+    
     // Enhanced error logging with better error object handling
     const errorInfo = {
       message: error?.message || 'Unknown error',
@@ -80,9 +89,44 @@ api.interceptors.response.use(
           detail: { type: 'network', message: 'Unable to connect to server' }
         }))
       }
+    } else if (error?.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      // Token expired - try to refresh
+      originalRequest._retry = true
+      
+      try {
+        const refreshed = await refreshAccessToken()
+        if (refreshed) {
+          // Update the token in axios defaults
+          const newToken = getAccessToken()
+          if (newToken && originalRequest.headers) {
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`
+            setAuthToken(newToken)
+            // Retry the original request with new token
+            return api(originalRequest)
+          }
+        } else {
+          // Refresh failed, clear auth
+          setAuthToken(null)
+          clearAuth()
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('api-error', {
+              detail: { type: 'unauthorized', message: 'Session expired. Please log in again.' }
+            }))
+          }
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError)
+        setAuthToken(null)
+        clearAuth()
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('api-error', {
+            detail: { type: 'unauthorized', message: 'Session expired. Please log in again.' }
+          }))
+        }
+      }
     } else if (error?.response?.status === 401) {
+      // Already retried or refresh failed
       console.error('Unauthorized: Token may be expired or invalid')
-      // Clear token and redirect to login
       setAuthToken(null)
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('api-error', {

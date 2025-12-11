@@ -8,6 +8,9 @@ const TOKEN_KEY = 'auth_token'
 const REFRESH_TOKEN_KEY = 'refresh_token'
 const USER_KEY = 'auth_user'
 
+// Token refresh mutex to prevent concurrent refresh attempts
+let refreshPromise: Promise<boolean> | null = null
+
 export interface User {
   id: string
   email: string
@@ -254,7 +257,7 @@ export async function logout(): Promise<void> {
 /**
  * Get current authenticated user
  */
-export async function getCurrentUser(): Promise<User | null> {
+export async function getCurrentUser(retryCount = 0): Promise<User | null> {
   const accessToken = getAccessToken()
   
   if (!accessToken) {
@@ -275,12 +278,12 @@ export async function getCurrentUser(): Promise<User | null> {
       const user = data.user || data
       setUser(user)
       return user
-    } else if (response.status === 401) {
-      // Token expired, try to refresh
+    } else if (response.status === 401 && retryCount === 0) {
+      // Token expired, try to refresh (only retry once to prevent infinite recursion)
       const refreshed = await refreshAccessToken()
       if (refreshed) {
-        // Retry with new token
-        return getCurrentUser()
+        // Retry with new token (increment retry count)
+        return getCurrentUser(retryCount + 1)
       }
       clearAuth()
       return null
@@ -295,38 +298,61 @@ export async function getCurrentUser(): Promise<User | null> {
 
 /**
  * Refresh access token using refresh token
+ * Uses a mutex to prevent concurrent refresh attempts
  */
 export async function refreshAccessToken(): Promise<boolean> {
+  // If a refresh is already in progress, wait for it instead of starting a new one
+  if (refreshPromise) {
+    return refreshPromise
+  }
+
   const refreshToken = getRefreshToken()
   
   if (!refreshToken) {
     return false
   }
 
-  try {
-    const response = await fetch(buildApiUrl('/api/users/auth/token/refresh/'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        refresh: refreshToken,
-      }),
-    })
+  // Create the refresh promise and store it
+  refreshPromise = (async (): Promise<boolean> => {
+    try {
+      const response = await fetch(buildApiUrl('/api/users/auth/token/refresh/'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          refresh: refreshToken,
+        }),
+      })
 
-    if (response.ok) {
-      const data = await response.json()
-      if (data.access) {
-        localStorage.setItem(TOKEN_KEY, data.access)
-        return true
+      if (response.ok) {
+        const data = await response.json()
+        if (data.access) {
+          // Update both localStorage and cookies
+          const currentRefreshToken = getRefreshToken()
+          setTokens(data.access, currentRefreshToken || refreshToken)
+          return true
+        }
+      } else {
+        // If refresh fails, clear auth to force re-login
+        const errorData = await response.json().catch(() => ({}))
+        if (errorData.detail?.includes('blacklisted') || errorData.detail?.includes('expired')) {
+          console.warn('Refresh token is invalid, clearing auth')
+          clearAuth()
+        }
       }
+      
+      return false
+    } catch (error) {
+      console.warn('Failed to refresh token:', error)
+      return false
+    } finally {
+      // Clear the promise so future calls can start a new refresh
+      refreshPromise = null
     }
-    
-    return false
-  } catch (error) {
-    console.warn('Failed to refresh token:', error)
-    return false
-  }
+  })()
+
+  return refreshPromise
 }
 
 /**
