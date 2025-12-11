@@ -17,7 +17,9 @@ import {
   Sparkles,
   Share2,
   ExternalLink,
-  Facebook
+  Facebook,
+  X,
+  Image
 } from "lucide-react"
 import React, { useState, useRef, useEffect } from "react"
 import { useUser, useAuth } from '@/hooks/useAuth'
@@ -688,20 +690,63 @@ export default function EnhancedPosterGeneratorWithBranding() {
           <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
             <div className="space-y-2">
               <Label htmlFor="prompt" className="text-sm sm:text-base">Describe your poster</Label>
-              <Textarea
-                ref={textareaRef}
-                id="prompt"
-                placeholder="Describe your Post"
-                value={prompt}
-                onChange={(e) => {
-                  setPrompt(e.target.value)
-                  // Auto-resize on input
-                  setTimeout(() => adjustTextareaHeight(), 0)
-                }}
-                disabled={isGenerating}
-                className="min-h-[100px] max-h-[500px] resize-none overflow-y-auto placeholder:opacity-50 text-sm sm:text-base"
-                style={{ height: 'auto' }}
-              />
+              <div className="relative">
+                <Textarea
+                  ref={textareaRef}
+                  id="prompt"
+                  placeholder="Describe your Post"
+                  value={prompt}
+                  onChange={(e) => {
+                    setPrompt(e.target.value)
+                    // Auto-resize on input
+                    setTimeout(() => adjustTextareaHeight(), 0)
+                  }}
+                  disabled={isGenerating}
+                  className="min-h-[100px] max-h-[500px] resize-none overflow-y-auto placeholder:opacity-50 text-sm sm:text-base pr-28 pb-20"
+                  style={{ height: 'auto' }}
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={isGenerating}
+                  className="hidden"
+                />
+                <div className="absolute bottom-3 left-3 flex items-end gap-2">
+                  {previewUrl && (
+                    <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={previewUrl}
+                        alt="Preview"
+                        className="w-12 h-12 object-cover rounded border"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={clearUploadedImage}
+                        disabled={isGenerating}
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isGenerating}
+                    aria-label="Choose image"
+                    className="bg-gray-100 dark:bg-gray-800 hover:bg-[#800000] dark:hover:bg-[#800000] hover:text-white border-gray-300 dark:border-gray-600"
+                  >
+                    <Image className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Template Section */}
@@ -809,52 +854,6 @@ export default function EnhancedPosterGeneratorWithBranding() {
                 <option value="16:9">Landscape (16:9)</option>
                 <option value="9:16">Vertical (9:16)</option>
               </select>
-            </div>
-
-            {/* Image Upload */}
-            <div className="space-y-2">
-              <Label className="text-sm sm:text-base">Upload Image (Optional)</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-4 text-center">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  disabled={isGenerating}
-                  className="hidden"
-                />
-                {previewUrl ? (
-                  <div className="space-y-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={previewUrl} 
-                      alt="Preview" 
-                      className="w-full h-24 sm:h-32 object-cover rounded"
-                    />
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={clearUploadedImage}
-                      disabled={isGenerating}
-                      className="text-xs sm:text-sm"
-                    >
-                      Remove Image
-                    </Button>
-                  </div>
-                ) : (
-                  <div>
-                    <Upload className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-gray-400 mb-2" />
-                    <Button 
-                      variant="outline" 
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isGenerating}
-                      className="text-xs sm:text-sm"
-                    >
-                      Choose Image
-                    </Button>
-                  </div>
-                )}
-              </div>
             </div>
 
             <Button 
