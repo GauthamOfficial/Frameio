@@ -645,9 +645,9 @@ export default function SchedulerPage() {
                       <Button
                         size="sm"
                         onClick={() => handleSchedulePoster(poster)}
-                        className="bg-textile-accent hover:bg-textile-accent/90 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 h-7 sm:h-8 w-full sm:w-auto"
+                        className="bg-textile-accent hover:bg-textile-accent/90 text-xs px-2 py-1 h-7 w-full sm:w-auto sm:max-w-[100px] sm:flex-shrink-0"
                       >
-                        <Clock className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                        <Clock className="mr-1 h-3 w-3 shrink-0" />
                         Schedule
                       </Button>
                     </div>
