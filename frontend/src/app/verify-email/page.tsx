@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import { Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { sendVerificationEmail, verifyEmail, setTokens, setUser } from '@/lib/auth'
 import { useToastHelpers } from '@/components/common'
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { showSuccess, showError } = useToastHelpers()
@@ -20,14 +20,7 @@ export default function VerifyEmailPage() {
   const [isResending, setIsResending] = useState(false)
   const [userEmail, setUserEmail] = useState(email || '')
 
-  // Auto-verify if token is provided
-  useEffect(() => {
-    if (token && status === 'pending') {
-      handleVerify(token)
-    }
-  }, [token])
-
-  const handleVerify = async (verificationToken: string) => {
+  const handleVerify = useCallback(async (verificationToken: string) => {
     setStatus('verifying')
     
     try {
@@ -67,7 +60,14 @@ export default function VerifyEmailPage() {
       const errorMessage = error instanceof Error ? error.message : 'Failed to verify email'
       showError(errorMessage)
     }
-  }
+  }, [router, showError, showSuccess])
+
+  // Auto-verify if token is provided
+  useEffect(() => {
+    if (token && status === 'pending') {
+      handleVerify(token)
+    }
+  }, [token, status, handleVerify])
 
   const handleResendEmail = async () => {
     if (!userEmail) {
@@ -119,14 +119,14 @@ export default function VerifyEmailPage() {
               ? 'The verification link is invalid or has expired. Please request a new one.'
               : status === 'verifying'
               ? 'Please wait while we verify your email...'
-              : 'We\'ve sent a verification link to your email address. Please click the link to verify your account.'}
+              : 'We&apos;ve sent a verification link to your email address. Please click the link to verify your account.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {status === 'pending' && (
             <>
               <div className="rounded-lg bg-muted p-4 text-sm">
-                <p className="mb-2 font-medium">Didn't receive the email?</p>
+                <p className="mb-2 font-medium">Didn&apos;t receive the email?</p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground mb-4">
                   <li>Check your spam/junk folder</li>
                   <li>Make sure you entered the correct email address</li>
@@ -239,6 +239,14 @@ export default function VerifyEmailPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailContent />
+    </Suspense>
   )
 }
 

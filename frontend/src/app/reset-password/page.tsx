@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import { buildApiUrl } from '@/utils/api'
 import { useToastHelpers } from '@/components/common'
 import Link from 'next/link'
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { showSuccess, showError } = useToastHelpers()
@@ -27,17 +27,7 @@ export default function ResetPasswordPage() {
   const [userEmail, setUserEmail] = useState('')
   const [success, setSuccess] = useState(false)
 
-  // Verify token on mount
-  useEffect(() => {
-    if (token) {
-      verifyToken(token)
-    } else {
-      setVerifying(false)
-      setTokenValid(false)
-    }
-  }, [token])
-
-  const verifyToken = async (resetToken: string) => {
+  const verifyToken = useCallback(async (resetToken: string) => {
     try {
       const response = await fetch(buildApiUrl(`/api/users/auth/verify-reset-token/${resetToken}/`), {
         method: 'GET',
@@ -61,7 +51,17 @@ export default function ResetPasswordPage() {
     } finally {
       setVerifying(false)
     }
-  }
+  }, [showError])
+
+  // Verify token on mount
+  useEffect(() => {
+    if (token) {
+      verifyToken(token)
+    } else {
+      setVerifying(false)
+      setTokenValid(false)
+    }
+  }, [token, verifyToken])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -304,6 +304,14 @@ export default function ResetPasswordPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }
 

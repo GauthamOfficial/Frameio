@@ -19,12 +19,14 @@ export interface User {
 }
 
 export interface AuthResponse {
-  user: User
-  tokens: {
+  user?: User
+  tokens?: {
     access: string
     refresh: string
-  }
+  } | null
+  email?: string
   message?: string
+  requires_verification?: boolean
 }
 
 /**

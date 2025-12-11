@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { login } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,6 @@ import { Eye, EyeOff } from 'lucide-react'
 
 export function SignInModal() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { showSuccess, showError } = useToastHelpers()
   const { showSignIn, closeSignIn, switchToSignUp } = useAuthModal()
   const [email, setEmail] = useState('')

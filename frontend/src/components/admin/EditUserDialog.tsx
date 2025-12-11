@@ -63,10 +63,14 @@ export function EditUserDialog({ open, onOpenChange, user, onSave }: EditUserDia
       <DialogContent className="max-w-lg w-[calc(100%-2rem)] sm:w-full mx-4">
         <DialogClose onClose={() => onOpenChange(false)} />
         <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">Edit User</DialogTitle>
-          <DialogDescription className="text-sm">
-            Update user information below. Click save when you&apos;re done.
-          </DialogDescription>
+          <div className="text-lg sm:text-xl">
+            <DialogTitle>Edit User</DialogTitle>
+          </div>
+          <div className="text-sm">
+            <DialogDescription>
+              Update user information below. Click save when you&apos;re done.
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
@@ -126,20 +130,22 @@ export function EditUserDialog({ open, onOpenChange, user, onSave }: EditUserDia
             )}
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0 mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-              {loading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </DialogFooter>
+          <div className="flex-col sm:flex-row gap-2 sm:gap-0 mt-6 flex">
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

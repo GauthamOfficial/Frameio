@@ -13,7 +13,7 @@ import { useApp } from "@/contexts/app-context"
 import { DashboardErrorBoundary } from "@/components/common/error-boundary"
 import { Plus, TrendingUp, Calendar, Image, User, Settings, Palette } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { getCurrentUser, getAccessToken, setTokens, getRefreshToken } from "@/lib/auth"
+import { getCurrentUser, getAccessToken, setTokens } from "@/lib/auth"
 
 export default function DashboardPage() {
   const { userRole, isLoading } = useOrganization()
@@ -28,8 +28,6 @@ export default function DashboardPage() {
     if (verified === 'true') {
       // Ensure tokens are in localStorage (they should be, but double-check)
       const accessToken = getAccessToken()
-      const refreshToken = getRefreshToken()
-      
       // If tokens exist in cookies but not localStorage, sync them
       if (!accessToken && typeof document !== 'undefined') {
         const cookieToken = document.cookie

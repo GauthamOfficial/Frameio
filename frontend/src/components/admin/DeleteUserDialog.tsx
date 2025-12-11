@@ -38,11 +38,15 @@ export function DeleteUserDialog({ open, onOpenChange, user, onConfirm }: Delete
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:w-full mx-4">
         <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">Delete User</DialogTitle>
-          <DialogDescription className="text-sm break-words">
-            Are you sure you want to delete <strong>{user.name}</strong> ({user.email})? 
-            This action cannot be undone.
-          </DialogDescription>
+          <div className="text-lg sm:text-xl">
+            <DialogTitle>Delete User</DialogTitle>
+          </div>
+          <div className="text-sm break-words">
+            <DialogDescription>
+              Are you sure you want to delete <strong>{user.name}</strong> ({user.email})? 
+              This action cannot be undone.
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
         {error && (
@@ -51,24 +55,26 @@ export function DeleteUserDialog({ open, onOpenChange, user, onConfirm }: Delete
           </div>
         )}
 
-        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleConfirm}
-            disabled={loading}
-            className="w-full sm:w-auto"
-          >
-            {loading ? 'Deleting...' : 'Delete User'}
-          </Button>
-        </DialogFooter>
+        <div className="flex-col sm:flex-row gap-2 sm:gap-0 flex">
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirm}
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              {loading ? 'Deleting...' : 'Delete User'}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

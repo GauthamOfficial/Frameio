@@ -63,7 +63,7 @@ export function SignUpModal() {
       })
       
       // Redirect to check-email page (NOT dashboard - user must verify first)
-      const email = response?.user?.email || response?.email || formData.email
+      const email = response?.user?.email || formData.email
       setTimeout(() => {
         window.location.href = `/check-email?email=${encodeURIComponent(email)}`
       }, 150)

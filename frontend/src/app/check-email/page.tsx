@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { sendVerificationEmail, setTokens, setUser } from '@/lib/auth'
 import { useToastHelpers } from '@/components/common'
 import { buildApiUrl } from '@/utils/api'
 
-export default function CheckEmailPage() {
+function CheckEmailContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { showSuccess, showError } = useToastHelpers()
@@ -81,7 +81,7 @@ export default function CheckEmailPage() {
     } finally {
       setIsVerifying(false)
     }
-  }, [])
+  }, [router, showError, showSuccess])
 
   // If token is provided, automatically verify
   useEffect(() => {
@@ -195,7 +195,7 @@ export default function CheckEmailPage() {
           </div>
           <CardTitle className="text-2xl">Check Your Email</CardTitle>
           <CardDescription>
-            We've sent a verification link to
+            We&apos;ve sent a verification link to
             {email && (
               <span className="font-semibold text-foreground"> {email}</span>
             )}
@@ -205,7 +205,7 @@ export default function CheckEmailPage() {
           <div className="text-sm text-muted-foreground space-y-2">
             <p>Please check your email and click the verification link to activate your account.</p>
             <p className="text-xs">
-              The link will expire in 24 hours. If you don't see the email, check your spam folder.
+              The link will expire in 24 hours. If you don&apos;t see the email, check your spam folder.
             </p>
           </div>
 
@@ -254,6 +254,14 @@ export default function CheckEmailPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function CheckEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckEmailContent />
+    </Suspense>
   )
 }
 
