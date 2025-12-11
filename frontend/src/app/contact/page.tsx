@@ -272,7 +272,7 @@ export default function ContactPage() {
                     href="https://www.facebook.com/share/1FfjVzCy2m/?mibextid=wwXIfr"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-accent hover:text-accent-foreground transition-all duration-200"
+                    className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
                   >
                     <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
                       <Facebook className="h-6 w-6 text-primary-foreground" />
@@ -287,7 +287,7 @@ export default function ContactPage() {
                     href="https://www.instagram.com/frameioai?igsh=NDh6OW03NG51MDR3"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-accent hover:text-accent-foreground transition-all duration-200"
+                    className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
                   >
                     <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center">
                       <Instagram className="h-6 w-6 text-accent-foreground" />
@@ -300,7 +300,7 @@ export default function ContactPage() {
 
                   <a
                     href="mailto:startuptsg@gmail.com"
-                    className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-accent hover:text-accent-foreground transition-all duration-200"
+                    className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
                   >
                     <div className="w-12 h-12 bg-chart-1 rounded-lg flex items-center justify-center">
                       <Mail className="h-6 w-6 text-white" />
@@ -313,7 +313,7 @@ export default function ContactPage() {
 
                   <a
                     href="tel:0759819250"
-                    className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-accent hover:text-accent-foreground transition-all duration-200"
+                    className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
                   >
                     <div className="w-12 h-12 bg-chart-2 rounded-lg flex items-center justify-center">
                       <Phone className="h-6 w-6 text-white" />

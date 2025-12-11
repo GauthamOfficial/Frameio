@@ -11,7 +11,6 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  Upload,
   Copy,
   MessageSquare,
   Sparkles,
@@ -743,6 +742,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                     aria-label="Choose image"
                     className="bg-gray-100 dark:bg-gray-800 hover:bg-[#800000] dark:hover:bg-[#800000] hover:text-white border-gray-300 dark:border-gray-600"
                   >
+                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
                     <Image className="h-4 w-4" />
                   </Button>
                 </div>
