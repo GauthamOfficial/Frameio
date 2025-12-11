@@ -119,8 +119,16 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Protected admin area</p>
+          <div className="mt-6 space-y-2 text-center text-sm">
+            <div>
+              <a
+                href="/forgot-password"
+                className="text-primary hover:underline font-medium"
+              >
+                Forgot password?
+              </a>
+            </div>
+            <p className="text-muted-foreground">Protected admin area</p>
           </div>
         </CardContent>
       </Card>

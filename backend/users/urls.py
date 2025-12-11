@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import UserViewSet, UserProfileViewSet, UserActivityViewSet, CompanyProfileViewSet
 from .auth_views import CustomTokenObtainPairView, register, logout, me
 from .verification_views import send_verification_email_view, verify_email, check_verification_status
+from .password_reset_views import request_password_reset, verify_reset_token, reset_password
 from . import google_analytics_views
 
 # TEST ENDPOINT - completely bypasses DRF
@@ -33,6 +34,10 @@ urlpatterns = [
     path('users/auth/send-verification-email/', send_verification_email_view, name='send_verification_email'),
     path('users/auth/verify-email/<str:token>/', verify_email, name='verify_email'),
     path('users/auth/verification-status/', check_verification_status, name='verification_status'),
+    # Password reset endpoints
+    path('users/auth/request-password-reset/', request_password_reset, name='request_password_reset'),
+    path('users/auth/verify-reset-token/<str:token>/', verify_reset_token, name='verify_reset_token'),
+    path('users/auth/reset-password/<str:token>/', reset_password, name='reset_password'),
     # Google Analytics endpoints
     path('admin/analytics/', google_analytics_views.google_analytics_all, name='google-analytics-all'),
     path('admin/analytics/overview/', google_analytics_views.google_analytics_overview, name='google-analytics-overview'),

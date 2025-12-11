@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { login } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,12 +13,19 @@ import { Eye, EyeOff } from 'lucide-react'
 
 export function SignInModal() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { showSuccess, showError } = useToastHelpers()
   const { showSignIn, closeSignIn, switchToSignUp } = useAuthModal()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  const handleForgotPassword = () => {
+    closeSignIn()
+    // Use window.location for a hard navigation to ensure we leave the modal context
+    window.location.href = '/forgot-password'
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -125,16 +132,28 @@ export function SignInModal() {
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
-        <div className="mt-4 text-center text-sm">
-          <span className="text-muted-foreground">Don&apos;t have an account? </span>
-          <button
-            type="button"
-            onClick={switchToSignUp}
-            className="text-primary hover:underline font-medium"
-            disabled={loading}
-          >
-            Sign up
-          </button>
+        <div className="mt-4 space-y-2">
+          <div className="text-center text-sm">
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-primary hover:underline font-medium"
+              disabled={loading}
+            >
+              Forgot password?
+            </button>
+          </div>
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">Don&apos;t have an account? </span>
+            <button
+              type="button"
+              onClick={switchToSignUp}
+              className="text-primary hover:underline font-medium"
+              disabled={loading}
+            >
+              Sign up
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
