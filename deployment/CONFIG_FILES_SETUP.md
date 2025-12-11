@@ -2,18 +2,26 @@
 
 This document lists all configuration files that need to be set up for Frameio deployment, including their source paths, destination paths, and setup instructions.
 
+## 📍 Important: Project Location
+
+**Your project is located at:** `~/Frameio/` (which expands to `/home/ubuntu/Frameio/`)
+
+All paths in this document use `~/Frameio/` for user-relative paths and `/home/ubuntu/Frameio/` for absolute paths required by system services (systemd, nginx).
+
+**Note:** If your project is in a different location, replace all `~/Frameio/` references with your actual project path.
+
 ---
 
 ## 📋 Configuration Files Overview
 
 | # | Config File | Source Path | Destination Path | Required | Auto-Setup |
 |---|-------------|-------------|------------------|----------|------------|
-| 1 | Environment Variables | `deployment/env.production.template` | `/opt/frameio/.env` | ✅ Yes | ❌ Manual |
+| 1 | Environment Variables | `deployment/env.production.template` | `~/Frameio/.env` | ✅ Yes | ❌ Manual |
 | 2 | Nginx Configuration | `nginx.conf` | `/etc/nginx/sites-available/frameio` | ✅ Yes | ✅ Yes (setup.sh) |
 | 3 | Systemd Service | `deployment/frameio-backend.service` | `/etc/systemd/system/frameio-backend.service` | ✅ Yes | ✅ Yes (setup.sh) |
-| 4 | Gunicorn Config | `backend/gunicorn_config.py` | `/opt/frameio/backend/gunicorn_config.py` | ✅ Yes | ✅ Already exists |
-| 5 | Django Settings | `backend/frameio_backend/settings.py` | `/opt/frameio/backend/frameio_backend/settings.py` | ✅ Yes | ✅ Already exists |
-| 6 | Next.js Config | `frontend/next.config.ts` | `/opt/frameio/frontend/next.config.ts` | ⚠️ If frontend on server | ✅ Already exists |
+| 4 | Gunicorn Config | `backend/gunicorn_config.py` | `~/Frameio/backend/gunicorn_config.py` | ✅ Yes | ✅ Already exists |
+| 5 | Django Settings | `backend/frameio_backend/settings.py` | `~/Frameio/backend/frameio_backend/settings.py` | ✅ Yes | ✅ Already exists |
+| 6 | Next.js Config | `frontend/next.config.ts` | `~/Frameio/frontend/next.config.ts` | ⚠️ If frontend on server | ✅ Already exists |
 
 ---
 
@@ -23,7 +31,7 @@ This document lists all configuration files that need to be set up for Frameio d
 **Path:** `deployment/env.production.template`
 
 ### Destination
-**Path:** `/opt/frameio/.env`
+**Path:** `~/Frameio/.env` (or `/home/ubuntu/Frameio/.env`)
 
 ### Purpose
 Contains all production environment variables including:
@@ -36,19 +44,22 @@ Contains all production environment variables including:
 ### Setup Instructions
 
 ```bash
-# 1. Copy template to production location
-cp /opt/frameio/deployment/env.production.template /opt/frameio/.env
+# 1. Navigate to project directory
+cd ~/Frameio
 
-# 2. Edit with your production values
-nano /opt/frameio/.env
+# 2. Copy template to production location
+cp deployment/env.production.template .env
+
+# 3. Edit with your production values
+nano .env
 # OR
-sudo nano /opt/frameio/.env
+vim .env
 
-# 3. Set secure permissions (only owner can read/write)
-chmod 600 /opt/frameio/.env
+# 4. Set secure permissions (only owner can read/write)
+chmod 600 .env
 
-# 4. Verify permissions
-ls -la /opt/frameio/.env
+# 5. Verify permissions
+ls -la .env
 # Should show: -rw------- (only you can read it)
 ```
 
@@ -113,23 +124,28 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 ### Setup Instructions
 
 ```bash
-# 1. Copy Nginx config to system location
-sudo cp /opt/frameio/nginx.conf /etc/nginx/sites-available/frameio
+# 1. Navigate to project directory
+cd ~/Frameio
 
-# 2. Create symbolic link to enable site
+# 2. Copy Nginx config to system location
+sudo cp nginx.conf /etc/nginx/sites-available/frameio
+
+# 3. Create symbolic link to enable site
 sudo ln -sf /etc/nginx/sites-available/frameio /etc/nginx/sites-enabled/
 
-# 3. Remove default Nginx site (optional but recommended)
+# 4. Remove default Nginx site (optional but recommended)
 sudo rm -f /etc/nginx/sites-enabled/default
 
-# 4. Test Nginx configuration
+# 5. Test Nginx configuration
 sudo nginx -t
 
-# 5. If test passes, reload Nginx
+# 6. If test passes, reload Nginx
 sudo systemctl reload nginx
 ```
 
 ### Key Configuration Settings
+
+**Important:** Make sure your `nginx.conf` file uses the correct paths. Update it if needed:
 
 ```nginx
 # Server
@@ -138,18 +154,25 @@ listen 80;
 
 # Static files
 location /static/ {
-    alias /opt/frameio/backend/staticfiles/;
+    alias /home/ubuntu/Frameio/backend/staticfiles/;
 }
 
 # Media files
 location /media/ {
-    alias /opt/frameio/backend/media/;
+    alias /home/ubuntu/Frameio/backend/media/;
 }
 
 # API proxy to Gunicorn
 location / {
     proxy_pass http://127.0.0.1:8000;
 }
+```
+
+**Before copying nginx.conf, verify the paths match your server structure:**
+```bash
+cd ~/Frameio
+grep -n "/opt/frameio" nginx.conf
+# If you see any results, update them to /home/ubuntu/Frameio
 ```
 
 ### Status
@@ -175,19 +198,26 @@ location / {
 ### Setup Instructions
 
 ```bash
-# 1. Copy service file to systemd directory
-sudo cp /opt/frameio/deployment/frameio-backend.service /etc/systemd/system/
+# 1. Navigate to project directory
+cd ~/Frameio
 
-# 2. Reload systemd to recognize new service
+# 2. Copy service file to systemd directory
+sudo cp deployment/frameio-backend.service /etc/systemd/system/
+
+# 3. Edit the service file to use correct paths (if needed)
+# Update paths in the service file to match your project location
+sudo nano /etc/systemd/system/frameio-backend.service
+
+# 4. Reload systemd to recognize new service
 sudo systemctl daemon-reload
 
-# 3. Enable service to start on boot
+# 5. Enable service to start on boot
 sudo systemctl enable frameio-backend
 
-# 4. Start the service
+# 6. Start the service
 sudo systemctl start frameio-backend
 
-# 5. Check status
+# 7. Check status
 sudo systemctl status frameio-backend
 ```
 
@@ -201,9 +231,10 @@ After=network.target mysql.service redis.service
 [Service]
 User=www-data
 Group=www-data
-WorkingDirectory=/opt/frameio/backend
-ExecStart=/opt/frameio/venv/bin/gunicorn \
-    --config /opt/frameio/backend/gunicorn_config.py \
+WorkingDirectory=/home/ubuntu/Frameio/backend
+Environment="PATH=/home/ubuntu/Frameio/venv/bin"
+ExecStart=/home/ubuntu/Frameio/venv/bin/gunicorn \
+    --config /home/ubuntu/Frameio/backend/gunicorn_config.py \
     frameio_backend.wsgi:application
 Restart=always
 
@@ -242,7 +273,7 @@ sudo journalctl -u frameio-backend -f
 **Path:** `backend/gunicorn_config.py`
 
 ### Destination
-**Path:** `/opt/frameio/backend/gunicorn_config.py`
+**Path:** `~/Frameio/backend/gunicorn_config.py` (or `/home/ubuntu/Frameio/backend/gunicorn_config.py`)
 
 ### Purpose
 - Configures Gunicorn WSGI server
@@ -255,7 +286,8 @@ sudo journalctl -u frameio-backend -f
 ```bash
 # File is already in your project
 # No setup needed - just ensure it's in the correct location
-ls -la /opt/frameio/backend/gunicorn_config.py
+cd ~/Frameio
+ls -la backend/gunicorn_config.py
 ```
 
 ### Key Configuration Settings
@@ -268,8 +300,8 @@ bind = "127.0.0.1:8000"
 workers = multiprocessing.cpu_count() * 2 + 1
 
 # Logging
-accesslog = "/opt/frameio/backend/logs/gunicorn_access.log"
-errorlog = "/opt/frameio/backend/logs/gunicorn_error.log"
+accesslog = "/home/ubuntu/Frameio/backend/logs/gunicorn_access.log"
+errorlog = "/home/ubuntu/Frameio/backend/logs/gunicorn_error.log"
 
 # Timeouts
 timeout = 30
@@ -288,7 +320,7 @@ graceful_timeout = 30
 **Path:** `backend/frameio_backend/settings.py`
 
 ### Destination
-**Path:** `/opt/frameio/backend/frameio_backend/settings.py`
+**Path:** `~/Frameio/backend/frameio_backend/settings.py` (or `/home/ubuntu/Frameio/backend/frameio_backend/settings.py`)
 
 ### Purpose
 - Django application configuration
@@ -341,7 +373,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 **Path:** `frontend/next.config.ts`
 
 ### Destination
-**Path:** `/opt/frameio/frontend/next.config.ts`
+**Path:** `~/Frameio/frontend/next.config.ts` (or `/home/ubuntu/Frameio/frontend/next.config.ts`)
 
 ### Purpose
 - Next.js build configuration
@@ -514,10 +546,12 @@ REDIS_URL=redis://localhost:6379/0
 Most configuration files are set up automatically by the setup script:
 
 ```bash
-cd /opt/frameio/deployment
+cd ~/Frameio/deployment
 sudo chmod +x setup.sh
 sudo ./setup.sh
 ```
+
+**Note:** If `setup.sh` uses `/opt/frameio/` paths, you'll need to update it to use `~/Frameio/` or `/home/ubuntu/Frameio/` paths.
 
 **What `setup.sh` does:**
 - ✅ Installs system packages (Python, Nginx, MySQL, Redis, Node.js)
@@ -554,14 +588,22 @@ Framio/
 ### On Production Server (EC2)
 
 ```
-/opt/frameio/
-├── .env                          # Production environment variables
+/home/ubuntu/Frameio/            # Project root (or ~/Frameio/)
+├── .env                         # Production environment variables
+├── venv/                        # Python virtual environment (if created)
 ├── backend/
-│   ├── gunicorn_config.py       # Gunicorn config (copied from project)
+│   ├── gunicorn_config.py      # Gunicorn config
+│   ├── staticfiles/             # Collected static files
+│   ├── media/                   # User uploads
+│   ├── logs/                    # Application logs
 │   └── frameio_backend/
-│       └── settings.py          # Django settings (copied from project)
-└── frontend/
-    └── next.config.ts           # Next.js config (copied from project)
+│       └── settings.py          # Django settings
+├── frontend/
+│   └── next.config.ts           # Next.js config
+├── deployment/
+│   ├── env.production.template  # Template for .env
+│   └── frameio-backend.service  # Systemd service file
+└── nginx.conf                   # Nginx configuration
 
 /etc/nginx/sites-available/
 └── frameio                      # Nginx config (copied from nginx.conf)
@@ -577,29 +619,32 @@ Framio/
 After setup, verify all configuration files:
 
 ```bash
-# 1. Check .env file exists and has correct permissions
-ls -la /opt/frameio/.env
+# 1. Navigate to project directory
+cd ~/Frameio
+
+# 2. Check .env file exists and has correct permissions
+ls -la .env
 # Should show: -rw------- (600)
 
-# 2. Check Nginx config
+# 3. Check Nginx config
 sudo nginx -t
 sudo ls -la /etc/nginx/sites-available/frameio
 sudo ls -la /etc/nginx/sites-enabled/frameio
 
-# 3. Check systemd service
+# 4. Check systemd service
 sudo systemctl status frameio-backend
 sudo ls -la /etc/systemd/system/frameio-backend.service
 
-# 4. Check Gunicorn config
-ls -la /opt/frameio/backend/gunicorn_config.py
+# 5. Check Gunicorn config
+ls -la backend/gunicorn_config.py
 
-# 5. Check Django settings
-ls -la /opt/frameio/backend/frameio_backend/settings.py
+# 6. Check Django settings
+ls -la backend/frameio_backend/settings.py
 
-# 6. Test database connection
+# 7. Test database connection
 mysql -u frameio_user -p frameio_db
 
-# 7. Test Redis connection
+# 8. Test Redis connection
 redis-cli ping
 ```
 

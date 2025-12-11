@@ -10,6 +10,7 @@ Group=www-data
 WorkingDirectory=/opt/frameio/backend
 Environment="PATH=/opt/frameio/venv/bin"
 Environment="DJANGO_SETTINGS_MODULE=frameio_backend.settings"
+Environment="DOMAIN_URL=http://13.213.53.199"
 ExecStart=/opt/frameio/venv/bin/gunicorn \
     --config /opt/frameio/backend/gunicorn_config.py \
     frameio_backend.wsgi:application

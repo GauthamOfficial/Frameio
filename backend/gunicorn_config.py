@@ -15,7 +15,7 @@ backlog = 2048
 workers = multiprocessing.cpu_count() * 2 + 1
 worker_class = "sync"
 worker_connections = 1000
-timeout = 30
+timeout = 120
 keepalive = 2
 
 # Logging
@@ -40,7 +40,7 @@ group = None
 tmp_upload_dir = None
 
 # Graceful timeout for worker restarts
-graceful_timeout = 30
+graceful_timeout = 120
 
 # Maximum requests per worker before restart (helps prevent memory leaks)
 max_requests = 1000

@@ -16,7 +16,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from .ai_caption_service import AICaptionService
 from .brand_overlay_service import BrandOverlayService
-from .utils.storage_handler import store_poster_image, create_and_store_shareable_page, upload_poster_image
+from .utils.storage_handler import store_poster_image, create_and_store_shareable_page, upload_poster_image, get_domain_url
 
 # Import Google GenAI
 try:
@@ -645,7 +645,7 @@ class AIPosterService:
                                     if request:
                                         image_url = request.build_absolute_uri(image_url)
                                     else:
-                                        image_url = f"http://localhost:8000{image_url}"
+                                        image_url = f"{get_domain_url()}{image_url}"
                                 public_url = image_url
                             
                             logger.info(f"=== END IMAGE STORAGE ===")
@@ -1270,7 +1270,7 @@ class AIPosterService:
                     image_url = default_storage.url(saved_path)
                     # Ensure full URL for download
                     if not image_url.startswith('http'):
-                        image_url = f"http://localhost:8000{image_url}"
+                        image_url = f"{get_domain_url()}{image_url}"
                     
                     final_w, final_h = edited_image.size
                     logger.info(f"Edited poster generated successfully: {saved_path}; size={final_w}x{final_h}")
@@ -1663,7 +1663,7 @@ class AIPosterService:
                     image_url = default_storage.url(saved_path)
                     # Ensure full URL for download
                     if not image_url.startswith('http'):
-                        image_url = f"http://localhost:8000{image_url}"
+                        image_url = f"{get_domain_url()}{image_url}"
                     
                     final_w, final_h = composite_image.size
                     logger.info(f"Composite poster generated successfully: {saved_path}; size={final_w}x{final_h}")
@@ -1713,7 +1713,7 @@ class AIPosterService:
                                     saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
                                     image_url = default_storage.url(saved_path)
                                     if not image_url.startswith('http'):
-                                        image_url = f"http://localhost:8000{image_url}"
+                                        image_url = f"{get_domain_url()}{image_url}"
                                     
                                     # Get public URL for composite (retry case)
                                     try:
@@ -1876,7 +1876,7 @@ class AIPosterService:
                     image_url = default_storage.url(saved_path)
                     # Ensure full URL for download
                     if not image_url.startswith('http'):
-                        image_url = f"http://localhost:8000{image_url}"
+                        image_url = f"{get_domain_url()}{image_url}"
                     
                     logger.info(f"Text overlay added successfully: {saved_path}")
                     

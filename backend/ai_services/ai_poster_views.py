@@ -17,6 +17,7 @@ from django.conf import settings
 from django.db.models import Q
 from .ai_poster_service import AIPosterService
 from .models import GeneratedPoster
+from .utils.storage_handler import get_domain_url
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +227,7 @@ def generate_poster(request):
                 if image_url:
                     # If image_url is relative, make it absolute
                     if not image_url.startswith('http'):
-                        response_public_url = f"http://localhost:8000{image_url}"
+                        response_public_url = f"{get_domain_url()}{image_url}"
                     else:
                         response_public_url = image_url
                     logger.warning(f"WARNING: Using image_url as public_url fallback (Facebook sharing may not work): {response_public_url}")
@@ -681,7 +682,7 @@ def edit_poster(request):
                     elif image_url:
                         # If relative, make it absolute
                         if image_url.startswith('/'):
-                            response_public_url = f"http://localhost:8000{image_url}"
+                            response_public_url = f"{get_domain_url()}{image_url}"
                         else:
                             response_public_url = image_url
                         logger.warning(f"WARNING: Using image_url as public_url fallback: {response_public_url}")
@@ -1023,12 +1024,10 @@ def get_poster(request, poster_id):
                 try:
                     image_url = request.build_absolute_uri(image_url)
                 except Exception:
-                    from django.conf import settings
-                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    base_url = get_domain_url()
                     image_url = f"{base_url}{image_url}"
             else:
-                from django.conf import settings
-                base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                base_url = get_domain_url()
                 image_url = f"{base_url}/{image_url}"
         
         poster_data = {
@@ -1516,13 +1515,11 @@ def list_posters(request):
                         image_url = request.build_absolute_uri(image_url)
                     except Exception:
                         # Fallback if request.build_absolute_uri fails
-                        from django.conf import settings
-                        base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                        base_url = get_domain_url()
                         image_url = f"{base_url}{image_url}"
                 else:
                     # Prepend base URL for relative paths without leading slash
-                    from django.conf import settings
-                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    base_url = get_domain_url()
                     image_url = f"{base_url}/{image_url}"
             
             # Ensure hashtags is a list
