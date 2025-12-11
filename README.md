@@ -267,18 +267,35 @@ Frameio/
 
 ## 🚀 Deployment
 
-### Backend Deployment (Railway/Render)
+### Full-Stack Server Deployment (AWS EC2)
+
+For comprehensive server deployment structure and step-by-step guide, see:
+- **📋 Full Deployment Structure:** [`deployment/FULL_STACK_DEPLOYMENT_STRUCTURE.md`](deployment/FULL_STACK_DEPLOYMENT_STRUCTURE.md)
+- **🚀 Quick Start:** [`deployment/QUICK_START.md`](deployment/QUICK_START.md)
+- **📖 Step-by-Step Guide:** [`deployment/STEP_BY_STEP_DEPLOYMENT.md`](deployment/STEP_BY_STEP_DEPLOYMENT.md)
+- **📚 Complete Documentation:** [`deployment/README.md`](deployment/README.md)
+
+**Quick Overview:**
+- **Backend:** Django + Gunicorn + Nginx on AWS EC2
+- **Frontend:** Next.js (can be deployed separately on Vercel or same server)
+- **Database:** MySQL 8.0+ on EC2 or cloud service
+- **Cache:** Redis (optional)
+- **Server IP:** 13.213.53.199
+
+### Alternative Deployment Options
+
+#### Backend Deployment (Railway/Render)
 1. Connect your GitHub repository
 2. Set environment variables in deployment platform
 3. Configure build command: `pip install -r requirements.txt`
 4. Set start command: `python manage.py runserver 0.0.0.0:$PORT`
 
-### Frontend Deployment (Vercel)
+#### Frontend Deployment (Vercel)
 1. Connect your GitHub repository
 2. Set environment variables in Vercel dashboard
 3. Deploy automatically on push to main branch
 
-### Database (MySQL Cloud - PlanetScale/AWS RDS/DigitalOcean)
+#### Database (MySQL Cloud - PlanetScale/AWS RDS/DigitalOcean)
 1. Create MySQL 8.0+ database instance
 2. Update database credentials in environment variables:
    - `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`

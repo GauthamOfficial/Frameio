@@ -2,10 +2,30 @@
 Role-based permissions system for multi-tenant organization management.
 """
 from rest_framework import permissions
+from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from organizations.models import OrganizationMember
 import os
+
+
+class IsVerified(permissions.BasePermission):
+    """
+    Permission class that requires the user to have verified their email.
+    """
+    message = "Please verify your email address to access this feature."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if not request.user.is_verified:
+            raise PermissionDenied(
+                detail="Your email address must be verified to access this feature. Please check your email for the verification link.",
+                code="email_not_verified"
+            )
+        
+        return True
 
 
 def get_organization_from_request(request):

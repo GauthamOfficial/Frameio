@@ -41,14 +41,15 @@ export function SignUpModal() {
     setLoading(true)
 
     try {
-      await register(
+      const response = await register(
         formData.username,
         formData.email,
         formData.password,
         formData.firstName || undefined,
         formData.lastName || undefined
       )
-      showSuccess('Account created successfully!')
+      
+      showSuccess('Account created successfully! Please check your email to verify your account.')
       closeSignUp()
       
       // Reset form
@@ -61,9 +62,10 @@ export function SignUpModal() {
         lastName: '',
       })
       
-      // Redirect to dashboard
+      // Redirect to check-email page (NOT dashboard - user must verify first)
+      const email = response?.user?.email || response?.email || formData.email
       setTimeout(() => {
-        window.location.href = '/dashboard'
+        window.location.href = `/check-email?email=${encodeURIComponent(email)}`
       }, 150)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create account'

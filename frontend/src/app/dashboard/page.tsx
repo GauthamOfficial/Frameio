@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { OverviewCards } from "@/components/dashboard/overview-cards"
 import { SavedPosters } from "@/components/dashboard/saved-posters"
 import { BrandingKitHistory } from "@/components/dashboard/branding-kit-history"
@@ -11,12 +13,51 @@ import { useApp } from "@/contexts/app-context"
 import { DashboardErrorBoundary } from "@/components/common/error-boundary"
 import { Plus, TrendingUp, Calendar, Image, User, Settings, Palette } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { getCurrentUser, getAccessToken, setTokens, getRefreshToken } from "@/lib/auth"
 
 export default function DashboardPage() {
   const { userRole, isLoading } = useOrganization()
   const { userRole: appUserRole, permissions } = useApp()
   // const { showSuccess } = useToastHelpers() // Removed unused variable
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Refresh user data if coming from verification
+  useEffect(() => {
+    const verified = searchParams?.get('verified')
+    if (verified === 'true') {
+      // Ensure tokens are in localStorage (they should be, but double-check)
+      const accessToken = getAccessToken()
+      const refreshToken = getRefreshToken()
+      
+      // If tokens exist in cookies but not localStorage, sync them
+      if (!accessToken && typeof document !== 'undefined') {
+        const cookieToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth_token='))
+          ?.split('=')[1]
+        const cookieRefresh = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('refresh_token='))
+          ?.split('=')[1]
+        
+        if (cookieToken && cookieRefresh) {
+          setTokens(cookieToken, cookieRefresh)
+        }
+      }
+      
+      // Refresh user data to get latest verification status
+      getCurrentUser().then((user) => {
+        if (user) {
+          console.log('User data refreshed after verification:', user)
+          // Remove the verified parameter from URL
+          router.replace('/dashboard')
+        }
+      }).catch((error) => {
+        console.error('Failed to refresh user data:', error)
+      })
+    }
+  }, [searchParams, router])
 
   const getRoleBadgeVariant = (role: string | null) => {
     switch (role) {

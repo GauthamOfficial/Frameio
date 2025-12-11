@@ -8,6 +8,8 @@ const isPublicRoute = (pathname: string): boolean => {
     "/api/webhooks",
     "/poster",
     "/admin/login",
+    "/check-email",
+    "/verify-email",
   ];
   
   return publicRoutes.some(route => 
@@ -18,6 +20,11 @@ const isPublicRoute = (pathname: string): boolean => {
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Allow token setting route (used for email verification auto-login)
+  if (pathname === '/api/auth/set-tokens') {
+    return NextResponse.next();
+  }
+
   // Handle admin routes with custom authentication
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     // Admin API routes - allow through
@@ -27,8 +34,8 @@ export default function middleware(req: NextRequest) {
 
     // Admin login route - redirect if already authenticated
     if (pathname === '/admin/login') {
-      const authToken = req.cookies.get('auth_token');
-      if (authToken) {
+      const adminSession = req.cookies.get('admin-session');
+      if (adminSession) {
         return NextResponse.redirect(new URL('/admin', req.url));
       }
       return NextResponse.next();
@@ -36,8 +43,8 @@ export default function middleware(req: NextRequest) {
 
     // Protected admin pages - redirect to login if not authenticated
     if (pathname.startsWith('/admin')) {
-      const authToken = req.cookies.get('auth_token');
-      if (!authToken) {
+      const adminSession = req.cookies.get('admin-session');
+      if (!adminSession) {
         return NextResponse.redirect(new URL('/admin/login', req.url));
       }
       return NextResponse.next();

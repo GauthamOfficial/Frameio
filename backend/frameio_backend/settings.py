@@ -379,17 +379,24 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'startuptsg@gmail.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+# SMTP connection timeout settings (in seconds)
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '10'))  # 10 seconds timeout
+
 # Use SMTP backend if password is provided, otherwise use console for development
 if EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    if DEBUG:
+        print(f"INFO: Email configured - Host: {EMAIL_HOST}:{EMAIL_PORT}, User: {EMAIL_HOST_USER}")
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     if DEBUG:
         print("INFO: EMAIL_HOST_PASSWORD not set. Using console email backend for development.")
+        print("      Emails will be printed to console instead of being sent.")
 
 # Custom UTF-8 StreamHandler for Windows compatibility
 class UTF8StreamHandler(logging.StreamHandler):

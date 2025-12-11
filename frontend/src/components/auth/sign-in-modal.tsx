@@ -42,7 +42,19 @@ export function SignInModal() {
       }, 150)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to sign in'
-      showError(errorMessage)
+      
+      // Check if error is about email verification
+      if (errorMessage.toLowerCase().includes('email not verified') || 
+          errorMessage.toLowerCase().includes('verify your email')) {
+        // Show error and offer to resend verification email
+        showError('Please verify your email address before logging in.')
+        // Optionally redirect to verify email page
+        setTimeout(() => {
+          window.location.href = `/verify-email?email=${encodeURIComponent(email)}`
+        }, 2000)
+      } else {
+        showError(errorMessage)
+      }
     } finally {
       setLoading(false)
     }

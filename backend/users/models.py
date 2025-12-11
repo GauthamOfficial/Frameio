@@ -300,3 +300,45 @@ class CompanyProfile(models.Model):
         if self.facebook_username:
             contact_info['facebook'] = self.facebook_username
         return contact_info
+
+
+class EmailVerificationToken(models.Model):
+    """
+    Model for storing email verification tokens.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verification_tokens')
+    token = models.CharField(max_length=255, unique=True, db_index=True)
+    is_used = models.BooleanField(default=False)
+    expires_at = models.DateTimeField()
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'email_verification_tokens'
+        verbose_name = 'Email Verification Token'
+        verbose_name_plural = 'Email Verification Tokens'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['token', 'is_used']),
+            models.Index(fields=['user', 'is_used']),
+        ]
+    
+    def __str__(self):
+        return f"Verification token for {self.user.email}"
+    
+    @property
+    def is_expired(self):
+        """Check if the token has expired."""
+        return timezone.now() > self.expires_at
+    
+    @property
+    def is_valid(self):
+        """Check if the token is valid (not used and not expired)."""
+        return not self.is_used and not self.is_expired
+    
+    def mark_as_used(self):
+        """Mark the token as used."""
+        self.is_used = True
+        self.save(update_fields=['is_used'])

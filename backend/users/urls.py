@@ -6,6 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import UserViewSet, UserProfileViewSet, UserActivityViewSet, CompanyProfileViewSet
 from .auth_views import CustomTokenObtainPairView, register, logout, me
+from .verification_views import send_verification_email_view, verify_email, check_verification_status
 from . import google_analytics_views
 
 # TEST ENDPOINT - completely bypasses DRF
@@ -28,6 +29,10 @@ urlpatterns = [
     path('users/auth/logout/', logout, name='logout'),
     path('users/auth/me/', me, name='me'),
     path('users/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # Email verification endpoints
+    path('users/auth/send-verification-email/', send_verification_email_view, name='send_verification_email'),
+    path('users/auth/verify-email/<str:token>/', verify_email, name='verify_email'),
+    path('users/auth/verification-status/', check_verification_status, name='verification_status'),
     # Google Analytics endpoints
     path('admin/analytics/', google_analytics_views.google_analytics_all, name='google-analytics-all'),
     path('admin/analytics/overview/', google_analytics_views.google_analytics_overview, name='google-analytics-overview'),

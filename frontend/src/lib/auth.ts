@@ -118,6 +118,16 @@ export async function login(email: string, password: string): Promise<AuthRespon
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Login failed' }))
     console.error('Login error response:', error)
+    
+    // Check if error is about email verification
+    if (response.status === 403 && (error.requires_verification || error.detail?.toLowerCase().includes('verify'))) {
+      const errorMessage = error.detail || error.error || 'Please verify your email address before logging in.'
+      const verificationError = new Error(errorMessage) as Error & { requiresVerification?: boolean; email?: string }
+      verificationError.requiresVerification = true
+      verificationError.email = error.email
+      throw verificationError
+    }
+    
     // Extract error message - prefer detail field as it has the specific reason
     const errorMessage = error.detail || error.error || error.message || 'Login failed'
     throw new Error(errorMessage)
@@ -188,7 +198,19 @@ export async function register(
 
   const data = await response.json()
   
-  // Store tokens and user
+  // Check if verification is required (strict mode - no tokens returned)
+  if (data.requires_verification && !data.tokens) {
+    // Don't store tokens - user must verify email first
+    return {
+      user: data.user || { email: data.email },
+      email: data.email || data.user?.email,
+      message: data.message,
+      requires_verification: true,
+      tokens: undefined, // Explicitly no tokens
+    }
+  }
+  
+  // Store tokens and user only if verification not required
   if (data.tokens?.access && data.tokens?.refresh) {
     setTokens(data.tokens.access, data.tokens.refresh)
   }
@@ -318,5 +340,75 @@ export function isAuthenticated(): boolean {
 export function getAuthHeader(): string | null {
   const token = getAccessToken()
   return token ? `Bearer ${token}` : null
+}
+
+/**
+ * Send verification email
+ */
+export async function sendVerificationEmail(email: string): Promise<void> {
+  const response = await fetch(buildApiUrl('/api/users/auth/send-verification-email/'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to send verification email' }))
+    throw new Error(error.error || error.message || 'Failed to send verification email')
+  }
+}
+
+/**
+ * Check verification status
+ */
+export async function checkVerificationStatus(): Promise<{ is_verified: boolean; email: string }> {
+  const accessToken = getAccessToken()
+  
+  if (!accessToken) {
+    throw new Error('Not authenticated')
+  }
+
+  const response = await fetch(buildApiUrl('/api/users/auth/verification-status/'), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to check verification status' }))
+    throw new Error(error.error || error.message || 'Failed to check verification status')
+  }
+
+  return response.json()
+}
+
+/**
+ * Verify email with token
+ */
+export async function verifyEmail(token: string): Promise<{ message: string; user: User; access?: string; refresh?: string }> {
+  const response = await fetch(buildApiUrl(`/api/users/auth/verify-email/${token}/`), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to verify email' }))
+    throw new Error(error.error || error.message || 'Failed to verify email')
+  }
+
+  const data = await response.json()
+  
+  // Update user data if verification successful (tokens will be set via server-side route)
+  if (data.user) {
+    setUser(data.user)
+  }
+
+  return data
 }
 
