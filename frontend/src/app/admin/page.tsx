@@ -47,30 +47,30 @@ function AdminLoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-6">
       <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="space-y-1 text-center">
+        <CardHeader className="space-y-1 text-center px-4 sm:px-6 pt-6 sm:pt-6">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-primary/10 rounded-full">
-              <Shield className="h-8 w-8 text-primary" />
+              <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Admin Dashboard</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl sm:text-2xl font-bold">Admin Dashboard</CardTitle>
+          <CardDescription className="text-sm">
             Enter your credentials to access the admin panel
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6 pb-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                <AlertCircle className="h-4 w-4" />
-                <span>{error}</span>
+              <div className="flex items-start gap-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <span className="break-words">{error}</span>
               </div>
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="text-sm">Username</Label>
               <Input
                 id="username"
                 type="text"
@@ -80,11 +80,12 @@ function AdminLoginForm() {
                 required
                 autoComplete="username"
                 disabled={isLoading}
+                className="w-full"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -94,6 +95,7 @@ function AdminLoginForm() {
                 required
                 autoComplete="current-password"
                 disabled={isLoading}
+                className="w-full"
               />
             </div>
 
@@ -113,7 +115,7 @@ function AdminLoginForm() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+          <div className="mt-6 text-center text-xs sm:text-sm text-muted-foreground">
             <p>Protected admin area</p>
           </div>
         </CardContent>
@@ -172,21 +174,21 @@ function AdminDashboard() {
   const recentActivity: { user: string; action: string; time: string }[] = [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Monitor platform metrics and user activity
         </p>
       </div>
 
       {/* Stats Grid */}
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="animate-pulse space-y-3">
                   <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                   <div className="h-8 bg-gray-200 rounded w-3/4"></div>
@@ -197,7 +199,7 @@ function AdminDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <StatsCard
             title="Total Users"
             value={stats.totalUsers.toLocaleString()}
@@ -226,19 +228,19 @@ function AdminDashboard() {
       )}
 
       {/* Charts Row */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Most Used Aspect Ratios</CardTitle>
-            <CardDescription>Popular poster dimensions</CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Most Used Aspect Ratios</CardTitle>
+            <CardDescription className="text-sm">Popular poster dimensions</CardDescription>
           </CardHeader>
           <CardContent>
             {aspectRatioData.length === 0 ? (
-              <div className="flex items-center justify-center h-64 text-gray-400">
-                <div className="text-center">
-                  <Activity className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No analytics data available</p>
-                  <p className="text-sm mt-1">Data will appear once posts are generated</p>
+              <div className="flex items-center justify-center h-48 sm:h-64 text-gray-400">
+                <div className="text-center px-4">
+                  <Activity className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 opacity-20" />
+                  <p className="text-sm sm:text-base">No analytics data available</p>
+                  <p className="text-xs sm:text-sm mt-1">Data will appear once posts are generated</p>
                 </div>
               </div>
             ) : (
@@ -253,16 +255,16 @@ function AdminDashboard() {
         
         <Card>
           <CardHeader>
-            <CardTitle>Most Active Textile Companies</CardTitle>
-            <CardDescription>By posts generated</CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Most Active Textile Companies</CardTitle>
+            <CardDescription className="text-sm">By posts generated</CardDescription>
           </CardHeader>
           <CardContent>
             {topCompanies.length === 0 ? (
-              <div className="flex items-center justify-center h-64 text-gray-400">
-                <div className="text-center">
-                  <Building2 className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No company data available</p>
-                  <p className="text-sm mt-1">Data will appear once companies are active</p>
+              <div className="flex items-center justify-center h-48 sm:h-64 text-gray-400">
+                <div className="text-center px-4">
+                  <Building2 className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 opacity-20" />
+                  <p className="text-sm sm:text-base">No company data available</p>
+                  <p className="text-xs sm:text-sm mt-1">Data will appear once companies are active</p>
                 </div>
               </div>
             ) : (
@@ -279,21 +281,21 @@ function AdminDashboard() {
       {/* Recent Activity */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Latest user actions on the platform</CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Recent Activity</CardTitle>
+              <CardDescription className="text-sm">Latest user actions on the platform</CardDescription>
             </div>
-            <Activity className="h-5 w-5 text-muted-foreground" />
+            <Activity className="h-5 w-5 text-muted-foreground hidden sm:block" />
           </div>
         </CardHeader>
         <CardContent>
           {recentActivity.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-gray-400">
-              <div className="text-center">
-                <Clock className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                <p>No recent activity</p>
-                <p className="text-sm mt-1">User activity will be displayed here</p>
+              <div className="text-center px-4">
+                <Clock className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 opacity-20" />
+                <p className="text-sm sm:text-base">No recent activity</p>
+                <p className="text-xs sm:text-sm mt-1">User activity will be displayed here</p>
               </div>
             </div>
           ) : (
@@ -301,20 +303,20 @@ function AdminDashboard() {
               {recentActivity.map((activity, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b pb-4 last:border-0 last:pb-0"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                       {activity.user.charAt(0)}
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">{activity.user}</p>
-                      <p className="text-sm text-muted-foreground">{activity.action}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{activity.user}</p>
+                      <p className="text-sm text-muted-foreground truncate">{activity.action}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    {activity.time}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground sm:ml-4">
+                    <Clock className="h-4 w-4 flex-shrink-0" />
+                    <span className="whitespace-nowrap">{activity.time}</span>
                   </div>
                 </div>
               ))}

@@ -6,11 +6,18 @@ import { Navbar } from '@/components/admin/Navbar';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
 import { Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { isLoading, isAuthenticated } = useAdminAuth();
   const pathname = usePathname();
-  
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [pathname]);
+
   // Don't wrap login page with admin layout
   if (pathname === '/admin/login') {
     return <>{children}</>;
@@ -33,10 +40,23 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   // Show admin dashboard with sidebar/navbar for authenticated users
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      {/* Mobile overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <Sidebar 
+        isMobileOpen={isMobileSidebarOpen}
+        onMobileClose={() => setIsMobileSidebarOpen(false)}
+      />
+      
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Navbar />
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+        <Navbar onMobileMenuClick={() => setIsMobileSidebarOpen(true)} />
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6">
           {children}
         </main>
       </div>

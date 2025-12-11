@@ -36,26 +36,27 @@ export function DeleteUserDialog({ open, onOpenChange, user, onConfirm }: Delete
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:w-full mx-4">
         <DialogHeader>
-          <DialogTitle>Delete User</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Delete User</DialogTitle>
+          <DialogDescription className="text-sm break-words">
             Are you sure you want to delete <strong>{user.name}</strong> ({user.email})? 
             This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
 
         {error && (
-          <div className="text-sm text-red-600 bg-red-50 p-2 rounded mt-4">
+          <div className="text-sm text-red-600 bg-red-50 p-3 rounded mt-4 break-words">
             {error}
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
@@ -63,6 +64,7 @@ export function DeleteUserDialog({ open, onOpenChange, user, onConfirm }: Delete
             variant="destructive"
             onClick={handleConfirm}
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             {loading ? 'Deleting...' : 'Delete User'}
           </Button>

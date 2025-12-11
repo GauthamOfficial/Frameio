@@ -120,19 +120,19 @@ export default function AdminAnalyticsPage() {
   // Show loading state
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Platform performance and user insights
             </p>
           </div>
         </div>
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-48 sm:h-64 px-4">
           <div className="text-center">
-            <BarChart3 className="h-12 w-12 mx-auto mb-4 animate-pulse text-muted-foreground" />
-            <p className="text-muted-foreground">Loading analytics data...</p>
+            <BarChart3 className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 animate-pulse text-muted-foreground" />
+            <p className="text-sm sm:text-base text-muted-foreground">Loading analytics data...</p>
           </div>
         </div>
       </div>
@@ -142,25 +142,25 @@ export default function AdminAnalyticsPage() {
   // Show error/not configured state
   if (!configured || !analyticsData) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Platform performance and user insights
             </p>
           </div>
         </div>
 
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mx-4 sm:mx-0">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Google Analytics Not Configured</AlertTitle>
-          <AlertDescription>
+          <AlertTitle className="text-base sm:text-lg">Google Analytics Not Configured</AlertTitle>
+          <AlertDescription className="text-sm break-words">
             {error || 'Google Analytics is not configured. Please set up GOOGLE_ANALYTICS_PROPERTY_ID and credentials in your backend environment variables.'}
             <br />
             <br />
-            <strong>Required environment variables:</strong>
-            <ul className="list-disc list-inside mt-2 space-y-1">
+            <strong className="text-sm">Required environment variables:</strong>
+            <ul className="list-disc list-inside mt-2 space-y-1 text-xs sm:text-sm">
               <li>GOOGLE_ANALYTICS_PROPERTY_ID - Your GA4 Property ID</li>
               <li>GOOGLE_ANALYTICS_CREDENTIALS_JSON - Service account credentials as JSON string</li>
               <li>Or GOOGLE_ANALYTICS_CREDENTIALS_PATH - Path to service account credentials file</li>
@@ -174,16 +174,16 @@ export default function AdminAnalyticsPage() {
   const { overview, userGrowth, deviceBreakdown, topPages, trafficSources } = analyticsData;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Real-time platform performance and user insights from Google Analytics
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Button 
             variant="outline" 
             size="sm"
@@ -193,14 +193,23 @@ export default function AdminAnalyticsPage() {
               const nextIndex = (currentIndex + 1) % ranges.length;
               setTimeRange(ranges[nextIndex]);
             }}
+            className="w-full sm:w-auto justify-center sm:justify-start"
           >
             <Calendar className="mr-2 h-4 w-4" />
-            {timeRange === '7d' && 'Last 7 days'}
-            {timeRange === '30d' && 'Last 30 days'}
-            {timeRange === '90d' && 'Last 90 days'}
-            {timeRange === '1y' && 'Last year'}
+            <span className="hidden sm:inline">
+              {timeRange === '7d' && 'Last 7 days'}
+              {timeRange === '30d' && 'Last 30 days'}
+              {timeRange === '90d' && 'Last 90 days'}
+              {timeRange === '1y' && 'Last year'}
+            </span>
+            <span className="sm:hidden">
+              {timeRange === '7d' && '7d'}
+              {timeRange === '30d' && '30d'}
+              {timeRange === '90d' && '90d'}
+              {timeRange === '1y' && '1y'}
+            </span>
           </Button>
-          <Button variant="outline" size="sm" onClick={loadAnalyticsData}>
+          <Button variant="outline" size="sm" onClick={loadAnalyticsData} className="w-full sm:w-auto justify-center sm:justify-start">
             <Download className="mr-2 h-4 w-4" />
             Refresh
           </Button>
@@ -208,7 +217,7 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Users"
           value={formatNumber(overview.totalUsers)}
@@ -240,7 +249,7 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Growth Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <AnalyticsChart
           title="User Growth"
           description="Active users over time"
@@ -254,19 +263,19 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Top Pages & Traffic Sources */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Top Pages */}
         <Card>
-          <CardHeader>
-            <CardTitle>Top Pages</CardTitle>
-            <CardDescription>Most viewed pages</CardDescription>
+          <CardHeader className="px-4 sm:px-6 pt-6">
+            <CardTitle className="text-lg sm:text-xl">Top Pages</CardTitle>
+            <CardDescription className="text-sm">Most viewed pages</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 sm:px-6 pb-6">
             {topPages.length === 0 ? (
-              <div className="flex items-center justify-center h-64 text-gray-400">
+              <div className="flex items-center justify-center h-48 sm:h-64 text-gray-400 px-4">
                 <div className="text-center">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No page data available</p>
+                  <BarChart3 className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 opacity-20" />
+                  <p className="text-sm sm:text-base">No page data available</p>
                 </div>
               </div>
             ) : (
@@ -274,13 +283,13 @@ export default function AdminAnalyticsPage() {
                 {topPages.map((page, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-4 last:border-0 last:pb-0"
                   >
                     <div className="space-y-1 flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{page.title}</p>
                       <p className="text-xs text-muted-foreground truncate">{page.path}</p>
                     </div>
-                    <Badge variant="secondary" className="ml-4">
+                    <Badge variant="secondary" className="self-start sm:self-center sm:ml-4 whitespace-nowrap">
                       {formatNumber(page.views)} views
                     </Badge>
                   </div>
@@ -292,16 +301,16 @@ export default function AdminAnalyticsPage() {
 
         {/* Traffic Sources */}
         <Card>
-          <CardHeader>
-            <CardTitle>Traffic Sources</CardTitle>
-            <CardDescription>Where your visitors come from</CardDescription>
+          <CardHeader className="px-4 sm:px-6 pt-6">
+            <CardTitle className="text-lg sm:text-xl">Traffic Sources</CardTitle>
+            <CardDescription className="text-sm">Where your visitors come from</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 sm:px-6 pb-6">
             {trafficSources.length === 0 ? (
-              <div className="flex items-center justify-center h-64 text-gray-400">
+              <div className="flex items-center justify-center h-48 sm:h-64 text-gray-400 px-4">
                 <div className="text-center">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No traffic source data available</p>
+                  <BarChart3 className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 opacity-20" />
+                  <p className="text-sm sm:text-base">No traffic source data available</p>
                 </div>
               </div>
             ) : (
@@ -309,12 +318,12 @@ export default function AdminAnalyticsPage() {
                 {trafficSources.map((source, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-4 last:border-0 last:pb-0"
                   >
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">{source.source || 'direct'}</p>
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{source.source || 'direct'}</p>
                     </div>
-                    <Badge variant="secondary" className="ml-4">
+                    <Badge variant="secondary" className="self-start sm:self-center sm:ml-4 whitespace-nowrap">
                       {formatNumber(source.sessions)} sessions
                     </Badge>
                   </div>

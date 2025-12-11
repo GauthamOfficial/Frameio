@@ -26,22 +26,22 @@ export function AnalyticsChart({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="px-4 sm:px-6 pt-6">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>{title}</CardTitle>
-            {description && <CardDescription>{description}</CardDescription>}
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-lg sm:text-xl truncate">{title}</CardTitle>
+            {description && <CardDescription className="text-sm truncate">{description}</CardDescription>}
           </div>
-          <BarChart3 className="h-5 w-5 text-muted-foreground" />
+          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0 ml-2" />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 sm:px-6 pb-6">
         <div className="space-y-4">
           {data.map((point, index) => (
             <div key={index} className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{point.label}</span>
-                <span className="text-muted-foreground">{point.value}</span>
+              <div className="flex items-center justify-between text-xs sm:text-sm gap-2">
+                <span className="font-medium truncate flex-1 min-w-0">{point.label}</span>
+                <span className="text-muted-foreground whitespace-nowrap flex-shrink-0">{point.value}</span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
                 <div

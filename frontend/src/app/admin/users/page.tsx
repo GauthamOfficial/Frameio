@@ -278,21 +278,21 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Users Management</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Manage and monitor all platform users
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport}>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button>
+          <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Add User
           </Button>
@@ -302,9 +302,9 @@ export default function AdminUsersPage() {
       {/* Loading State */}
       {loading && (
         <Card>
-          <CardContent className="flex items-center justify-center py-12">
+          <CardContent className="flex items-center justify-center py-12 px-4">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            <span className="ml-2 text-gray-600">Loading users...</span>
+            <span className="ml-2 text-sm sm:text-base text-gray-600">Loading users...</span>
           </CardContent>
         </Card>
       )}
@@ -312,13 +312,13 @@ export default function AdminUsersPage() {
       {/* Error State */}
       {error && (
         <Card className="border-red-200 bg-red-50">
-          <CardContent className="py-6">
-            <p className="text-red-600 font-semibold">Error: {error}</p>
-            <p className="text-sm text-red-500 mt-2">
+          <CardContent className="py-6 px-4 sm:px-6">
+            <p className="text-sm sm:text-base text-red-600 font-semibold break-words">Error: {error}</p>
+            <p className="text-xs sm:text-sm text-red-500 mt-2">
               Check your browser console (F12) for detailed error messages.
             </p>
-            <div className="mt-4 space-x-2">
-              <Button onClick={loadUsers}>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <Button onClick={loadUsers} className="w-full sm:w-auto">
                 Try Again
               </Button>
               <Button 
@@ -328,6 +328,7 @@ export default function AdminUsersPage() {
                   console.log('Attempting to reload...');
                   loadUsers();
                 }}
+                className="w-full sm:w-auto"
               >
                 Reload with Logging
               </Button>
@@ -339,11 +340,11 @@ export default function AdminUsersPage() {
       {/* Data Source Indicator */}
       {!loading && !error && users.length > 0 && (
         <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="py-4">
-            <p className="text-sm">
+          <CardContent className="py-4 px-4 sm:px-6">
+            <p className="text-xs sm:text-sm">
               ✓ Showing {users.length} users from the database
             </p>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-gray-600 mt-1 break-all">
               Sample IDs: {users.slice(0, 2).map(u => u.id.substring(0, 8)).join(', ')}...
             </p>
           </CardContent>
@@ -352,33 +353,33 @@ export default function AdminUsersPage() {
 
       {/* Stats */}
       {!loading && !error && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Users</CardDescription>
-            <CardTitle className="text-3xl">{users.length}</CardTitle>
+          <CardHeader className="pb-2 px-4 sm:px-6 pt-4 sm:pt-6">
+            <CardDescription className="text-xs sm:text-sm">Total Users</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">{users.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Active Users</CardDescription>
-            <CardTitle className="text-3xl">
+          <CardHeader className="pb-2 px-4 sm:px-6 pt-4 sm:pt-6">
+            <CardDescription className="text-xs sm:text-sm">Active Users</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">
               {users.filter((u) => u.status === 'active').length}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Inactive Users</CardDescription>
-            <CardTitle className="text-3xl">
+          <CardHeader className="pb-2 px-4 sm:px-6 pt-4 sm:pt-6">
+            <CardDescription className="text-xs sm:text-sm">Inactive Users</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">
               {users.filter((u) => u.status === 'inactive').length}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Suspended Users</CardDescription>
-            <CardTitle className="text-3xl">
+          <CardHeader className="pb-2 px-4 sm:px-6 pt-4 sm:pt-6">
+            <CardDescription className="text-xs sm:text-sm">Suspended Users</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">
               {users.filter((u) => u.status === 'suspended').length}
             </CardTitle>
           </CardHeader>
@@ -389,9 +390,9 @@ export default function AdminUsersPage() {
       {/* Empty State */}
       {!loading && !error && users.length === 0 && (
         <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-gray-500 text-lg mb-4">No users found in the database</p>
-            <p className="text-sm text-gray-400">
+          <CardContent className="py-12 px-4 text-center">
+            <p className="text-gray-500 text-base sm:text-lg mb-4">No users found in the database</p>
+            <p className="text-xs sm:text-sm text-gray-400">
               Users will appear here once they are added to the system.
             </p>
           </CardContent>
@@ -401,19 +402,19 @@ export default function AdminUsersPage() {
       {/* Search and Filter */}
       {!loading && !error && users.length > 0 && (
         <Card>
-        <CardHeader>
-          <CardTitle>All Users</CardTitle>
-          <CardDescription>
+        <CardHeader className="px-4 sm:px-6 pt-6">
+          <CardTitle className="text-lg sm:text-xl">All Users</CardTitle>
+          <CardDescription className="text-sm">
             Search and manage user accounts ({users.length} total)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6 pb-6">
           <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by name, email, or company..."
-                className="pl-10"
+                className="pl-10 text-sm sm:text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -421,7 +422,7 @@ export default function AdminUsersPage() {
           </div>
 
           {filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-sm sm:text-base text-gray-500 px-4">
               No users match your search criteria
             </div>
           ) : (
