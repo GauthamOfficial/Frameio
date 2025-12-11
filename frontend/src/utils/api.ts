@@ -319,6 +319,22 @@ export function getFullUrl(path: string): string {
     return path;
   }
   
+  // Media files are served directly by nginx, not through API
+  if (path.startsWith('/media/')) {
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:8000'
+      : (process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://13.213.53.199');
+    return `${baseUrl}${path}`;
+  }
+  
+  // Static files are also served directly
+  if (path.startsWith('/static/')) {
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:8000'
+      : (process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://13.213.53.199');
+    return `${baseUrl}${path}`;
+  }
+  
   // If path starts with /, it's relative to API base
   if (path.startsWith('/')) {
     return `${API_BASE_URL}${path}`;
