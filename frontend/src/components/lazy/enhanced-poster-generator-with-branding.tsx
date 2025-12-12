@@ -275,6 +275,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
     window.open(shareLink, '_blank')
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const shareToClipboard = async () => {
     if (!result?.image_url || !result?.full_caption) return
 

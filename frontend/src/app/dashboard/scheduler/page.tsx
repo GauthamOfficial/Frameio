@@ -108,6 +108,7 @@ export default function SchedulerPage() {
       const isoString = buildDateTime(dateTime)
       setScheduleData(prev => ({ ...prev, scheduledTime: isoString }))
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateTime])
   
   const { getToken } = useAuth()
