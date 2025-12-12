@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { useOrganization } from "@/contexts/organization-context"
 import { useApp } from "@/contexts/app-context"
 import { DashboardErrorBoundary } from "@/components/common/error-boundary"
-import { Plus, TrendingUp, Calendar, Image, User, Settings, Palette } from "lucide-react"
+import { Plus, Calendar, Image, User, Settings, Palette } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { getCurrentUser, getAccessToken, setTokens } from "@/lib/auth"
 
@@ -71,7 +71,6 @@ export default function DashboardPage() {
       { name: "Generate AI Poster", href: "/dashboard/poster-generator", icon: Image },
       { name: "Brandkit", href: "/dashboard/branding-kit", icon: Palette },
       { name: "Schedule Post", href: "/dashboard/scheduler", icon: Calendar },
-      { name: "View Analytics", href: "/dashboard/analytics", icon: TrendingUp },
     ]
 
     // Add admin action if user has admin permissions

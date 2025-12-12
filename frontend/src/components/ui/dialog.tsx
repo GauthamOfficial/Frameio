@@ -53,12 +53,12 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
-      <div className="relative z-50">{children}</div>
+      <div className="relative z-50 w-full max-w-full">{children}</div>
     </div>
   );
 }
@@ -66,7 +66,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
 export function DialogContent({ children, className = '' }: DialogContentProps) {
   return (
     <div
-      className={`bg-card text-card-foreground rounded-lg shadow-lg p-6 max-w-md w-full mx-4 border border-border ${className}`}
+      className={`bg-card text-card-foreground rounded-lg shadow-lg p-4 sm:p-6 max-w-md w-full mx-auto border border-border ${className}`}
     >
       {children}
     </div>

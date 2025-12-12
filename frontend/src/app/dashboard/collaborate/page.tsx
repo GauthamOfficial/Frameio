@@ -296,8 +296,32 @@ export default function CollaborationPage() {
   const handleShareSession = async () => {
     try {
       const shareUrl = `${window.location.origin}/collaborate/${session?.id}`;
-      await navigator.clipboard.writeText(shareUrl);
-      // Show success message
+      
+      // Try modern Clipboard API first (works on HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+        // Show success message
+        return;
+      }
+      
+      // Fallback for HTTP or when Clipboard API is not available
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (!successful) {
+          throw new Error('execCommand failed');
+        }
+      } finally {
+        document.body.removeChild(textArea);
+      }
     } catch {
       setError('Failed to copy share link');
     }

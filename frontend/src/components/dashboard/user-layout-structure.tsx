@@ -8,7 +8,6 @@ import {
   FolderOpen,
   Palette,
   Calendar,
-  BarChart3,
   Settings
 } from "lucide-react"
 
@@ -42,11 +41,6 @@ export function UserLayoutStructure({ children }: UserLayoutStructureProps) {
       href: "/dashboard/scheduler",
       icon: Calendar,
       label: "Scheduler",
-    },
-    {
-      href: "/dashboard/analytics",
-      icon: BarChart3,
-      label: "Analytics",
     },
     {
       href: "/dashboard/settings",

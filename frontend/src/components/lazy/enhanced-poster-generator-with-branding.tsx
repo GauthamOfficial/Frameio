@@ -148,9 +148,35 @@ export default function EnhancedPosterGeneratorWithBranding() {
   // Copy and share functions
   const copyToClipboard = async (text: string, type: string) => {
     try {
-      await navigator.clipboard.writeText(text)
-      setCopiedItem(type)
-      setTimeout(() => setCopiedItem(null), 2000)
+      // Try modern Clipboard API first (works on HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+        setCopiedItem(type)
+        setTimeout(() => setCopiedItem(null), 2000)
+        return
+      }
+      
+      // Fallback for HTTP or when Clipboard API is not available
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      
+      try {
+        const successful = document.execCommand('copy')
+        if (successful) {
+          setCopiedItem(type)
+          setTimeout(() => setCopiedItem(null), 2000)
+        } else {
+          throw new Error('execCommand failed')
+        }
+      } finally {
+        document.body.removeChild(textArea)
+      }
     } catch (err) {
       console.error('Failed to copy text: ', err)
     }
@@ -1029,35 +1055,19 @@ export default function EnhancedPosterGeneratorWithBranding() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="pt-0 p-4 sm:p-6">
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-lg border mb-3 sm:mb-4">
+                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-lg border">
                               <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Share your poster and AI-generated content:</p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div className="flex justify-center">
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={shareToFacebook}
-                                  className="flex items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm w-full"
+                                  className="flex items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm"
                                 >
                                   <Facebook className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
                                   Share on Facebook
                                 </Button>
                               </div>
-                            </div>
-                            <div className="text-center">
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={shareToClipboard}
-                                className="w-full text-xs sm:text-sm"
-                              >
-                                <Share2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                                <span className="hidden sm:inline">
-                                  {copiedItem === 'share' ? 'Copied to Clipboard!' : 'Copy All Content to Clipboard'}
-                                </span>
-                                <span className="sm:hidden">
-                                  {copiedItem === 'share' ? 'Copied!' : 'Copy All'}
-                                </span>
-                              </Button>
                             </div>
                           </CardContent>
                         </Card>

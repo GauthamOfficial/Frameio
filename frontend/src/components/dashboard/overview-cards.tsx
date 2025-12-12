@@ -63,8 +63,48 @@ export function OverviewCards() {
         // Don't throw - stats will remain at default values
       }
 
+      // Fetch scheduled posts count
+      try {
+        // Build custom headers for organization context
+        const customHeaders: Record<string, string> = {}
+        if (typeof window !== 'undefined') {
+          const orgSlug = window.localStorage.getItem('organizationSlug') 
+            || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG 
+            || null
+          if (orgSlug) {
+            customHeaders['X-Organization'] = orgSlug
+          }
+          const devOrgId = window.localStorage.getItem('devOrgId')
+            || process.env.NEXT_PUBLIC_DEV_ORG_ID 
+            || null
+          if (devOrgId) {
+            customHeaders['X-Dev-Org-Id'] = devOrgId
+          }
+        }
+
+        const scheduledData = await apiGet('/api/ai/schedule/', { headers: customHeaders, credentials: 'include', mode: 'cors' }, token) as Array<{ status?: string }> | { results?: Array<{ status?: string }> }
+        
+        let scheduledPosts: Array<{ status?: string }> = []
+        if (Array.isArray(scheduledData)) {
+          scheduledPosts = scheduledData
+        } else if (scheduledData.results && Array.isArray(scheduledData.results)) {
+          scheduledPosts = scheduledData.results
+        }
+
+        // Filter out cancelled posts (they're "deleted" from user's perspective)
+        const activePosts = scheduledPosts.filter(post => post.status !== 'cancelled')
+        
+        setStats(prev => ({
+          ...prev,
+          scheduledPosts: activePosts.length
+        }))
+      } catch (scheduledError) {
+        // Handle network errors for scheduled posts fetch gracefully
+        console.warn('Failed to fetch scheduled posts count:', scheduledError)
+        // Don't throw - stats will remain at default values
+      }
+
       // TODO: Fetch other stats when endpoints are available
-      // - Scheduled posts: GET /api/scheduler/posts/count
       // - Engagement rate: GET /api/analytics/engagement
       
     } catch (error) {

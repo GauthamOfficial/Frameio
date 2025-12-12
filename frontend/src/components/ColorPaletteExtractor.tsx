@@ -240,12 +240,38 @@ export default function ColorPaletteExtractor({
   /**
    * Copy color to clipboard
    */
-  const copyColor = (color: string) => {
-    navigator.clipboard.writeText(color).then(() => {
-      showSuccess(`Copied ${color} to clipboard`);
-    }).catch(() => {
+  const copyColor = async (color: string) => {
+    try {
+      // Try modern Clipboard API first (works on HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(color);
+        showSuccess(`Copied ${color} to clipboard`);
+        return;
+      }
+      
+      // Fallback for HTTP or when Clipboard API is not available
+      const textArea = document.createElement('textarea');
+      textArea.value = color;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showSuccess(`Copied ${color} to clipboard`);
+        } else {
+          throw new Error('execCommand failed');
+        }
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    } catch {
       showError('Failed to copy color');
-    });
+    }
   };
 
   /**

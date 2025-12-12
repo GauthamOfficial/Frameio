@@ -134,7 +134,36 @@ async function handleResponse<T>(response: Response): Promise<T> {
     throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
   }
   
-  return response.json();
+  // Handle empty responses (204 No Content)
+  if (response.status === 204) {
+    return null as T;
+  }
+  
+  // Check content-length header for empty responses
+  const contentLength = response.headers.get('content-length');
+  if (contentLength === '0') {
+    return null as T;
+  }
+  
+  // Try to parse JSON, handle empty responses gracefully
+  try {
+    const text = await response.text();
+    
+    // If text is empty, return null
+    if (!text || text.trim() === '') {
+      return null as T;
+    }
+    
+    // Try to parse as JSON
+    return JSON.parse(text) as T;
+  } catch (error) {
+    // If it's an "Unexpected end of JSON input" error, the response was empty
+    if (error instanceof SyntaxError && error.message.includes('JSON')) {
+      return null as T;
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 /**

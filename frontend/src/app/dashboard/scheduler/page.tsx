@@ -60,10 +60,55 @@ export default function SchedulerPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [postToDelete, setPostToDelete] = useState<ScheduledPost | null>(null)
   const [scheduleData, setScheduleData] = useState({
-    platform: 'instagram',
+    platform: 'facebook',
     scheduledTime: '',
     caption: ''
   })
+  const [dateTime, setDateTime] = useState({
+    date: '',
+    hour: '12',
+    minute: '00',
+    period: 'PM'
+  })
+
+  // Helper to convert date/time components to ISO datetime string
+  const buildDateTime = (dt: typeof dateTime): string => {
+    if (!dt.date) return ''
+    const [year, month, day] = dt.date.split('-')
+    let hour24 = parseInt(dt.hour)
+    if (dt.period === 'PM' && hour24 !== 12) hour24 += 12
+    if (dt.period === 'AM' && hour24 === 12) hour24 = 0
+    const minute = dt.minute
+    return `${year}-${month}-${day}T${String(hour24).padStart(2, '0')}:${minute}:00`
+  }
+
+  // Helper to parse ISO datetime to date/time components
+  const parseDateTime = (isoString: string): typeof dateTime => {
+    if (!isoString) return { date: '', hour: '12', minute: '00', period: 'PM' }
+    const date = new Date(isoString)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    let hour = date.getHours()
+    const period = hour >= 12 ? 'PM' : 'AM'
+    if (hour === 0) hour = 12
+    else if (hour > 12) hour -= 12
+    const minute = String(date.getMinutes()).padStart(2, '0')
+    return {
+      date: `${year}-${month}-${day}`,
+      hour: String(hour).padStart(2, '0'),
+      minute,
+      period
+    }
+  }
+
+  // Update scheduledTime when dateTime changes
+  useEffect(() => {
+    if (dateTime.date) {
+      const isoString = buildDateTime(dateTime)
+      setScheduleData(prev => ({ ...prev, scheduledTime: isoString }))
+    }
+  }, [dateTime])
   
   const { getToken } = useAuth()
   const { showError, showSuccess } = useToastHelpers()
@@ -251,9 +296,15 @@ export default function SchedulerPage() {
   const handleSchedulePoster = (poster: GeneratedPoster) => {
     setSelectedPoster(poster)
     setScheduleData({
-      platform: 'instagram',
+      platform: 'facebook',
       scheduledTime: '',
       caption: poster.full_caption || poster.caption || ''
+    })
+    setDateTime({
+      date: '',
+      hour: '12',
+      minute: '00',
+      period: 'PM'
     })
     setShowScheduleModal(true)
   }
@@ -261,13 +312,20 @@ export default function SchedulerPage() {
   const handleScheduleSubmit = async () => {
     if (!selectedPoster) return
     
-    if (!scheduleData.scheduledTime || !scheduleData.caption.trim()) {
+    if (!dateTime.date || !scheduleData.caption.trim()) {
       showError("Please fill in all required fields")
       return
     }
 
+    // Build datetime from components
+    const isoString = buildDateTime(dateTime)
+    if (!isoString) {
+      showError("Please select a valid date and time")
+      return
+    }
+
     // Validate scheduled time is in the future
-    const scheduledDate = new Date(scheduleData.scheduledTime)
+    const scheduledDate = new Date(isoString)
     if (scheduledDate <= new Date()) {
       showError("Scheduled time must be in the future")
       return
@@ -310,7 +368,7 @@ export default function SchedulerPage() {
         platform: scheduleData.platform,
         asset_url: assetUrl,
         caption: scheduleData.caption,
-        scheduled_time: scheduledDate.toISOString(),
+        scheduled_time: isoString,
         metadata: {
           poster_id: selectedPoster.id,
           hashtags: selectedPoster.hashtags || [],
@@ -325,9 +383,15 @@ export default function SchedulerPage() {
       setShowScheduleModal(false)
       setSelectedPoster(null)
       setScheduleData({
-        platform: 'instagram',
+        platform: 'facebook',
         scheduledTime: '',
         caption: ''
+      })
+      setDateTime({
+        date: '',
+        hour: '12',
+        minute: '00',
+        period: 'PM'
       })
       
       // Refresh scheduled posts
@@ -344,30 +408,35 @@ export default function SchedulerPage() {
 
   const handleEditPost = (post: ScheduledPost) => {
     setSelectedScheduledPost(post)
-    // Convert scheduled_time to local datetime format for input
-    const scheduledDate = new Date(post.scheduled_time)
-    const localDateTime = new Date(scheduledDate.getTime() - scheduledDate.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16)
+    // Parse scheduled_time to date/time components
+    const parsedDateTime = parseDateTime(post.scheduled_time)
     
     setScheduleData({
       platform: post.platform,
-      scheduledTime: localDateTime,
+      scheduledTime: post.scheduled_time,
       caption: post.caption
     })
+    setDateTime(parsedDateTime)
     setShowEditModal(true)
   }
 
   const handleEditSubmit = async () => {
     if (!selectedScheduledPost) return
     
-    if (!scheduleData.scheduledTime || !scheduleData.caption.trim()) {
+    if (!dateTime.date || !scheduleData.caption.trim()) {
       showError("Please fill in all required fields")
       return
     }
 
+    // Build datetime from components
+    const isoString = buildDateTime(dateTime)
+    if (!isoString) {
+      showError("Please select a valid date and time")
+      return
+    }
+
     // Validate scheduled time is in the future
-    const scheduledDate = new Date(scheduleData.scheduledTime)
+    const scheduledDate = new Date(isoString)
     if (scheduledDate <= new Date()) {
       showError("Scheduled time must be in the future")
       return
@@ -399,7 +468,7 @@ export default function SchedulerPage() {
         platform: scheduleData.platform,
         asset_url: selectedScheduledPost.asset_url,
         caption: scheduleData.caption,
-        scheduled_time: scheduledDate.toISOString(),
+        scheduled_time: isoString,
         metadata: selectedScheduledPost.metadata || {}
       }
       
@@ -409,9 +478,15 @@ export default function SchedulerPage() {
       setShowEditModal(false)
       setSelectedScheduledPost(null)
       setScheduleData({
-        platform: 'instagram',
+        platform: 'facebook',
         scheduledTime: '',
         caption: ''
+      })
+      setDateTime({
+        date: '',
+        hour: '12',
+        minute: '00',
+        period: 'PM'
       })
       
       // Refresh scheduled posts
@@ -701,29 +776,70 @@ export default function SchedulerPage() {
                   onChange={(e) => setScheduleData({ ...scheduleData, platform: e.target.value })}
                   className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
                 >
-                  <option value="instagram">Instagram</option>
                   <option value="facebook">Facebook</option>
-                  <option value="twitter">Twitter</option>
-                  <option value="linkedin">LinkedIn</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="whatsapp">WhatsApp</option>
                 </select>
               </div>
 
               {/* Scheduled Time */}
-              <div>
-                <label htmlFor="schedule-time" className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+              <div className="space-y-3">
+                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                   Scheduled Time *
                 </label>
-                <input
-                  id="schedule-time"
-                  type="datetime-local"
-                  value={scheduleData.scheduledTime}
-                  onChange={(e) => setScheduleData({ ...scheduleData, scheduledTime: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
-                  min={new Date().toISOString().slice(0, 16)}
-                  required
-                />
+                
+                {/* Date Input */}
+                <div>
+                  <input
+                    type="date"
+                    value={dateTime.date}
+                    onChange={(e) => setDateTime(prev => ({ ...prev, date: e.target.value }))}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
+                    required
+                  />
+                </div>
+
+                {/* Time Selection - Clean Dropdowns */}
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Hour */}
+                  <div>
+                    <select
+                      value={dateTime.hour}
+                      onChange={(e) => setDateTime(prev => ({ ...prev, hour: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const hour = String(i + 1).padStart(2, '0')
+                        return <option key={hour} value={hour}>{hour}</option>
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Minute */}
+                  <div>
+                    <select
+                      value={dateTime.minute}
+                      onChange={(e) => setDateTime(prev => ({ ...prev, minute: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
+                    >
+                      {Array.from({ length: 60 }, (_, i) => {
+                        const minute = String(i).padStart(2, '0')
+                        return <option key={minute} value={minute}>{minute}</option>
+                      })}
+                    </select>
+                  </div>
+
+                  {/* AM/PM */}
+                  <div>
+                    <select
+                      value={dateTime.period}
+                      onChange={(e) => setDateTime(prev => ({ ...prev, period: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {/* Caption */}
@@ -765,7 +881,7 @@ export default function SchedulerPage() {
                 </Button>
                 <Button
                   onClick={handleScheduleSubmit}
-                  disabled={scheduling || !scheduleData.scheduledTime || !scheduleData.caption.trim()}
+                  disabled={scheduling || !dateTime.date || !scheduleData.caption.trim()}
                   className="bg-textile-accent hover:bg-textile-accent/90 w-full sm:w-auto text-sm sm:text-base"
                 >
                   {scheduling ? (
@@ -793,9 +909,15 @@ export default function SchedulerPage() {
             setShowEditModal(false)
             setSelectedScheduledPost(null)
             setScheduleData({
-              platform: 'instagram',
+              platform: 'facebook',
               scheduledTime: '',
               caption: ''
+            })
+            setDateTime({
+              date: '',
+              hour: '12',
+              minute: '00',
+              period: 'PM'
             })
           }} />
           <div className="px-4 sm:px-6 pt-4 sm:pt-6">
@@ -823,28 +945,70 @@ export default function SchedulerPage() {
                   onChange={(e) => setScheduleData({ ...scheduleData, platform: e.target.value })}
                   className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
                 >
-                  <option value="instagram">Instagram</option>
                   <option value="facebook">Facebook</option>
-                  <option value="twitter">Twitter</option>
-                  <option value="linkedin">LinkedIn</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="whatsapp">WhatsApp</option>
                 </select>
               </div>
 
               {/* Scheduled Time */}
-              <div>
+              <div className="space-y-3">
                 <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                   Scheduled Time *
                 </label>
-                <input
-                  type="datetime-local"
-                  value={scheduleData.scheduledTime}
-                  onChange={(e) => setScheduleData({ ...scheduleData, scheduledTime: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
-                  min={new Date().toISOString().slice(0, 16)}
-                  required
-                />
+                
+                {/* Date Input */}
+                <div>
+                  <input
+                    type="date"
+                    value={dateTime.date}
+                    onChange={(e) => setDateTime(prev => ({ ...prev, date: e.target.value }))}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
+                    required
+                  />
+                </div>
+
+                {/* Time Selection - Clean Dropdowns */}
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Hour */}
+                  <div>
+                    <select
+                      value={dateTime.hour}
+                      onChange={(e) => setDateTime(prev => ({ ...prev, hour: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const hour = String(i + 1).padStart(2, '0')
+                        return <option key={hour} value={hour}>{hour}</option>
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Minute */}
+                  <div>
+                    <select
+                      value={dateTime.minute}
+                      onChange={(e) => setDateTime(prev => ({ ...prev, minute: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
+                    >
+                      {Array.from({ length: 60 }, (_, i) => {
+                        const minute = String(i).padStart(2, '0')
+                        return <option key={minute} value={minute}>{minute}</option>
+                      })}
+                    </select>
+                  </div>
+
+                  {/* AM/PM */}
+                  <div>
+                    <select
+                      value={dateTime.period}
+                      onChange={(e) => setDateTime(prev => ({ ...prev, period: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-border rounded-lg bg-background text-foreground"
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {/* Caption */}
@@ -872,9 +1036,15 @@ export default function SchedulerPage() {
                     setShowEditModal(false)
                     setSelectedScheduledPost(null)
                     setScheduleData({
-                      platform: 'instagram',
+                      platform: 'facebook',
                       scheduledTime: '',
                       caption: ''
+                    })
+                    setDateTime({
+                      date: '',
+                      hour: '12',
+                      minute: '00',
+                      period: 'PM'
                     })
                   }}
                   disabled={editing}
@@ -884,7 +1054,7 @@ export default function SchedulerPage() {
                 </Button>
                 <Button
                   onClick={handleEditSubmit}
-                  disabled={editing || !scheduleData.scheduledTime || !scheduleData.caption.trim()}
+                  disabled={editing || !dateTime.date || !scheduleData.caption.trim()}
                   className="bg-textile-accent hover:bg-textile-accent/90 w-full sm:w-auto text-sm sm:text-base"
                 >
                   {editing ? (

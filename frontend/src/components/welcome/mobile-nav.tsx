@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { useUser } from '@/hooks/useAuth'
 import { SignInButton } from '@/components/auth/sign-in-button'
 import { SignUpButton } from '@/components/auth/sign-up-button'
@@ -55,22 +56,28 @@ export function MobileNav({ className }: MobileNavProps) {
               </Button>
             </div>
             
-            <div className="flex-1 p-4 flex flex-col justify-center space-y-6">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to Frameio</h2>
-                <p className="text-muted-foreground mb-6">
-                  AI-Powered Marketing Assets for Textile Shops
-                </p>
-              </div>
-              
-              <div className="space-y-4">
-                <SignUpButton className="w-full" size="lg">
-                  Get Started
-                </SignUpButton>
-                <SignInButton variant="outline" className="w-full" size="lg">
-                  Login
-                </SignInButton>
-              </div>
+            <div className="flex-1 p-4 flex flex-col justify-center items-center">
+              <Card className="w-full max-w-md mx-auto bg-card border border-border shadow-lg">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="text-center space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to Frameio</h2>
+                      <p className="text-muted-foreground">
+                        AI-Powered Marketing Assets for Textile Shops
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4 pt-2">
+                      <SignUpButton className="w-full" size="lg">
+                        Get Started
+                      </SignUpButton>
+                      <SignInButton variant="outline" className="w-full" size="lg">
+                        Login
+                      </SignInButton>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

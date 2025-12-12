@@ -65,9 +65,15 @@ export async function verifyAdminSession(token: string): Promise<AdminSession | 
  */
 export async function setAdminSessionCookie(token: string) {
   const cookieStore = await cookies();
+  
+  // Only use Secure flag if we're actually using HTTPS
+  // Set NEXT_PUBLIC_USE_HTTPS=true in environment when using HTTPS/SSL
+  // Defaults to false for HTTP connections
+  const isSecure = process.env.NEXT_PUBLIC_USE_HTTPS === 'true';
+  
   cookieStore.set('admin-session', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,  // Only secure if using HTTPS
     sameSite: 'lax',
     maxAge: SESSION_EXPIRY * 60 * 60, // Convert hours to seconds
     path: '/',

@@ -188,9 +188,35 @@ export default function EnhancedPosterGenerator() {
 
   const copyToClipboard = async (text: string, type: string) => {
     try {
-      await navigator.clipboard.writeText(text)
-      setCopiedItem(type)
-      setTimeout(() => setCopiedItem(null), 2000)
+      // Try modern Clipboard API first (works on HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+        setCopiedItem(type)
+        setTimeout(() => setCopiedItem(null), 2000)
+        return
+      }
+      
+      // Fallback for HTTP or when Clipboard API is not available
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      
+      try {
+        const successful = document.execCommand('copy')
+        if (successful) {
+          setCopiedItem(type)
+          setTimeout(() => setCopiedItem(null), 2000)
+        } else {
+          throw new Error('execCommand failed')
+        }
+      } finally {
+        document.body.removeChild(textArea)
+      }
     } catch (err) {
       console.error('Failed to copy text: ', err)
     }
@@ -592,9 +618,9 @@ export default function EnhancedPosterGenerator() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="pt-0">
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border mb-4">
+                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border">
                               <p className="text-xs text-gray-600 mb-3">Share your poster and AI-generated content:</p>
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="flex justify-center">
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -605,17 +631,6 @@ export default function EnhancedPosterGenerator() {
                                   Share on Facebook
                                 </Button>
                               </div>
-                            </div>
-                            <div className="text-center">
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={shareToClipboard}
-                                className="w-full"
-                              >
-                                <Share2 className="mr-2 h-4 w-4" />
-                                {copiedItem === 'share' ? 'Copied to Clipboard!' : 'Copy All Content to Clipboard'}
-                              </Button>
                             </div>
                           </CardContent>
                         </Card>

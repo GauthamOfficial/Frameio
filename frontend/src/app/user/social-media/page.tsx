@@ -89,10 +89,37 @@ export default function SocialMediaPage() {
 
   const copyToClipboard = async (text: string, type: string) => {
     try {
-      await navigator.clipboard.writeText(text)
-      setCopiedItem(type)
-      setTimeout(() => setCopiedItem(null), 2000)
-      showSuccess('Copied to clipboard!')
+      // Try modern Clipboard API first (works on HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+        setCopiedItem(type)
+        setTimeout(() => setCopiedItem(null), 2000)
+        showSuccess('Copied to clipboard!')
+        return
+      }
+      
+      // Fallback for HTTP or when Clipboard API is not available
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      
+      try {
+        const successful = document.execCommand('copy')
+        if (successful) {
+          setCopiedItem(type)
+          setTimeout(() => setCopiedItem(null), 2000)
+          showSuccess('Copied to clipboard!')
+        } else {
+          throw new Error('execCommand failed')
+        }
+      } finally {
+        document.body.removeChild(textArea)
+      }
     } catch (err) {
       console.error('Failed to copy text: ', err)
       showError('Failed to copy to clipboard')
