@@ -57,7 +57,9 @@ function CheckEmailContent() {
           
           // Use server-side API route to set cookies and redirect
           // This ensures cookies are set before redirect happens
-          const redirectUrl = `/api/auth/set-tokens?access=${encodeURIComponent(data.access)}&refresh=${encodeURIComponent(data.refresh)}&redirect=/dashboard`
+          // Use absolute frontend URL to avoid redirecting to backend domain
+          const frontendUrl = typeof window !== 'undefined' ? window.location.origin : ''
+          const redirectUrl = `${frontendUrl}/api/auth/set-tokens?access=${encodeURIComponent(data.access)}&refresh=${encodeURIComponent(data.refresh)}&redirect=/dashboard`
           console.log('Redirecting to:', redirectUrl)
           window.location.href = redirectUrl
         } else {

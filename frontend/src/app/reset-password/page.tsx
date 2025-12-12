@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,8 +26,16 @@ function ResetPasswordContent() {
   const [tokenValid, setTokenValid] = useState(false)
   const [userEmail, setUserEmail] = useState('')
   const [success, setSuccess] = useState(false)
+  const hasVerifiedRef = useRef(false)
 
   const verifyToken = useCallback(async (resetToken: string) => {
+    // Prevent multiple verification attempts
+    if (hasVerifiedRef.current) {
+      return
+    }
+    
+    hasVerifiedRef.current = true
+    
     try {
       const response = await fetch(buildApiUrl(`/api/users/auth/verify-reset-token/${resetToken}/`), {
         method: 'GET',
@@ -53,15 +61,21 @@ function ResetPasswordContent() {
     }
   }, [showError])
 
-  // Verify token on mount
+  // Reset verification ref when token changes
   useEffect(() => {
-    if (token) {
+    hasVerifiedRef.current = false
+  }, [token])
+
+  // Verify token on mount - only once
+  useEffect(() => {
+    if (token && !hasVerifiedRef.current && !success) {
       verifyToken(token)
-    } else {
+    } else if (!token) {
       setVerifying(false)
       setTokenValid(false)
     }
-  }, [token, verifyToken])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, success])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
