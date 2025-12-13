@@ -76,6 +76,10 @@ export default function TemplatesPage() {
   }, [templates, searchQuery, selectedCategory, selectedAudience, selectedOffer])
 
   const handleTemplateClick = (template: Template) => {
+    // Set flag to indicate we're navigating from templates page
+    // This helps preserve uploaded images when selecting a template
+    sessionStorage.setItem('posterGenerator_fromTemplates', 'true')
+    
     // Navigate to poster-generator with prompt as query parameter
     try {
       // Use encodeURIComponent to properly encode the prompt

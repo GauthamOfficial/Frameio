@@ -73,6 +73,119 @@ export default function EnhancedPosterGeneratorWithBranding() {
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageRestoredRef = useRef(false)
+  
+  // Restore uploaded image from sessionStorage on mount (but clear on refresh)
+  useEffect(() => {
+    // Only restore once on initial mount
+    if (imageRestoredRef.current) {
+      return
+    }
+    
+    const restoreUploadedImage = async () => {
+      try {
+        // Check if we're coming from templates page (flag set by templates page)
+        const fromTemplates = sessionStorage.getItem('posterGenerator_fromTemplates') === 'true'
+        
+        // Clear the flag after checking
+        sessionStorage.removeItem('posterGenerator_fromTemplates')
+        
+        // Check if page was refreshed using Performance Navigation API
+        let isRefresh = false
+        if (typeof window !== 'undefined' && window.performance) {
+          try {
+            const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
+            if (navigation) {
+              // 'reload' means page was refreshed (F5, Ctrl+R, etc.)
+              // 'navigate' means navigated from another page (including from templates page)
+              isRefresh = navigation.type === 'reload'
+            }
+          } catch (e) {
+            // Performance API not available - if we have fromTemplates flag, it's not a refresh
+            isRefresh = !fromTemplates
+          }
+        } else {
+          // Performance API not available - if we have fromTemplates flag, it's not a refresh
+          isRefresh = !fromTemplates
+        }
+        
+        // If we're coming from templates page, preserve the image
+        if (fromTemplates) {
+          // Restore from sessionStorage (navigation from templates page)
+          const storedImageData = sessionStorage.getItem('posterGenerator_uploadedImage')
+          const storedImageName = sessionStorage.getItem('posterGenerator_uploadedImageName')
+          const storedImageType = sessionStorage.getItem('posterGenerator_uploadedImageType')
+          
+          if (storedImageData && storedImageName && storedImageType) {
+            // Convert base64 back to File
+            const byteCharacters = atob(storedImageData)
+            const byteNumbers = new Array(byteCharacters.length)
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i)
+            }
+            const byteArray = new Uint8Array(byteNumbers)
+            const blob = new Blob([byteArray], { type: storedImageType })
+            const file = new File([blob], storedImageName, { type: storedImageType })
+            
+            setUploadedImage(file)
+            const url = URL.createObjectURL(file)
+            setPreviewUrl(url)
+          }
+          imageRestoredRef.current = true
+          return
+        }
+        
+        // If page was refreshed, clear the stored image
+        if (isRefresh) {
+          sessionStorage.removeItem('posterGenerator_uploadedImage')
+          sessionStorage.removeItem('posterGenerator_uploadedImageName')
+          sessionStorage.removeItem('posterGenerator_uploadedImageType')
+          imageRestoredRef.current = true
+          return
+        }
+        
+        // Otherwise, restore from sessionStorage (normal navigation)
+        const storedImageData = sessionStorage.getItem('posterGenerator_uploadedImage')
+        const storedImageName = sessionStorage.getItem('posterGenerator_uploadedImageName')
+        const storedImageType = sessionStorage.getItem('posterGenerator_uploadedImageType')
+        
+        if (storedImageData && storedImageName && storedImageType) {
+          // Convert base64 back to File
+          const byteCharacters = atob(storedImageData)
+          const byteNumbers = new Array(byteCharacters.length)
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i)
+          }
+          const byteArray = new Uint8Array(byteNumbers)
+          const blob = new Blob([byteArray], { type: storedImageType })
+          const file = new File([blob], storedImageName, { type: storedImageType })
+          
+          setUploadedImage(file)
+          const url = URL.createObjectURL(file)
+          setPreviewUrl(url)
+        }
+        imageRestoredRef.current = true
+      } catch (error) {
+        console.error('Error restoring uploaded image:', error)
+        // Clear corrupted sessionStorage data
+        sessionStorage.removeItem('posterGenerator_uploadedImage')
+        sessionStorage.removeItem('posterGenerator_uploadedImageName')
+        sessionStorage.removeItem('posterGenerator_uploadedImageType')
+        imageRestoredRef.current = true
+      }
+    }
+    
+    restoreUploadedImage()
+  }, [])
+  
+  // Cleanup preview URL blob on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
   
   // Textarea auto-resize functionality
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -659,19 +772,44 @@ export default function EnhancedPosterGeneratorWithBranding() {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
+      // Revoke the old blob URL to prevent memory leaks
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+      
       setUploadedImage(file)
       const url = URL.createObjectURL(file)
       setPreviewUrl(url)
       setError(null)
+      
+      // Save to sessionStorage to persist across navigation
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64String = reader.result as string
+        // Remove data URL prefix (e.g., "data:image/png;base64,")
+        const base64Data = base64String.split(',')[1] || base64String
+        sessionStorage.setItem('posterGenerator_uploadedImage', base64Data)
+        sessionStorage.setItem('posterGenerator_uploadedImageName', file.name)
+        sessionStorage.setItem('posterGenerator_uploadedImageType', file.type)
+      }
+      reader.readAsDataURL(file)
     }
   }
 
   const clearUploadedImage = () => {
+    // Revoke the blob URL to prevent memory leaks
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+    }
     setUploadedImage(null)
     setPreviewUrl(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
+    // Clear from sessionStorage when user explicitly clears the image
+    sessionStorage.removeItem('posterGenerator_uploadedImage')
+    sessionStorage.removeItem('posterGenerator_uploadedImageName')
+    sessionStorage.removeItem('posterGenerator_uploadedImageType')
   }
 
 

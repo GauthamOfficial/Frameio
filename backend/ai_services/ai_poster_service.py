@@ -566,7 +566,7 @@ class AIPosterService:
                             image = Image.open(BytesIO(part.inline_data.data))
 
                             # Strict AR enforcement with retries
-                            max_retries = 2
+                            max_retries = 0  # No retries - use cropping fallback only
                             attempt_idx = 0
                             while not self._is_aspect_ratio_match(image, normalized_ar) and attempt_idx < max_retries:
                                 logger.warning(f"Generated image AR mismatch (attempt {attempt_idx+1}); retrying with strict dimensions")
@@ -1211,7 +1211,7 @@ class AIPosterService:
                     edited_image = Image.open(BytesIO(part.inline_data.data))
 
                     # Strict AR enforcement with retries
-                    max_retries = 2
+                    max_retries = 0  # No retries - use cropping fallback only
                     attempt_idx = 0
                     while not self._is_aspect_ratio_match(edited_image, normalized_ar) and attempt_idx < max_retries:
                         logger.warning(f"Edited image AR mismatch (attempt {attempt_idx+1}); retrying with strict dimensions")
@@ -1606,7 +1606,7 @@ class AIPosterService:
                     composite_image = Image.open(BytesIO(part.inline_data.data))
 
                     # Strict AR enforcement with retries
-                    max_retries = 2
+                    max_retries = 0  # No retries - use cropping fallback only
                     attempt_idx = 0
                     while not self._is_aspect_ratio_match(composite_image, normalized_ar) and attempt_idx < max_retries:
                         logger.warning(f"Composite image AR mismatch (attempt {attempt_idx+1}); retrying with strict dimensions")
