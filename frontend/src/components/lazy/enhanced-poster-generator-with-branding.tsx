@@ -100,7 +100,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
               // 'navigate' means navigated from another page (including from templates page)
               isRefresh = navigation.type === 'reload'
             }
-          } catch (e) {
+          } catch {
             // Performance API not available - if we have fromTemplates flag, it's not a refresh
             isRefresh = !fromTemplates
           }
