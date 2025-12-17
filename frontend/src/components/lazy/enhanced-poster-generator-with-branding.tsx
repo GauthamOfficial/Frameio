@@ -804,7 +804,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
           const canvas = document.createElement('canvas')
           let width = img.width
           let height = img.height
-          let quality = 0.9
+          const quality = 0.9
           
           // Reduce dimensions if image is too large
           const maxDimension = 1920
@@ -1013,7 +1013,6 @@ export default function EnhancedPosterGeneratorWithBranding() {
                     aria-label="Choose image"
                     className="bg-gray-100 dark:bg-gray-800 hover:bg-[#800000] dark:hover:bg-[#800000] hover:text-white border-gray-300 dark:border-gray-600"
                   >
-                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
                     <ImageIcon className="h-4 w-4" />
                   </Button>
                 </div>
