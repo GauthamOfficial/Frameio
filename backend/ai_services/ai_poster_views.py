@@ -421,12 +421,41 @@ def generate_poster(request):
             
             return Response(response_data, status=status.HTTP_200_OK)
         else:
-            error_message = result.get('message', 'Failed to generate poster')
+            # Extract error message from result
+            error_message = result.get('message') or result.get('error') or 'Failed to generate poster'
             logger.error(f"Poster generation failed: {error_message}")
-            return Response({
-                "success": False,
-                "error": error_message
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            # Ensure error_message is a string and not empty
+            if not error_message or not isinstance(error_message, str):
+                error_message = 'Failed to generate poster'
+            else:
+                error_message = str(error_message).strip()
+                if not error_message:
+                    error_message = 'Failed to generate poster'
+            
+            try:
+                return Response({
+                    "success": False,
+                    "error": error_message
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except Exception as response_error:
+                logger.error(f"Failed to create Response object: {str(response_error)}")
+                from django.http import JsonResponse
+                try:
+                    return JsonResponse({
+                        "success": False,
+                        "error": error_message
+                    }, status=500)
+                except Exception as json_error:
+                    logger.error(f"Failed to create JsonResponse: {str(json_error)}")
+                    # Last resort: return a simple HTTP response
+                    from django.http import HttpResponse
+                    import json
+                    return HttpResponse(
+                        json.dumps({"success": False, "error": error_message}),
+                        content_type='application/json',
+                        status=500
+                    )
             
     except Exception as e:
         import traceback
@@ -437,17 +466,28 @@ def generate_poster(request):
         try:
             response = Response({
                 "success": False,
-                "error": error_message
+                "error": str(error_message) if error_message else "Internal server error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             response['Content-Type'] = 'application/json'
             return response
         except Exception as response_error:
             logger.error(f"Failed to create error response: {str(response_error)}")
+            logger.error(f"Original error: {str(e)}")
             from django.http import JsonResponse
-            return JsonResponse({
-                "success": False,
-                "error": "Internal server error"
-            }, status=500)
+            try:
+                return JsonResponse({
+                    "success": False,
+                    "error": str(error_message) if error_message else "Internal server error"
+                }, status=500)
+            except Exception as json_error:
+                logger.error(f"Failed to create JsonResponse: {str(json_error)}")
+                # Last resort: return a simple text response
+                from django.http import HttpResponse
+                return HttpResponse(
+                    '{"success": false, "error": "Internal server error"}',
+                    content_type='application/json',
+                    status=500
+                )
 
 
 @csrf_exempt

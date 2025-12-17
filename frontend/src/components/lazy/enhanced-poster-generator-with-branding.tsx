@@ -596,19 +596,27 @@ export default function EnhancedPosterGeneratorWithBranding() {
           const errorData = await response.json()
           console.error('Error response data:', errorData)
           
-          // Handle empty object case
-          if (Object.keys(errorData).length === 0) {
+          // Handle null, undefined, or empty object case
+          if (!errorData || (typeof errorData === 'object' && Object.keys(errorData).length === 0)) {
             message = `HTTP ${response.status}: Server returned empty error response. Check backend logs for details.`
             console.error('Empty error response received - backend may have encountered a serialization error')
           } else {
-            message = errorData?.error || errorData?.message || errorData?.detail || message
+            // Extract error message from various possible fields
+            const errorMsg = errorData?.error || errorData?.message || errorData?.detail || errorData?.error_message
+            if (errorMsg) {
+              message = typeof errorMsg === 'string' ? errorMsg : String(errorMsg)
+            } else {
+              // If no error message found, use a default
+              message = `HTTP ${response.status}: An error occurred during poster generation`
+            }
             // Include more details if available
             if (errorData?.detail && errorData.detail !== message) {
               message += `: ${errorData.detail}`
             }
           }
-        } catch {
+        } catch (jsonError) {
           // If JSON parsing fails, try as text
+          console.error('Failed to parse error response as JSON:', jsonError)
           try {
             const responseText = await clonedResponse.text()
             console.error('Error response text (raw):', responseText)

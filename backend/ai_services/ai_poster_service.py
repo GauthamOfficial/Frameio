@@ -99,6 +99,18 @@ def sanitize_for_logging(data):
 class AIPosterService:
     """Service class for AI poster generation using Gemini 2.5 Flash"""
 
+    # Centralized aspect ratio to resolution mapping
+    ASPECT_RATIO_RESOLUTIONS = {
+        "1:1": (1024, 1024),
+        "4:5": (1024, 1280),
+        "3:4": (960, 1280),
+        "9:16": (720, 1280),
+        "16:9": (1280, 720),
+        "5:4": (1280, 1024),
+        "3:2": (1536, 1024),
+        "2:3": (1024, 1536),
+    }
+
     @staticmethod
     def _build_image_config(types_module, aspect_ratio: str):
         """Builds an image generation config compatible across google-genai versions.
@@ -120,24 +132,19 @@ class AIPosterService:
         # If neither exists, do not pass image_config at all
         return None
 
-    @staticmethod
-    def _choose_dimensions_for_ratio(aspect_ratio: str, max_width: int = 1536) -> Optional[tuple]:
-        """Return (width, height) tuple for a reasonable max edge size while matching ratio.
-        Uses max dimension ≈ 1536 to balance quality and latency.
+    @classmethod
+    def _choose_dimensions_for_ratio(cls, aspect_ratio: str, max_width: int = 1536) -> Optional[tuple]:
+        """Return (width, height) tuple from centralized mapping.
+        Uses centralized ASPECT_RATIO_RESOLUTIONS for consistency.
+        Falls back to calculated dimensions if ratio not in mapping.
         """
-        # Normalize common ratios
+        # Normalize aspect ratio
         ar = str(aspect_ratio or "1:1").strip()
-        choices = {
-            "1:1": (1024, 1024),
-            "16:9": (1536, 864),
-            "9:16": (864, 1536),
-            "4:5": (1024, 1280),
-            "5:4": (1280, 1024),
-            "3:2": (1536, 1024),
-            "2:3": (1024, 1536),
-        }
-        if ar in choices:
-            return choices[ar]
+        
+        # Check centralized mapping first
+        if ar in cls.ASPECT_RATIO_RESOLUTIONS:
+            return cls.ASPECT_RATIO_RESOLUTIONS[ar]
+        
         # Fallback: parse float and compute based on provided max_width
         try:
             if ":" in ar:
@@ -152,14 +159,15 @@ class AIPosterService:
             return None
 
     @classmethod
-    def _build_image_config_with_dimensions(cls, types_module, aspect_ratio: str, max_width: int = 1536):
-        """Attempt to build an image config using explicit dimensions supported by SDK.
-        Tries size, width/height variations across ImageConfig and ImageGenerationConfig.
+    def _build_image_config_with_dimensions(cls, types_module, aspect_ratio: str, max_width: int = None):
+        """Attempt to build an image config using exact dimensions from centralized mapping.
+        Uses only the mapped resolution for stability. Tries size, width/height variations.
         Returns None if not constructible.
         """
         if not types_module:
             return None
-        dims = cls._choose_dimensions_for_ratio(aspect_ratio, max_width=max_width)
+        # Use only the mapped resolution (ignore max_width parameter)
+        dims = cls._choose_dimensions_for_ratio(aspect_ratio)
         if not dims:
             return None
         width, height = dims
@@ -180,30 +188,6 @@ class AIPosterService:
                 except Exception:
                     continue
         return None
-
-    @classmethod
-    def _build_best_dimension_configs(cls, types_module, aspect_ratio: str) -> List[Any]:
-        """Return a list of image_config objects trying multiple explicit sizes for better compliance."""
-        if not types_module:
-            return []
-        configs: List[Any] = []
-        for max_w in (1024, 1280, 1536, 1792, 2048):
-            try:
-                cfg = cls._build_image_config_with_dimensions(types_module, aspect_ratio, max_width=max_w)
-                if cfg is not None:
-                    configs.append(cfg)
-            except Exception:
-                continue
-        # De-duplicate by repr
-        seen = set()
-        unique = []
-        for c in configs:
-            r = repr(c)
-            if r in seen:
-                continue
-            seen.add(r)
-            unique.append(c)
-        return unique
 
     def _retry_api_call(self, api_func, *args, **kwargs):
         """
@@ -252,6 +236,22 @@ class AIPosterService:
         # If we get here, all retries failed
         raise last_exception
     
+    @classmethod
+    def _get_composition_guidance(cls, aspect_ratio: str) -> str:
+        """Generate soft, AI-friendly composition guidance for aspect ratio.
+        Replaces strict aspect ratio language with composition intent.
+        """
+        normalized_ar = cls._normalize_aspect_ratio_value(aspect_ratio)
+        return f"""
+COMPOSITION GUIDE:
+- The image will be displayed in a {normalized_ar} frame
+- Compose the subject so it fits naturally within this frame
+- Keep the main subject centered vertically and horizontally
+- Allow visually calm or gradient areas near the top and bottom
+- Avoid placing critical visual details near extreme edges
+- Ensure all important elements are fully visible within the frame
+"""
+
     @staticmethod
     def _parse_aspect_ratio(aspect_ratio: str) -> Optional[float]:
         """Parse aspect ratio like '16:9' or '1:1' or '4:5' into a float width/height.
@@ -316,6 +316,32 @@ class AIPosterService:
         current = w / h
         return abs(current - target) <= tolerance
 
+    @classmethod
+    def _enforce_exact_resolution(cls, image: Image.Image, aspect_ratio: str) -> Image.Image:
+        """Enforce exact resolution from centralized mapping.
+        First crops to correct aspect ratio, then resizes to exact dimensions.
+        No padding, borders, or letterboxing.
+        """
+        # Get target dimensions from centralized mapping
+        dims = cls._choose_dimensions_for_ratio(aspect_ratio)
+        if not dims:
+            # Fallback to aspect ratio enforcement only
+            return cls._enforce_aspect_ratio(image, aspect_ratio)
+        
+        target_width, target_height = dims
+        
+        # First, ensure correct aspect ratio via cropping
+        image = cls._enforce_aspect_ratio(image, aspect_ratio)
+        
+        # Then resize to exact dimensions
+        try:
+            from PIL import Image as PILImage
+            resample = getattr(PILImage, 'Resampling', PILImage).LANCZOS
+            return image.resize((target_width, target_height), resample)
+        except Exception:
+            # Fallback to basic resize
+            return image.resize((target_width, target_height), Image.LANCZOS)
+    
     @classmethod
     def _enforce_aspect_ratio(cls, image: Image.Image, aspect_ratio: str) -> Image.Image:
         """Center-crop the PIL image to match the target aspect ratio.
@@ -437,7 +463,7 @@ class AIPosterService:
             
             # Create base prompt with enhanced instructions for better image generation
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
-            ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
+            composition_guidance = self._get_composition_guidance(normalized_ar)
             
             # Enhanced contrast and clarity instructions for main subject with gradient transitions
             contrast_instructions = """
@@ -446,7 +472,7 @@ class AIPosterService:
             - Always enhance the contrast and clarity of the main subject so it stands out clearly from the background
             - Ensure the main subject has strong visual presence and is the focal point of the image
             - Use lighting, shadows, and color contrast to make the subject pop
-            - Keep the main subject centered within the safe visual zone (avoiding top 20% and bottom 15%)
+            - Keep the main subject comfortably away from the extreme top and bottom edges
             - Maintain clear subject contrast against the background while ensuring smooth tonal transitions
             """
             
@@ -455,17 +481,17 @@ class AIPosterService:
             
             if is_simple_prompt:
                 # For simple prompts, send as-is with minimal additions
-                base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
+                base_prompt = f"{composition_guidance}\n{contrast_instructions}\n{prompt}"
             else:
                 # For complex prompts, add more detailed instructions
-                base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
+                base_prompt = f"{composition_guidance}\n{contrast_instructions}\n{prompt}"
             
             if has_branding:
                 # Add instructions for seamless gradient transitions in overlay areas
                 branding_layout_instructions = """
                 
                 LAYOUT REQUIREMENTS:
-                - Maintain all main content and primary text within the center safe zone (middle 65% of image)
+                - Keep all main content and primary text comfortably centered, away from the extreme edges
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{base_prompt}{branding_layout_instructions}"
@@ -479,589 +505,517 @@ class AIPosterService:
                 - Focus purely on the visual design and aesthetic elements with full-bleed composition
                 - Do not include any text that suggests a specific company or brand
                 - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
-                - Keep main content centered in the safe visual zone (middle 65% of image)
+                - Keep main content comfortably centered, away from the extreme edges
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{base_prompt}{no_branding_instructions}"
             
-            # Try multiple prompt variations if the first one fails
-            prompts_to_try = [
-                base_prompt,
-                f"Create a high-quality image: {base_prompt}",
-                f"Generate a professional image: {base_prompt}",
-                f"Design an image: {base_prompt}"
-            ]
+            # Configure image generation (prefer explicit dimensions; fallback to aspect_ratio)
+            image_config = self._build_image_config_with_dimensions(types, normalized_ar) or \
+                           self._build_image_config(types, normalized_ar)
             
-            for attempt, current_prompt in enumerate(prompts_to_try):
-                logger.info(f"Attempt {attempt + 1}: Trying prompt: {current_prompt[:50]}...")
-                
-                # Configure image generation (prefer explicit dimensions; fallback to aspect_ratio)
-                image_config = self._build_image_config_with_dimensions(types, normalized_ar) or \
-                               self._build_image_config(types, normalized_ar)
-                
-                config_kwargs = {"response_modalities": ['Image']}
-                if image_config is not None:
-                    config_kwargs["image_config"] = image_config
-                else:
-                    logger.info("Image generation: image_config not available; relying on prompt directive for aspect ratio")
-                
-                try:
-                    response = self._retry_api_call(
-                        self.client.models.generate_content,
-                        model="gemini-2.5-flash-image",
-                        contents=[current_prompt],
-                        config=types.GenerateContentConfig(**config_kwargs),
-                    )
-                except Exception as api_error:
-                    error_str = str(api_error)
-                    logger.error(f"API call failed after retries: {error_str}")
-                    
-                    # Check for specific error types
-                    if '500' in error_str or 'INTERNAL' in error_str:
-                        if attempt < len(prompts_to_try) - 1:
-                            logger.info(f"Retrying with different prompt variation...")
-                            time.sleep(2)  # Wait before trying next prompt
-                            continue
-                        return {
-                            "status": "error",
-                            "message": "Google API is experiencing temporary issues. Please try again in a few moments. If the problem persists, please check your API quota and configuration."
-                        }
-                    else:
-                        # For other errors, return immediately
-                        return {
-                            "status": "error",
-                            "message": f"Image generation failed: {error_str}"
-                        }
+            config_kwargs = {"response_modalities": ['Image']}
+            if image_config is not None:
+                config_kwargs["image_config"] = image_config
+            else:
+                logger.info("Image generation: image_config not available; relying on post-generation enforcement for aspect ratio")
             
-                # Process response and save image
-                if not response.candidates or len(response.candidates) == 0:
-                    logger.warning(f"Attempt {attempt + 1}: No candidates returned from Gemini model")
-                    if attempt < len(prompts_to_try) - 1:
-                        continue
-                    return {"status": "error", "message": "No candidates returned from model"}
-                
-                candidate = response.candidates[0]
-                logger.info(f"Attempt {attempt + 1}: Gemini response candidate: {candidate}")
-                
-                if not candidate.content:
-                    logger.warning(f"Attempt {attempt + 1}: No content in Gemini response candidate")
-                    if attempt < len(prompts_to_try) - 1:
-                        continue
-                    return {"status": "error", "message": "No content returned from model"}
-                
-                if not candidate.content.parts:
-                    logger.warning(f"Attempt {attempt + 1}: No content parts in Gemini response")
-                    logger.warning(f"Content object: {candidate.content}")
-                    if attempt < len(prompts_to_try) - 1:
-                        continue
-                    return {"status": "error", "message": "No content parts returned from model"}
-                
-                logger.info(f"Attempt {attempt + 1}: Found {len(candidate.content.parts)} content parts")
-                
-                # Try to process the image
-                image_processed = False
-                for part in candidate.content.parts:
-                    if hasattr(part, 'inline_data') and part.inline_data is not None:
+            # Single API call with retry logic for transient errors only
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash-image",
+                    contents=[base_prompt],
+                    config=types.GenerateContentConfig(**config_kwargs),
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"API call failed after retries: {error_str}")
+                return {
+                    "status": "error",
+                    "message": f"Image generation failed: {error_str}"
+                }
+            
+            # Process response and save image
+            if not response.candidates or len(response.candidates) == 0:
+                logger.error("No candidates returned from Gemini model")
+                return {"status": "error", "message": "No candidates returned from model"}
+            
+            candidate = response.candidates[0]
+            logger.info(f"Gemini response candidate: {candidate}")
+            
+            if not candidate.content:
+                logger.error("No content in Gemini response candidate")
+                return {"status": "error", "message": "No content returned from model"}
+            
+            if not candidate.content.parts:
+                logger.error("No content parts in Gemini response")
+                logger.warning(f"Content object: {candidate.content}")
+                return {"status": "error", "message": "No content parts returned from model"}
+            
+            logger.info(f"Found {len(candidate.content.parts)} content parts")
+            
+            # Process the image
+            image_processed = False
+            for part in candidate.content.parts:
+                if hasattr(part, 'inline_data') and part.inline_data is not None:
+                    try:
+                        image = Image.open(BytesIO(part.inline_data.data))
+
+                        # Enforce exact resolution from centralized mapping
+                        # This ensures pixel-perfect aspect ratio matching
+                        image = self._enforce_exact_resolution(image, normalized_ar)
+
+                        # Generate unique filename
+                        timestamp = int(time.time())
+                        filename = f"generated_poster_{timestamp}.png"
+                        output_path = f"generated_posters/{filename}"
+
+                        # Convert image to bytes
+                        image_bytes = BytesIO()
+                        image.save(image_bytes, format='PNG')
+                        image_bytes.seek(0)
+                        
+                        final_w, final_h = image.size
+                        logger.info(f"Poster generated successfully; size={final_w}x{final_h}")
+                        
+                        # Store image using dual-mode storage handler
+                        logger.info(f"=== STARTING IMAGE STORAGE ===")
                         try:
-                            image = Image.open(BytesIO(part.inline_data.data))
-
-                            # Strict AR enforcement with retries
-                            max_retries = 0  # No retries - use cropping fallback only
-                            attempt_idx = 0
-                            while not self._is_aspect_ratio_match(image, normalized_ar) and attempt_idx < max_retries:
-                                logger.warning(f"Generated image AR mismatch (attempt {attempt_idx+1}); retrying with strict dimensions")
-                                # Build a series of image_config attempts with escalating dimensions
-                                dim_configs = self._build_best_dimension_configs(types, normalized_ar) or [self._build_image_config(types, normalized_ar)]
-                                # Include exact pixel directive in prompt
-                                w_h = self._choose_dimensions_for_ratio(normalized_ar, max_width=1536)
-                                px_directive = f"Generate exactly {w_h[0]}x{w_h[1]} pixels, no padding or borders. " if w_h else ""
-                                stricter_prompt = f"ABSOLUTE REQUIREMENT: Output must be exactly {normalized_ar}. {px_directive}{current_prompt}"
-                                retry_succeeded = False
-                                for dim_config in dim_configs:
-                                    retry_kwargs = dict(config_kwargs)
-                                    if dim_config is not None:
-                                        retry_kwargs["image_config"] = dim_config
-                                    try:
-                                        response_retry = self._retry_api_call(
-                                            self.client.models.generate_content,
-                                            model="gemini-2.5-flash-image",
-                                            contents=[stricter_prompt],
-                                            config=types.GenerateContentConfig(**retry_kwargs),
-                                        )
-                                    except Exception as retry_error:
-                                        logger.warning(f"Retry attempt failed: {retry_error}")
-                                        continue
-                                    for retry_part in response_retry.candidates[0].content.parts:
-                                        if getattr(retry_part, 'inline_data', None) is not None:
-                                            retry_img = Image.open(BytesIO(retry_part.inline_data.data))
-                                            image = retry_img
-                                            if self._is_aspect_ratio_match(image, normalized_ar):
-                                                retry_succeeded = True
-                                                break
-                                    if retry_succeeded:
-                                        break
-                                attempt_idx += 1
-                            # Fallback: if still mismatched after retries, enforce by center-cropping
-                            if not self._is_aspect_ratio_match(image, normalized_ar):
-                                logger.warning("Model did not honor aspect ratio after strict retries; enforcing via cropping")
-                                image = self._enforce_aspect_ratio(image, normalized_ar)
-
-                            # Generate unique filename
-                            timestamp = int(time.time())
-                            filename = f"generated_poster_{timestamp}.png"
-                            output_path = f"generated_posters/{filename}"
-                            
-                            # Ensure minimum short side before saving
-                            image = self._ensure_min_short_side(image, min_short_side=1080)
-
-                            # Convert image to bytes
-                            image_bytes = BytesIO()
-                            image.save(image_bytes, format='PNG')
-                            image_bytes.seek(0)
-                            
-                            final_w, final_h = image.size
-                            logger.info(f"Poster generated successfully on attempt {attempt + 1}; size={final_w}x{final_h}")
-                            
-                            # Store image using dual-mode storage handler
-                            logger.info(f"=== STARTING IMAGE STORAGE ===")
+                            saved_path, image_url, public_url = store_poster_image(
+                                image_bytes.getvalue(),
+                                filename=filename
+                            )
+                            logger.info(f"Image stored successfully:")
+                            logger.info(f"  saved_path: {saved_path}")
+                            logger.info(f"  image_url: {image_url}")
+                            logger.info(f"  public_url: {public_url}")
+                        except Exception as e:
+                            logger.error(f"Failed to store image: {str(e)}")
+                            import traceback
+                            traceback.print_exc()
+                            # Fallback to old method
+                            saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
+                            image_url = default_storage.url(saved_path)
+                            if not image_url.startswith('http'):
+                                request = getattr(self, '_request', None)
+                                if request:
+                                    image_url = request.build_absolute_uri(image_url)
+                                else:
+                                    image_url = f"{get_domain_url()}{image_url}"
+                            public_url = image_url
+                        
+                        logger.info(f"=== END IMAGE STORAGE ===")
+                        
+                        # Generate caption and hashtags for the poster
+                        logger.info("Starting caption generation...")
+                        caption_result = self.generate_caption_and_hashtags(prompt, image_url, user)
+                        logger.info(f"Caption generation result status: {caption_result.get('status')}")
+                        
+                        # Check if caption generation failed
+                        if caption_result.get("status") == "error":
+                            error_msg = caption_result.get("message", "Unknown error")
+                            logger.error(f"Caption generation failed: {error_msg}")
+                            # Still continue with poster generation, but log the error
+                            # The frontend can handle empty captions
+                        
+                        # Create shareable HTML page with Open Graph tags for Facebook
+                        # This allows Facebook to automatically fetch both image and caption
+                        shareable_page_url = None
+                        logger.info(f"=== HTML PAGE CREATION DEBUG ===")
+                        logger.info(f"public_url available: {bool(public_url)}")
+                        if public_url:
+                            logger.info(f"public_url value: {public_url}")
                             try:
-                                saved_path, image_url, public_url = store_poster_image(
-                                    image_bytes.getvalue(),
-                                    filename=filename
-                                )
-                                logger.info(f"Image stored successfully:")
-                                logger.info(f"  saved_path: {saved_path}")
-                                logger.info(f"  image_url: {image_url}")
-                                logger.info(f"  public_url: {public_url}")
-                            except Exception as e:
-                                logger.error(f"Failed to store image: {str(e)}")
+                                caption_text = caption_result.get("caption", "")
+                                full_caption_text = caption_result.get("full_caption", caption_text)
+                                logger.info(f"Caption text available: {bool(caption_text)}")
+                                logger.info(f"Full caption text available: {bool(full_caption_text)}")
+                                
+                                if caption_text or full_caption_text:
+                                    logger.info("Creating and storing shareable HTML page...")
+                                    shareable_page_url = create_and_store_shareable_page(
+                                        public_url,
+                                        caption_text,
+                                        full_caption_text
+                                    )
+                                    if shareable_page_url:
+                                        logger.info(f"SUCCESS: Shareable HTML page created successfully: {shareable_page_url}")
+                                    else:
+                                        logger.error("FAILED: Failed to create shareable HTML page, using image URL directly")
+                                        shareable_page_url = public_url  # Fallback to image URL
+                                else:
+                                    logger.warning("WARNING: No caption available, using image URL directly")
+                                    shareable_page_url = public_url  # Fallback to image URL
+                            except Exception as html_error:
+                                logger.error(f"ERROR: Error creating shareable HTML page: {html_error}")
                                 import traceback
                                 traceback.print_exc()
-                                # Fallback to old method
-                                saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
-                                image_url = default_storage.url(saved_path)
-                                if not image_url.startswith('http'):
-                                    request = getattr(self, '_request', None)
-                                    if request:
-                                        image_url = request.build_absolute_uri(image_url)
+                                shareable_page_url = public_url  # Fallback to image URL
+                        else:
+                            logger.error("ERROR: No public_url available, cannot create HTML page")
+                        
+                        logger.info(f"Final shareable_page_url: {shareable_page_url}")
+                        logger.info(f"=== END HTML PAGE CREATION DEBUG ===")
+                        
+                        # Ensure public_url is always set - prioritize HTML page, then image URL
+                        final_public_url = shareable_page_url or public_url or image_url
+                        
+                        if not final_public_url:
+                            logger.error("CRITICAL: No public_url available at all! Using image_url as fallback")
+                            final_public_url = image_url
+                        
+                        logger.info(f"=== FINAL RESULT DEBUG ===")
+                        logger.info(f"shareable_page_url: {shareable_page_url}")
+                        logger.info(f"public_url (image): {public_url}")
+                        logger.info(f"final_public_url: {final_public_url}")
+                        logger.info(f"image_url: {image_url}")
+                        
+                        # Add brand overlay if user has company profile
+                        # CRITICAL: Set public_url in final_result - this is what gets returned to the API
+                        # Ensure public_url is always set (even if empty)
+                        # Also include cloudinary_url as the direct image URL (not HTML page)
+                        cloudinary_image_url = public_url if public_url and not shareable_page_url else (public_url if public_url else '')
+                        
+                        final_result = {
+                            "status": "success", 
+                            "image_path": saved_path,
+                            "image_url": image_url,
+                            "public_url": final_public_url if final_public_url else '',  # Always set, even if empty (may be HTML page)
+                            "cloudinary_url": cloudinary_image_url,  # Direct image URL (not HTML page) - for backward compatibility
+                            "filename": filename,
+                            "width": final_w,
+                            "height": final_h,
+                            "aspect_ratio_final": f"{final_w}:{final_h}",
+                            "caption": caption_result.get("caption", ""),
+                            "full_caption": caption_result.get("full_caption", ""),
+                            "hashtags": caption_result.get("hashtags", []),
+                            "emoji": caption_result.get("emoji", ""),
+                            "call_to_action": caption_result.get("call_to_action", ""),
+                            "caption_error": caption_result.get("message") if caption_result.get("status") == "error" else None,
+                            "branding_applied": False
+                        }
+                        
+                        # CRITICAL: Ensure public_url key exists
+                        if 'public_url' not in final_result:
+                            logger.error("CRITICAL: public_url key missing from final_result!")
+                            final_result['public_url'] = ''
+                        
+                        # Final verification before returning
+                        logger.info(f"Final result public_url: {final_result.get('public_url')}")
+                        logger.info(f"Final result keys: {list(final_result.keys())}")
+                        if not final_result.get('public_url'):
+                            logger.error("CRITICAL: public_url missing in final_result! Setting to image_url")
+                            final_result['public_url'] = image_url
+                        logger.info(f"=== END FINAL RESULT DEBUG ===")
+                        
+                        # Apply brand overlay if user is provided and has company profile
+                        logger.info(f"=== BRANDING DEBUG ===")
+                        logger.info(f"User provided: {user}")
+                        if user:
+                            logger.info(f"User details: {user.username} ({user.email})")
+                            try:
+                                from users.models import CompanyProfile
+                                company_profile = getattr(user, 'company_profile', None)
+                                logger.info(f"Company profile: {company_profile}")
+                                
+                                if company_profile:
+                                    logger.info(f"Company name: {company_profile.company_name}")
+                                    logger.info(f"Has logo: {bool(company_profile.logo)}")
+                                    if company_profile.logo:
+                                        try:
+                                            # Try to get logo path (may not work for cloud storage)
+                                            if hasattr(company_profile.logo, 'path'):
+                                                logo_path = company_profile.logo.path
+                                                logger.info(f"Logo path: {logo_path}")
+                                                logger.info(f"Logo file exists: {os.path.exists(logo_path)}")
+                                            else:
+                                                logger.info(f"Logo stored in: {company_profile.logo.name}")
+                                        except Exception as path_error:
+                                            logger.info(f"Logo name: {company_profile.logo.name} (path check failed: {path_error})")
                                     else:
-                                        image_url = f"{get_domain_url()}{image_url}"
-                                public_url = image_url
-                            
-                            logger.info(f"=== END IMAGE STORAGE ===")
-                            
-                            # Generate caption and hashtags for the poster
-                            logger.info("Starting caption generation...")
-                            caption_result = self.generate_caption_and_hashtags(prompt, image_url, user)
-                            logger.info(f"Caption generation result status: {caption_result.get('status')}")
-                            
-                            # Check if caption generation failed
-                            if caption_result.get("status") == "error":
-                                error_msg = caption_result.get("message", "Unknown error")
-                                logger.error(f"Caption generation failed: {error_msg}")
-                                # Still continue with poster generation, but log the error
-                                # The frontend can handle empty captions
-                            
-                            # Create shareable HTML page with Open Graph tags for Facebook
-                            # This allows Facebook to automatically fetch both image and caption
-                            shareable_page_url = None
-                            logger.info(f"=== HTML PAGE CREATION DEBUG ===")
-                            logger.info(f"public_url available: {bool(public_url)}")
-                            if public_url:
-                                logger.info(f"public_url value: {public_url}")
-                                try:
-                                    caption_text = caption_result.get("caption", "")
-                                    full_caption_text = caption_result.get("full_caption", caption_text)
-                                    logger.info(f"Caption text available: {bool(caption_text)}")
-                                    logger.info(f"Full caption text available: {bool(full_caption_text)}")
+                                        logger.info("No logo uploaded")
+                                    logger.info(f"Contact info: {company_profile.get_contact_info()}")
+                                    logger.info(f"Profile complete: {company_profile.has_complete_profile}")
                                     
-                                    if caption_text or full_caption_text:
-                                        logger.info("Creating and storing shareable HTML page...")
-                                        shareable_page_url = create_and_store_shareable_page(
-                                            public_url,
-                                            caption_text,
-                                            full_caption_text
+                                    if company_profile.has_complete_profile:
+                                        logger.info("Applying brand overlay...")
+                                        brand_result = self.brand_overlay_service.create_branded_poster(
+                                            saved_path, company_profile
                                         )
-                                        if shareable_page_url:
-                                            logger.info(f"SUCCESS: Shareable HTML page created successfully: {shareable_page_url}")
-                                        else:
-                                            logger.error("FAILED: Failed to create shareable HTML page, using image URL directly")
-                                            shareable_page_url = public_url  # Fallback to image URL
-                                    else:
-                                        logger.warning("WARNING: No caption available, using image URL directly")
-                                        shareable_page_url = public_url  # Fallback to image URL
-                                except Exception as html_error:
-                                    logger.error(f"ERROR: Error creating shareable HTML page: {html_error}")
-                                    import traceback
-                                    traceback.print_exc()
-                                    shareable_page_url = public_url  # Fallback to image URL
-                            else:
-                                logger.error("ERROR: No public_url available, cannot create HTML page")
-                            
-                            logger.info(f"Final shareable_page_url: {shareable_page_url}")
-                            logger.info(f"=== END HTML PAGE CREATION DEBUG ===")
-                            
-                            # Ensure public_url is always set - prioritize HTML page, then image URL
-                            final_public_url = shareable_page_url or public_url or image_url
-                            
-                            if not final_public_url:
-                                logger.error("CRITICAL: No public_url available at all! Using image_url as fallback")
-                                final_public_url = image_url
-                            
-                            logger.info(f"=== FINAL RESULT DEBUG ===")
-                            logger.info(f"shareable_page_url: {shareable_page_url}")
-                            logger.info(f"public_url (image): {public_url}")
-                            logger.info(f"final_public_url: {final_public_url}")
-                            logger.info(f"image_url: {image_url}")
-                            
-                            # Add brand overlay if user has company profile
-                            # CRITICAL: Set public_url in final_result - this is what gets returned to the API
-                            # Ensure public_url is always set (even if empty)
-                            # Also include cloudinary_url as the direct image URL (not HTML page)
-                            cloudinary_image_url = public_url if public_url and not shareable_page_url else (public_url if public_url else '')
-                            
-                            final_result = {
-                                "status": "success", 
-                                "image_path": saved_path,
-                                "image_url": image_url,
-                                "public_url": final_public_url if final_public_url else '',  # Always set, even if empty (may be HTML page)
-                                "cloudinary_url": cloudinary_image_url,  # Direct image URL (not HTML page) - for backward compatibility
-                                "filename": filename,
-                                "width": final_w,
-                                "height": final_h,
-                                "aspect_ratio_final": f"{final_w}:{final_h}",
-                                "caption": caption_result.get("caption", ""),
-                                "full_caption": caption_result.get("full_caption", ""),
-                                "hashtags": caption_result.get("hashtags", []),
-                                "emoji": caption_result.get("emoji", ""),
-                                "call_to_action": caption_result.get("call_to_action", ""),
-                                "caption_error": caption_result.get("message") if caption_result.get("status") == "error" else None,
-                                "branding_applied": False
-                            }
-                            
-                            # CRITICAL: Ensure public_url key exists
-                            if 'public_url' not in final_result:
-                                logger.error("CRITICAL: public_url key missing from final_result!")
-                                final_result['public_url'] = ''
-                            
-                            # Final verification before returning
-                            logger.info(f"Final result public_url: {final_result.get('public_url')}")
-                            logger.info(f"Final result keys: {list(final_result.keys())}")
-                            if not final_result.get('public_url'):
-                                logger.error("CRITICAL: public_url missing in final_result! Setting to image_url")
-                                final_result['public_url'] = image_url
-                            logger.info(f"=== END FINAL RESULT DEBUG ===")
-                            
-                            # Apply brand overlay if user is provided and has company profile
-                            logger.info(f"=== BRANDING DEBUG ===")
-                            logger.info(f"User provided: {user}")
-                            if user:
-                                logger.info(f"User details: {user.username} ({user.email})")
-                                try:
-                                    from users.models import CompanyProfile
-                                    company_profile = getattr(user, 'company_profile', None)
-                                    logger.info(f"Company profile: {company_profile}")
-                                    
-                                    if company_profile:
-                                        logger.info(f"Company name: {company_profile.company_name}")
-                                        logger.info(f"Has logo: {bool(company_profile.logo)}")
-                                        if company_profile.logo:
-                                            try:
-                                                # Try to get logo path (may not work for cloud storage)
-                                                if hasattr(company_profile.logo, 'path'):
-                                                    logo_path = company_profile.logo.path
-                                                    logger.info(f"Logo path: {logo_path}")
-                                                    logger.info(f"Logo file exists: {os.path.exists(logo_path)}")
-                                                else:
-                                                    logger.info(f"Logo stored in: {company_profile.logo.name}")
-                                            except Exception as path_error:
-                                                logger.info(f"Logo name: {company_profile.logo.name} (path check failed: {path_error})")
-                                        else:
-                                            logger.info("No logo uploaded")
-                                        logger.info(f"Contact info: {company_profile.get_contact_info()}")
-                                        logger.info(f"Profile complete: {company_profile.has_complete_profile}")
+                                        logger.info(f"Brand overlay result: {brand_result}")
                                         
-                                        if company_profile.has_complete_profile:
-                                            logger.info("Applying brand overlay...")
-                                            brand_result = self.brand_overlay_service.create_branded_poster(
-                                                saved_path, company_profile
-                                            )
-                                            logger.info(f"Brand overlay result: {brand_result}")
+                                        if brand_result.get('status') == 'success':
+                                            logger.info("Brand overlay applied successfully!")
+                                            branded_path = brand_result.get("image_path", saved_path)
                                             
-                                            if brand_result.get('status') == 'success':
-                                                logger.info("Brand overlay applied successfully!")
-                                                branded_path = brand_result.get("image_path", saved_path)
-                                                
-                                                # Get public URL for branded poster from local storage
-                                                logger.info("Getting public URL for branded poster from local storage...")
-                                                branded_public_url = upload_poster_image(branded_path)
-                                                if branded_public_url:
-                                                    logger.info(f"✅ Branded poster public URL: {branded_public_url}")
-                                                else:
-                                                    logger.warning("⚠️  Failed to get public URL for branded poster, using original")
-                                                    branded_public_url = public_url if public_url else ''
-                                                
-                                                # Create shareable HTML page for branded poster
-                                                logger.info(f"=== BRANDED HTML PAGE CREATION DEBUG ===")
-                                                branded_shareable_url = None
-                                                if branded_public_url:
-                                                    logger.info(f"branded_public_url available: {branded_public_url}")
-                                                    try:
+                                            # Get public URL for branded poster from local storage
+                                            logger.info("Getting public URL for branded poster from local storage...")
+                                            branded_public_url = upload_poster_image(branded_path)
+                                            if branded_public_url:
+                                                logger.info(f"✅ Branded poster public URL: {branded_public_url}")
+                                            else:
+                                                logger.warning("⚠️  Failed to get public URL for branded poster, using original")
+                                                branded_public_url = public_url if public_url else ''
+                                            
+                                            # Create shareable HTML page for branded poster
+                                            logger.info(f"=== BRANDED HTML PAGE CREATION DEBUG ===")
+                                            branded_shareable_url = None
+                                            if branded_public_url:
+                                                logger.info(f"branded_public_url available: {branded_public_url}")
+                                                try:
+                                                    caption_text = final_result.get("caption", "")
+                                                    full_caption_text = final_result.get("full_caption", caption_text)
+                                                    logger.info(f"Caption available for branded: {bool(caption_text or full_caption_text)}")
+                                                    
+                                                    if caption_text or full_caption_text:
+                                                        logger.info("Creating branded shareable HTML page...")
+                                                        branded_shareable_url = create_and_store_shareable_page(
+                                                            branded_public_url,
+                                                            caption_text,
+                                                            full_caption_text
+                                                        )
+                                                        if branded_shareable_url:
+                                                            logger.info(f"✅ Branded shareable HTML page created: {branded_shareable_url}")
+                                                        else:
+                                                            logger.error("❌ Failed to create branded HTML page, using image URL")
+                                                            branded_shareable_url = branded_public_url
+                                                    else:
+                                                        logger.warning("⚠️  No caption for branded poster, using image URL")
+                                                        branded_shareable_url = branded_public_url
+                                                except Exception as html_error:
+                                                    logger.error(f"❌ Error creating branded shareable HTML page: {html_error}")
+                                                    import traceback
+                                                    traceback.print_exc()
+                                                    branded_shareable_url = branded_public_url
+                                            else:
+                                                logger.error("❌ No branded_public_url, cannot create HTML page")
+                                            
+                                            final_branded_url = branded_shareable_url or branded_public_url or shareable_page_url or public_url
+                                            logger.info(f"Final branded public_url: {final_branded_url}")
+                                            
+                                            # Ensure final_branded_url is a valid HTTP URL
+                                            if final_branded_url and not final_branded_url.startswith('http'):
+                                                logger.warning(f"final_branded_url is not a valid HTTP URL: {final_branded_url}")
+                                                # Try to get public URL from local storage
+                                                try:
+                                                    emergency_branded_url = upload_poster_image(branded_path)
+                                                    if emergency_branded_url:
+                                                        logger.info(f"SUCCESS: Got public URL for branded poster: {emergency_branded_url}")
+                                                        final_branded_url = emergency_branded_url
+                                                        # Also create HTML page
                                                         caption_text = final_result.get("caption", "")
                                                         full_caption_text = final_result.get("full_caption", caption_text)
-                                                        logger.info(f"Caption available for branded: {bool(caption_text or full_caption_text)}")
-                                                        
                                                         if caption_text or full_caption_text:
-                                                            logger.info("Creating branded shareable HTML page...")
-                                                            branded_shareable_url = create_and_store_shareable_page(
-                                                                branded_public_url,
+                                                            emergency_html_url = create_and_store_shareable_page(
+                                                                emergency_branded_url,
                                                                 caption_text,
                                                                 full_caption_text
                                                             )
-                                                            if branded_shareable_url:
-                                                                logger.info(f"✅ Branded shareable HTML page created: {branded_shareable_url}")
-                                                            else:
-                                                                logger.error("❌ Failed to create branded HTML page, using image URL")
-                                                                branded_shareable_url = branded_public_url
-                                                        else:
-                                                            logger.warning("⚠️  No caption for branded poster, using image URL")
-                                                            branded_shareable_url = branded_public_url
-                                                    except Exception as html_error:
-                                                        logger.error(f"❌ Error creating branded shareable HTML page: {html_error}")
-                                                        import traceback
-                                                        traceback.print_exc()
-                                                        branded_shareable_url = branded_public_url
+                                                            if emergency_html_url:
+                                                                final_branded_url = emergency_html_url
+                                                                logger.info(f"SUCCESS: Emergency HTML page created: {emergency_html_url}")
+                                                    else:
+                                                        logger.error("ERROR: Failed to get public URL for branded poster")
+                                                except Exception as emergency_error:
+                                                    logger.error(f"ERROR: Emergency URL generation exception: {emergency_error}")
+                                            
+                                            logger.info(f"=== END BRANDED HTML PAGE CREATION DEBUG ===")
+                                            
+                                            # CRITICAL: Ensure public_url is always set (even if empty)
+                                            final_branded_url = final_branded_url if final_branded_url else ''
+                                            
+                                            # Extract cloudinary_url for branded poster (direct image URL, not HTML page)
+                                            # For backward compatibility, set cloudinary_url to the image URL (not HTML page)
+                                            branded_cloudinary_url = branded_public_url if branded_public_url and branded_public_url.startswith('http') and not branded_public_url.endswith('.html') else ''
+                                            
+                                            # If not set, try fallbacks
+                                            if not branded_cloudinary_url:
+                                                # Fallback 1: Use original public_url if it's not HTML
+                                                if public_url and public_url.startswith('http') and not public_url.endswith('.html'):
+                                                    branded_cloudinary_url = public_url
+                                                    logger.info("Using original public_url as cloudinary_url for branded poster")
+                                                # Fallback 2: Try to get from final_result's existing cloudinary_url
+                                                elif final_result.get('cloudinary_url') and final_result.get('cloudinary_url').startswith('http'):
+                                                    branded_cloudinary_url = final_result.get('cloudinary_url')
+                                                    logger.info("Using existing cloudinary_url from final_result")
+                                                # Fallback 3: Try to get public URL from storage
                                                 else:
-                                                    logger.error("❌ No branded_public_url, cannot create HTML page")
-                                                
-                                                final_branded_url = branded_shareable_url or branded_public_url or shareable_page_url or public_url
-                                                logger.info(f"Final branded public_url: {final_branded_url}")
-                                                
-                                                # Ensure final_branded_url is a valid HTTP URL
-                                                if final_branded_url and not final_branded_url.startswith('http'):
-                                                    logger.warning(f"final_branded_url is not a valid HTTP URL: {final_branded_url}")
-                                                    # Try to get public URL from local storage
                                                     try:
-                                                        emergency_branded_url = upload_poster_image(branded_path)
-                                                        if emergency_branded_url:
-                                                            logger.info(f"SUCCESS: Got public URL for branded poster: {emergency_branded_url}")
-                                                            final_branded_url = emergency_branded_url
-                                                            # Also create HTML page
-                                                            caption_text = final_result.get("caption", "")
-                                                            full_caption_text = final_result.get("full_caption", caption_text)
-                                                            if caption_text or full_caption_text:
-                                                                emergency_html_url = create_and_store_shareable_page(
-                                                                    emergency_branded_url,
-                                                                    caption_text,
-                                                                    full_caption_text
-                                                                )
-                                                                if emergency_html_url:
-                                                                    final_branded_url = emergency_html_url
-                                                                    logger.info(f"SUCCESS: Emergency HTML page created: {emergency_html_url}")
-                                                        else:
-                                                            logger.error("ERROR: Failed to get public URL for branded poster")
-                                                    except Exception as emergency_error:
-                                                        logger.error(f"ERROR: Emergency URL generation exception: {emergency_error}")
-                                                
-                                                logger.info(f"=== END BRANDED HTML PAGE CREATION DEBUG ===")
-                                                
-                                                # CRITICAL: Ensure public_url is always set (even if empty)
-                                                final_branded_url = final_branded_url if final_branded_url else ''
-                                                
-                                                # Extract cloudinary_url for branded poster (direct image URL, not HTML page)
-                                                # For backward compatibility, set cloudinary_url to the image URL (not HTML page)
-                                                branded_cloudinary_url = branded_public_url if branded_public_url and branded_public_url.startswith('http') and not branded_public_url.endswith('.html') else ''
-                                                
-                                                # If not set, try fallbacks
-                                                if not branded_cloudinary_url:
-                                                    # Fallback 1: Use original public_url if it's not HTML
-                                                    if public_url and public_url.startswith('http') and not public_url.endswith('.html'):
-                                                        branded_cloudinary_url = public_url
-                                                        logger.info("Using original public_url as cloudinary_url for branded poster")
-                                                    # Fallback 2: Try to get from final_result's existing cloudinary_url
-                                                    elif final_result.get('cloudinary_url') and final_result.get('cloudinary_url').startswith('http'):
-                                                        branded_cloudinary_url = final_result.get('cloudinary_url')
-                                                        logger.info("Using existing cloudinary_url from final_result")
-                                                    # Fallback 3: Try to get public URL from storage
-                                                    else:
-                                                        try:
-                                                            emergency_cloudinary = upload_poster_image(branded_path)
-                                                            if emergency_cloudinary:
-                                                                branded_cloudinary_url = emergency_cloudinary
-                                                                logger.info(f"Got public URL for cloudinary_url: {branded_cloudinary_url}")
-                                                        except Exception as e:
-                                                            logger.error(f"Failed to get public URL: {e}")
-                                                
-                                                # Ensure final_branded_url is always a valid HTTP URL
-                                                if not final_branded_url or not final_branded_url.startswith('http'):
-                                                    logger.warning(f"final_branded_url is invalid: {final_branded_url}")
-                                                    # Use branded_cloudinary_url if available
-                                                    if branded_cloudinary_url:
-                                                        final_branded_url = branded_cloudinary_url
-                                                        logger.info(f"Using branded_cloudinary_url as final_branded_url: {final_branded_url}")
-                                                    # Fallback to original public_url if it's valid
-                                                    elif public_url and public_url.startswith('http'):
-                                                        final_branded_url = public_url
-                                                        logger.warning("Using original public_url as final_branded_url fallback")
-                                                    else:
-                                                        logger.error("No valid URL available for branded poster!")
-                                                        final_branded_url = ''
-                                                
-                                                # Ensure both URLs are set before updating final_result
-                                                if not branded_cloudinary_url and final_branded_url and final_branded_url.startswith('http') and not final_branded_url.endswith('.html'):
-                                                    # If cloudinary_url is still empty but we have a valid non-HTML public_url, use it
-                                                    branded_cloudinary_url = final_branded_url
-                                                    logger.info(f"Using final_branded_url as cloudinary_url: {branded_cloudinary_url}")
-                                                
-                                                final_result.update({
-                                                    "image_path": branded_path,
-                                                    "image_url": brand_result.get("image_url", image_url),
-                                                    "public_url": final_branded_url if final_branded_url else '',  # Use HTML page URL if available, or image URL
-                                                    "cloudinary_url": branded_cloudinary_url if branded_cloudinary_url else '',  # Direct image URL (not HTML page) - for backward compatibility
-                                                    "filename": brand_result.get("filename", filename),
-                                                    "branding_applied": True,
-                                                    "logo_added": brand_result.get("logo_added", False),
-                                                    "contact_info_added": brand_result.get("contact_info_added", False),
-                                                    "branding_metadata": brand_result.get("branding_metadata", {})
-                                                })
-                                                
-                                                # CRITICAL: Verify both URLs are set
-                                                if not final_result.get('cloudinary_url'):
-                                                    logger.error("❌ CRITICAL: cloudinary_url is empty after branding update!")
-                                                if not final_result.get('public_url'):
-                                                    logger.error("❌ CRITICAL: public_url is empty after branding update!")
-                                                
-                                                # CRITICAL: Ensure public_url key exists after update
-                                                if 'public_url' not in final_result:
-                                                    logger.error("CRITICAL: public_url key missing after branding update!")
-                                                    final_result['public_url'] = ''
-                                                elif final_result.get('public_url') is None:
-                                                    logger.error("CRITICAL: public_url is None after branding update!")
-                                                    final_result['public_url'] = ''
-                                            else:
-                                                logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
-                                        else:
-                                            logger.warning("Company profile is not complete - skipping branding")
-                                            logger.warning(f"Missing: logo={not company_profile.logo}, contact={not company_profile.get_contact_info()}")
-                                    else:
-                                        logger.warning("No company profile found for user")
-                                except Exception as brand_error:
-                                    logger.error(f"Brand overlay error: {str(brand_error)}")
-                                    import traceback
-                                    traceback.print_exc()
-                            else:
-                                logger.warning("No user provided - skipping branding")
-                            
-                            # Final check before returning - ENSURE public_url is ALWAYS set and is a Cloudinary URL
-                            current_public_url = final_result.get('public_url')
-                            
-                            # Check if public_url is missing OR is a local URL (not Cloudinary)
-                            if not current_public_url or (current_public_url and not current_public_url.startswith('http')):
-                                logger.error("CRITICAL ERROR: public_url is missing or is not a Cloudinary URL!")
-                                logger.error(f"Current public_url: {current_public_url}")
-                                logger.error(f"Available keys: {list(final_result.keys())}")
-                                logger.error(f"shareable_page_url: {shareable_page_url}")
-                                logger.error(f"public_url (image): {public_url}")
-                                logger.error(f"image_url: {image_url}")
-                                
-                                # Determine which file to upload (branded or original)
-                                file_to_upload = None
-                                if final_result.get('branding_applied') and final_result.get('image_path'):
-                                    file_to_upload = final_result.get('image_path')
-                                    logger.info(f"Using branded image path for emergency upload: {file_to_upload}")
-                                elif saved_path:
-                                    file_to_upload = saved_path
-                                    logger.info(f"Using original image path for emergency upload: {file_to_upload}")
-                                
-                                # Last resort: try to get public URL again if we have a file path
-                                if file_to_upload and default_storage.exists(file_to_upload):
-                                    logger.warning("WARNING: Attempting emergency public URL generation...")
-                                    try:
-                                        emergency_url = upload_poster_image(file_to_upload)
-                                        if emergency_url:
-                                            logger.info(f"SUCCESS: Emergency URL generation succeeded: {emergency_url}")
-                                            # Try to create HTML page too
-                                            caption_text = final_result.get("caption", "")
-                                            full_caption_text = final_result.get("full_caption", caption_text)
-                                            if caption_text or full_caption_text:
-                                                emergency_html_url = create_and_store_shareable_page(
-                                                    emergency_url,
-                                                    caption_text,
-                                                    full_caption_text
-                                                )
-                                                if emergency_html_url:
-                                                    final_result['public_url'] = emergency_html_url
-                                                    final_result['cloudinary_url'] = emergency_url  # Direct image URL
-                                                    logger.info(f"SUCCESS: Emergency HTML page created: {emergency_html_url}")
+                                                        emergency_cloudinary = upload_poster_image(branded_path)
+                                                        if emergency_cloudinary:
+                                                            branded_cloudinary_url = emergency_cloudinary
+                                                            logger.info(f"Got public URL for cloudinary_url: {branded_cloudinary_url}")
+                                                    except Exception as e:
+                                                        logger.error(f"Failed to get public URL: {e}")
+                                            
+                                            # Ensure final_branded_url is always a valid HTTP URL
+                                            if not final_branded_url or not final_branded_url.startswith('http'):
+                                                logger.warning(f"final_branded_url is invalid: {final_branded_url}")
+                                                # Use branded_cloudinary_url if available
+                                                if branded_cloudinary_url:
+                                                    final_branded_url = branded_cloudinary_url
+                                                    logger.info(f"Using branded_cloudinary_url as final_branded_url: {final_branded_url}")
+                                                # Fallback to original public_url if it's valid
+                                                elif public_url and public_url.startswith('http'):
+                                                    final_branded_url = public_url
+                                                    logger.warning("Using original public_url as final_branded_url fallback")
                                                 else:
-                                                    final_result['public_url'] = emergency_url
-                                                    final_result['cloudinary_url'] = emergency_url
+                                                    logger.error("No valid URL available for branded poster!")
+                                                    final_branded_url = ''
+                                            
+                                            # Ensure both URLs are set before updating final_result
+                                            if not branded_cloudinary_url and final_branded_url and final_branded_url.startswith('http') and not final_branded_url.endswith('.html'):
+                                                # If cloudinary_url is still empty but we have a valid non-HTML public_url, use it
+                                                branded_cloudinary_url = final_branded_url
+                                                logger.info(f"Using final_branded_url as cloudinary_url: {branded_cloudinary_url}")
+                                            
+                                            final_result.update({
+                                                "image_path": branded_path,
+                                                "image_url": brand_result.get("image_url", image_url),
+                                                "public_url": final_branded_url if final_branded_url else '',  # Use HTML page URL if available, or image URL
+                                                "cloudinary_url": branded_cloudinary_url if branded_cloudinary_url else '',  # Direct image URL (not HTML page) - for backward compatibility
+                                                "filename": brand_result.get("filename", filename),
+                                                "branding_applied": True,
+                                                "logo_added": brand_result.get("logo_added", False),
+                                                "contact_info_added": brand_result.get("contact_info_added", False),
+                                                "branding_metadata": brand_result.get("branding_metadata", {})
+                                            })
+                                            
+                                            # CRITICAL: Verify both URLs are set
+                                            if not final_result.get('cloudinary_url'):
+                                                logger.error("❌ CRITICAL: cloudinary_url is empty after branding update!")
+                                            if not final_result.get('public_url'):
+                                                logger.error("❌ CRITICAL: public_url is empty after branding update!")
+                                            
+                                            # CRITICAL: Ensure public_url key exists after update
+                                            if 'public_url' not in final_result:
+                                                logger.error("CRITICAL: public_url key missing after branding update!")
+                                                final_result['public_url'] = ''
+                                            elif final_result.get('public_url') is None:
+                                                logger.error("CRITICAL: public_url is None after branding update!")
+                                                final_result['public_url'] = ''
+                                        else:
+                                            logger.warning(f"Brand overlay failed: {brand_result.get('message')}")
+                                    else:
+                                        logger.warning("Company profile is not complete - skipping branding")
+                                        logger.warning(f"Missing: logo={not company_profile.logo}, contact={not company_profile.get_contact_info()}")
+                                else:
+                                    logger.warning("No company profile found for user")
+                            except Exception as brand_error:
+                                logger.error(f"Brand overlay error: {str(brand_error)}")
+                                import traceback
+                                traceback.print_exc()
+                        else:
+                            logger.warning("No user provided - skipping branding")
+                        
+                        # Final check before returning - ENSURE public_url is ALWAYS set and is a Cloudinary URL
+                        current_public_url = final_result.get('public_url')
+                        
+                        # Check if public_url is missing OR is a local URL (not Cloudinary)
+                        if not current_public_url or (current_public_url and not current_public_url.startswith('http')):
+                            logger.error("CRITICAL ERROR: public_url is missing or is not a Cloudinary URL!")
+                            logger.error(f"Current public_url: {current_public_url}")
+                            logger.error(f"Available keys: {list(final_result.keys())}")
+                            logger.error(f"shareable_page_url: {shareable_page_url}")
+                            logger.error(f"public_url (image): {public_url}")
+                            logger.error(f"image_url: {image_url}")
+                            
+                            # Determine which file to upload (branded or original)
+                            file_to_upload = None
+                            if final_result.get('branding_applied') and final_result.get('image_path'):
+                                file_to_upload = final_result.get('image_path')
+                                logger.info(f"Using branded image path for emergency upload: {file_to_upload}")
+                            elif saved_path:
+                                file_to_upload = saved_path
+                                logger.info(f"Using original image path for emergency upload: {file_to_upload}")
+                            
+                            # Last resort: try to get public URL again if we have a file path
+                            if file_to_upload and default_storage.exists(file_to_upload):
+                                logger.warning("WARNING: Attempting emergency public URL generation...")
+                                try:
+                                    emergency_url = upload_poster_image(file_to_upload)
+                                    if emergency_url:
+                                        logger.info(f"SUCCESS: Emergency URL generation succeeded: {emergency_url}")
+                                        # Try to create HTML page too
+                                        caption_text = final_result.get("caption", "")
+                                        full_caption_text = final_result.get("full_caption", caption_text)
+                                        if caption_text or full_caption_text:
+                                            emergency_html_url = create_and_store_shareable_page(
+                                                emergency_url,
+                                                caption_text,
+                                                full_caption_text
+                                            )
+                                            if emergency_html_url:
+                                                final_result['public_url'] = emergency_html_url
+                                                final_result['cloudinary_url'] = emergency_url  # Direct image URL
+                                                logger.info(f"SUCCESS: Emergency HTML page created: {emergency_html_url}")
                                             else:
                                                 final_result['public_url'] = emergency_url
                                                 final_result['cloudinary_url'] = emergency_url
                                         else:
-                                            logger.error("ERROR: Emergency URL generation also failed")
-                                            logger.error("WARNING: Setting public_url to empty - Facebook sharing will not work")
-                                            final_result['public_url'] = ''
-                                            final_result['cloudinary_url'] = ''
-                                    except Exception as emergency_error:
-                                        logger.error(f"ERROR: Emergency URL generation exception: {emergency_error}")
-                                        import traceback
-                                        traceback.print_exc()
+                                            final_result['public_url'] = emergency_url
+                                            final_result['cloudinary_url'] = emergency_url
+                                    else:
+                                        logger.error("ERROR: Emergency URL generation also failed")
+                                        logger.error("WARNING: Setting public_url to empty - Facebook sharing will not work")
                                         final_result['public_url'] = ''
                                         final_result['cloudinary_url'] = ''
-                                else:
-                                    logger.error(f"ERROR: No file to upload. saved_path: {saved_path}, file_to_upload: {file_to_upload}")
+                                except Exception as emergency_error:
+                                    logger.error(f"ERROR: Emergency URL generation exception: {emergency_error}")
+                                    import traceback
+                                    traceback.print_exc()
                                     final_result['public_url'] = ''
                                     final_result['cloudinary_url'] = ''
-                                
-                                logger.info(f"Final public_url after emergency fix: {final_result.get('public_url')}")
-                            
-                            # CRITICAL: Final verification - ensure public_url and cloudinary_url keys exist and are strings
-                            if 'public_url' not in final_result:
-                                logger.error("CRITICAL: public_url key missing from final_result!")
-                                final_result['public_url'] = ''
-                            elif final_result.get('public_url') is None:
-                                logger.error("CRITICAL: public_url is None in final_result!")
-                                final_result['public_url'] = ''
                             else:
-                                # Ensure it's a string
-                                final_result['public_url'] = str(final_result.get('public_url', ''))
-                            
-                            # Ensure cloudinary_url is also set (use public_url if it's a direct image URL, not HTML page)
-                            if 'cloudinary_url' not in final_result:
-                                # If public_url is an image URL (not HTML), use it
-                                current_public = final_result.get('public_url', '')
-                                if current_public and current_public.startswith('http') and not current_public.endswith('.html'):
-                                    final_result['cloudinary_url'] = current_public
-                                else:
-                                    final_result['cloudinary_url'] = ''
-                            elif final_result.get('cloudinary_url') is None:
+                                logger.error(f"ERROR: No file to upload. saved_path: {saved_path}, file_to_upload: {file_to_upload}")
+                                final_result['public_url'] = ''
                                 final_result['cloudinary_url'] = ''
                             
-                            # Verify public_url is actually set
-                            if not final_result.get('public_url'):
-                                logger.error("CRITICAL: public_url is STILL empty after all attempts!")
-                                logger.error("This will cause Facebook sharing to fail!")
-                            
-                            logger.info(f"=== RETURNING RESULT ===")
-                            logger.info(f"public_url: {final_result.get('public_url')}")
-                            logger.info(f"public_url type: {type(final_result.get('public_url'))}")
-                            logger.info(f"public_url in final_result: {'public_url' in final_result}")
-                            logger.info(f"status: {final_result.get('status')}")
-                            logger.info(f"All result keys: {list(final_result.keys())}")
-                            return final_result
-                        except Exception as img_error:
-                            logger.error(f"Error processing image: {str(img_error)}")
-                            continue
-                
-                if not image_processed:
-                    logger.warning(f"Attempt {attempt + 1}: No valid image data found in response")
-                    if attempt < len(prompts_to_try) - 1:
-                        continue
-                    return {"status": "error", "message": "No valid image data found in response"}
+                            logger.info(f"Final public_url after emergency fix: {final_result.get('public_url')}")
+                        
+                        # CRITICAL: Final verification - ensure public_url and cloudinary_url keys exist and are strings
+                        if 'public_url' not in final_result:
+                            logger.error("CRITICAL: public_url key missing from final_result!")
+                            final_result['public_url'] = ''
+                        elif final_result.get('public_url') is None:
+                            logger.error("CRITICAL: public_url is None in final_result!")
+                            final_result['public_url'] = ''
+                        else:
+                            # Ensure it's a string
+                            final_result['public_url'] = str(final_result.get('public_url', ''))
+                        
+                        # Ensure cloudinary_url is also set (use public_url if it's a direct image URL, not HTML page)
+                        if 'cloudinary_url' not in final_result:
+                            # If public_url is an image URL (not HTML), use it
+                            current_public = final_result.get('public_url', '')
+                            if current_public and current_public.startswith('http') and not current_public.endswith('.html'):
+                                final_result['cloudinary_url'] = current_public
+                            else:
+                                final_result['cloudinary_url'] = ''
+                        elif final_result.get('cloudinary_url') is None:
+                            final_result['cloudinary_url'] = ''
+                        
+                        # Verify public_url is actually set
+                        if not final_result.get('public_url'):
+                            logger.error("CRITICAL: public_url is STILL empty after all attempts!")
+                            logger.error("This will cause Facebook sharing to fail!")
+                        
+                        logger.info(f"=== RETURNING RESULT ===")
+                        logger.info(f"public_url: {final_result.get('public_url')}")
+                        logger.info(f"public_url type: {type(final_result.get('public_url'))}")
+                        logger.info(f"public_url in final_result: {'public_url' in final_result}")
+                        logger.info(f"status: {final_result.get('status')}")
+                        logger.info(f"All result keys: {list(final_result.keys())}")
+                        image_processed = True
+                        return final_result
+                    except Exception as img_error:
+                        logger.error(f"Error processing image: {str(img_error)}")
+                        return {"status": "error", "message": f"Error processing image: {str(img_error)}"}
             
-            return {"status": "error", "message": "All prompt attempts failed"}
+            if not image_processed:
+                logger.error("No valid image data found in response")
+                return {"status": "error", "message": "No valid image data found in response"}
             
         except Exception as e:
             logger.error(f"Error generating poster from prompt: {str(e)}")
@@ -1100,7 +1054,7 @@ class AIPosterService:
             
             # Create base prompt with enhanced instructions for better image generation
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
-            ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
+            composition_guidance = self._get_composition_guidance(normalized_ar)
             
             # Enhanced contrast and clarity instructions for main subject with gradient transitions
             contrast_instructions = """
@@ -1109,7 +1063,7 @@ class AIPosterService:
             - Always enhance the contrast and clarity of the main subject so it stands out clearly from the background
             - Ensure the main subject has strong visual presence and is the focal point of the image
             - Use lighting, shadows, and color contrast to make the subject pop
-            - Keep the main subject centered within the safe visual zone (avoiding top 20% and bottom 15%)
+            - Keep the main subject comfortably away from the extreme top and bottom edges
             - Maintain clear subject contrast against the background while ensuring smooth tonal transitions
             """
             
@@ -1118,17 +1072,17 @@ class AIPosterService:
             
             if is_simple_prompt:
                 # For simple prompts, send as-is with minimal additions
-                base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
+                base_prompt = f"{composition_guidance}\n{contrast_instructions}\n{prompt}"
             else:
                 # For complex prompts, add more detailed instructions
-                base_prompt = f"{ar_directive}\n{contrast_instructions}\n{prompt}"
+                base_prompt = f"{composition_guidance}\n{contrast_instructions}\n{prompt}"
             
             if has_branding:
                 # Add instructions for seamless gradient transitions in overlay areas
                 branding_layout_instructions = """
                 
                 LAYOUT REQUIREMENTS:
-                - Maintain all main content and primary text within the center safe zone (middle 65% of image)
+                - Keep all main content and primary text comfortably centered, away from the extreme edges
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{base_prompt}{branding_layout_instructions}"
@@ -1142,7 +1096,7 @@ class AIPosterService:
                 - Focus purely on the visual design and aesthetic elements with full-bleed composition
                 - Do not include any text that suggests a specific company or brand
                 - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
-                - Keep main content centered in the safe visual zone (middle 65% of image)
+                - Keep main content comfortably centered, away from the extreme edges
                 - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
                 """
                 base_prompt = f"{base_prompt}{no_branding_instructions}"
@@ -1210,56 +1164,14 @@ class AIPosterService:
                 if part.inline_data is not None:
                     edited_image = Image.open(BytesIO(part.inline_data.data))
 
-                    # Strict AR enforcement with retries
-                    max_retries = 0  # No retries - use cropping fallback only
-                    attempt_idx = 0
-                    while not self._is_aspect_ratio_match(edited_image, normalized_ar) and attempt_idx < max_retries:
-                        logger.warning(f"Edited image AR mismatch (attempt {attempt_idx+1}); retrying with strict dimensions")
-                        dim_configs = self._build_best_dimension_configs(types, normalized_ar) or [self._build_image_config(types, normalized_ar)]
-                        w_h = self._choose_dimensions_for_ratio(normalized_ar, max_width=1536)
-                        px_directive = f"Generate exactly {w_h[0]}x{w_h[1]} pixels, no padding or borders. " if w_h else ""
-                        stricter_prompt = f"ABSOLUTE REQUIREMENT: Output must be exactly {normalized_ar}. {px_directive}{base_prompt}"
-                        retry_succeeded = False
-                        for dim_config in dim_configs:
-                            retry_kwargs = dict(config_kwargs)
-                            if dim_config is not None:
-                                retry_kwargs["image_config"] = dim_config
-                            try:
-                                response_retry = self._retry_api_call(
-                                    self.client.models.generate_content,
-                                    model="gemini-2.5-flash-image",
-                                    contents=[image_part, stricter_prompt],
-                                    config=types.GenerateContentConfig(**retry_kwargs),
-                                )
-                            except Exception as retry_error:
-                                logger.warning(f"Aspect ratio retry failed: {retry_error}")
-                                continue
-                            if not response_retry.candidates or len(response_retry.candidates) == 0:
-                                continue
-                            if not response_retry.candidates[0].content or not response_retry.candidates[0].content.parts:
-                                continue
-                            for retry_part in response_retry.candidates[0].content.parts:
-                                if getattr(retry_part, 'inline_data', None) is not None:
-                                    retry_img = Image.open(BytesIO(retry_part.inline_data.data))
-                                    edited_image = retry_img
-                                    if self._is_aspect_ratio_match(edited_image, normalized_ar):
-                                        retry_succeeded = True
-                                        break
-                            if retry_succeeded:
-                                break
-                        attempt_idx += 1
-                    # Fallback: if still mismatched after retries, enforce by center-cropping
-                    if not self._is_aspect_ratio_match(edited_image, normalized_ar):
-                        logger.warning("Model did not honor aspect ratio for edit after strict retries; enforcing via cropping")
-                        edited_image = self._enforce_aspect_ratio(edited_image, normalized_ar)
+                    # Enforce exact resolution from centralized mapping
+                    # This ensures pixel-perfect aspect ratio matching
+                    edited_image = self._enforce_exact_resolution(edited_image, normalized_ar)
                     
                     # Generate unique filename
                     timestamp = int(time.time())
                     filename = f"edited_poster_{timestamp}.png"
                     output_path = f"generated_posters/{filename}"
-                    
-                    # Ensure minimum short side before saving
-                    edited_image = self._ensure_min_short_side(edited_image, min_short_side=1080)
 
                     # Save to media storage
                     image_bytes = BytesIO()
@@ -1515,15 +1427,16 @@ class AIPosterService:
             logger.info(f"Generating composite poster with {len(image_paths)} images and prompt: {prompt[:50]}...")
             
             # Create enhanced prompt with smart layout guidance for branding areas
+            # Simplified, AI-friendly safe-zone instructions
             spacing_instructions = """
             
-            IMPORTANT LAYOUT REQUIREMENTS:
-            - Keep the TOP-RIGHT corner (approximately 25% of image width and height) free of text but NOT empty - use background patterns, colors, or visual elements
-            - Keep the BOTTOM area (bottom 18% of image height) free of text but NOT empty - use background patterns, colors, or visual elements  
+            COMPOSITION GUIDE:
+            - Keep the main subject centered vertically and horizontally
+            - Allow visually calm or gradient areas near the top-right corner (approximately 25% of image width and height)
+            - Allow visually calm or gradient areas near the bottom (bottom 18% of image height)
             - Place all main text and visual elements in the CENTER and LEFT areas of the image
             - Ensure text is readable and doesn't overlap with reserved areas
-            - Use the center-left 55% of the image for main content
-            - Maintain all textual content within the middle 65% of the canvas
+            - Keep all textual content comfortably centered, away from the extreme edges
             - Fill the reserved areas with background elements, patterns, or colors - do not leave them blank
             - Make the design cohesive while keeping logo and contact areas text-free but visually rich
             - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
@@ -1535,10 +1448,10 @@ class AIPosterService:
             - Ensure the gradient blends seamlessly with the underlying image content
             """
             
-            # Create enhanced prompt with smart branding area guidance and AR directive
+            # Create enhanced prompt with smart branding area guidance and composition guidance
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
-            ar_directive = f"Strict aspect ratio: {normalized_ar}. Generate the canvas at {normalized_ar} without padding, borders, or letterboxing."
-            enhanced_prompt = f"{ar_directive}\n{prompt}{spacing_instructions}"
+            composition_guidance = self._get_composition_guidance(normalized_ar)
+            enhanced_prompt = f"{composition_guidance}\n{prompt}{spacing_instructions}"
             
             # Load all images
             image_parts = []
@@ -1572,14 +1485,15 @@ class AIPosterService:
             # Add text prompt
             contents = image_parts + [enhanced_prompt]
             
-            # Configure image generation (version-safe)
-            image_config = self._build_image_config(types, normalized_ar)
+            # Configure image generation (prefer explicit dimensions; fallback to aspect_ratio)
+            image_config = self._build_image_config_with_dimensions(types, normalized_ar) or \
+                           self._build_image_config(types, normalized_ar)
             
             config_kwargs = {"response_modalities": ['Image']}
             if image_config is not None:
                 config_kwargs["image_config"] = image_config
             else:
-                logger.info("Image generation: image_config not available; relying on prompt directive for aspect ratio")
+                logger.info("Image generation: image_config not available; relying on post-generation enforcement for aspect ratio")
             
             try:
                 response = self._retry_api_call(
@@ -1605,54 +1519,14 @@ class AIPosterService:
                 if part.inline_data is not None:
                     composite_image = Image.open(BytesIO(part.inline_data.data))
 
-                    # Strict AR enforcement with retries
-                    max_retries = 0  # No retries - use cropping fallback only
-                    attempt_idx = 0
-                    while not self._is_aspect_ratio_match(composite_image, normalized_ar) and attempt_idx < max_retries:
-                        logger.warning(f"Composite image AR mismatch (attempt {attempt_idx+1}); retrying with strict dimensions")
-                        dim_configs = self._build_best_dimension_configs(types, normalized_ar) or [self._build_image_config(types, normalized_ar)]
-                        w_h = self._choose_dimensions_for_ratio(normalized_ar, max_width=1536)
-                        px_directive = f"Generate exactly {w_h[0]}x{w_h[1]} pixels, no padding or borders. " if w_h else ""
-                        stricter_prompt = f"ABSOLUTE REQUIREMENT: Output must be exactly {normalized_ar}. {px_directive}{enhanced_prompt}"
-                        retry_succeeded = False
-                        for dim_config in dim_configs:
-                            retry_kwargs = dict(config_kwargs)
-                            if dim_config is not None:
-                                retry_kwargs["image_config"] = dim_config
-                            try:
-                                response_retry = self._retry_api_call(
-                                    self.client.models.generate_content,
-                                    model="gemini-2.5-flash-image",
-                                    contents=contents[:-1] + [stricter_prompt],
-                                    config=types.GenerateContentConfig(**retry_kwargs),
-                                )
-                            except Exception as retry_error:
-                                logger.warning(f"Composite aspect ratio retry failed: {retry_error}")
-                                continue
-                            if not response_retry.candidates or len(response_retry.candidates) == 0:
-                                continue
-                            for retry_part in response_retry.candidates[0].content.parts:
-                                if getattr(retry_part, 'inline_data', None) is not None:
-                                    retry_img = Image.open(BytesIO(retry_part.inline_data.data))
-                                    composite_image = retry_img
-                                    if self._is_aspect_ratio_match(composite_image, normalized_ar):
-                                        retry_succeeded = True
-                                        break
-                            if retry_succeeded:
-                                break
-                        attempt_idx += 1
-                    # Fallback: if still mismatched after retries, enforce by center-cropping
-                    if not self._is_aspect_ratio_match(composite_image, normalized_ar):
-                        logger.warning("Model did not honor aspect ratio for composite after strict retries; enforcing via cropping")
-                        composite_image = self._enforce_aspect_ratio(composite_image, normalized_ar)
+                    # Enforce exact resolution from centralized mapping
+                    # This ensures pixel-perfect aspect ratio matching
+                    composite_image = self._enforce_exact_resolution(composite_image, normalized_ar)
                     
                     # Generate unique filename
                     timestamp = int(time.time())
                     filename = f"composite_poster_{timestamp}.png"
                     output_path = f"generated_posters/{filename}"
-                    
-                    # Ensure minimum short side before saving
-                    composite_image = self._ensure_min_short_side(composite_image, min_short_side=1080)
 
                     # Save to media storage
                     image_bytes = BytesIO()
@@ -1679,52 +1553,6 @@ class AIPosterService:
                     except Exception as e:
                         logger.error(f"Error getting public URL for composite: {str(e)}")
                         # Continue even if URL generation fails
-                    if not self._is_aspect_ratio_match(composite_image, normalized_ar):
-                        logger.warning("Composite image aspect ratio mismatch; retrying once with stricter directive")
-                        stricter_prompt = f"ABSOLUTE REQUIREMENT: Output must be exactly {normalized_ar}. No padding, no borders, no letterboxing. {enhanced_prompt}"
-                        dim_config = self._build_image_config_with_dimensions(types, normalized_ar)
-                        retry_kwargs = dict(config_kwargs)
-                        if dim_config is not None:
-                            retry_kwargs["image_config"] = dim_config
-                            logger.info("Retry (composite) with dimension-based image_config")
-                        try:
-                            response_retry = self._retry_api_call(
-                                self.client.models.generate_content,
-                                model="gemini-2.5-flash-image",
-                                contents=contents[:-1] + [stricter_prompt],
-                                config=types.GenerateContentConfig(**retry_kwargs),
-                            )
-                        except Exception as retry_error:
-                            logger.warning(f"Composite dimension retry failed: {retry_error}")
-                            continue
-                        if not response_retry.candidates or len(response_retry.candidates) == 0:
-                            continue
-                        for retry_part in response_retry.candidates[0].content.parts:
-                            if getattr(retry_part, 'inline_data', None) is not None:
-                                retry_img = Image.open(BytesIO(retry_part.inline_data.data))
-                                if self._is_aspect_ratio_match(retry_img, normalized_ar):
-                                    composite_image = retry_img
-                                    # Ensure minimum short side before saving
-                                    composite_image = self._ensure_min_short_side(composite_image, min_short_side=1080)
-
-                                    image_bytes = BytesIO()
-                                    composite_image.save(image_bytes, format='PNG')
-                                    image_bytes.seek(0)
-                                    saved_path = default_storage.save(output_path, ContentFile(image_bytes.getvalue()))
-                                    image_url = default_storage.url(saved_path)
-                                    if not image_url.startswith('http'):
-                                        image_url = f"{get_domain_url()}{image_url}"
-                                    
-                                    # Get public URL for composite (retry case)
-                                    try:
-                                        public_url = upload_poster_image(saved_path)
-                                        if public_url:
-                                            logger.info(f"Composite poster (retry) public URL: {public_url}")
-                                    except Exception as e:
-                                        logger.error(f"Error getting public URL for composite (retry): {str(e)}")
-                                    
-                                    logger.info("Retry produced correct aspect ratio image for composite; using retry output")
-                                    break
                     
                     # Generate caption and hashtags for the poster
                     caption_result = self.generate_caption_and_hashtags(prompt, image_url, None)
@@ -1812,12 +1640,12 @@ class AIPosterService:
             - Do not include any text that suggests a specific company or brand
             - Keep the design clean and focused on the main content only
             
-            IMPORTANT LAYOUT REQUIREMENTS:
-            - Keep the TOP-RIGHT corner (≈25% of image width/height) completely free of ANY elements (no text, no graphics)
-            - Keep the BOTTOM area (bottom 18% of image height) completely free of ANY elements (no text, no graphics)
-            - Do not add bars or artificial padding; keep the natural background continuous
-            - Maintain all textual content within the middle 65% of the canvas
-            - Ensure text is readable and doesn't overlap with the top-right or bottom areas
+            COMPOSITION GUIDE:
+            - Keep the main subject centered vertically and horizontally
+            - Allow visually calm or gradient areas near the top-right corner (approximately 25% of image width and height)
+            - Allow visually calm or gradient areas near the bottom (bottom 18% of image height)
+            - Keep all textual content comfortably centered, away from the extreme edges
+            - Ensure text is readable and doesn't overlap with reserved areas
             - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
             
             GRADIENT OVERLAY REQUIREMENT:
