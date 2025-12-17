@@ -18,7 +18,7 @@ import {
   ExternalLink,
   Facebook,
   X,
-  Image
+  Image as ImageIcon
 } from "lucide-react"
 import React, { useState, useRef, useEffect } from "react"
 import { useUser, useAuth } from '@/hooks/useAuth'
@@ -117,19 +117,27 @@ export default function EnhancedPosterGeneratorWithBranding() {
           const storedImageType = sessionStorage.getItem('posterGenerator_uploadedImageType')
           
           if (storedImageData && storedImageName && storedImageType) {
-            // Convert base64 back to File
-            const byteCharacters = atob(storedImageData)
-            const byteNumbers = new Array(byteCharacters.length)
-            for (let i = 0; i < byteCharacters.length; i++) {
-              byteNumbers[i] = byteCharacters.charCodeAt(i)
+            try {
+              // Convert base64 back to File
+              const byteCharacters = atob(storedImageData)
+              const byteNumbers = new Array(byteCharacters.length)
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i)
+              }
+              const byteArray = new Uint8Array(byteNumbers)
+              const blob = new Blob([byteArray], { type: storedImageType })
+              const file = new File([blob], storedImageName, { type: storedImageType })
+              
+              setUploadedImage(file)
+              const url = URL.createObjectURL(file)
+              setPreviewUrl(url)
+            } catch (decodeError) {
+              console.error('Error decoding stored image data:', decodeError)
+              // Clear corrupted data
+              sessionStorage.removeItem('posterGenerator_uploadedImage')
+              sessionStorage.removeItem('posterGenerator_uploadedImageName')
+              sessionStorage.removeItem('posterGenerator_uploadedImageType')
             }
-            const byteArray = new Uint8Array(byteNumbers)
-            const blob = new Blob([byteArray], { type: storedImageType })
-            const file = new File([blob], storedImageName, { type: storedImageType })
-            
-            setUploadedImage(file)
-            const url = URL.createObjectURL(file)
-            setPreviewUrl(url)
           }
           imageRestoredRef.current = true
           return
@@ -150,19 +158,27 @@ export default function EnhancedPosterGeneratorWithBranding() {
         const storedImageType = sessionStorage.getItem('posterGenerator_uploadedImageType')
         
         if (storedImageData && storedImageName && storedImageType) {
-          // Convert base64 back to File
-          const byteCharacters = atob(storedImageData)
-          const byteNumbers = new Array(byteCharacters.length)
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i)
+          try {
+            // Convert base64 back to File
+            const byteCharacters = atob(storedImageData)
+            const byteNumbers = new Array(byteCharacters.length)
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i)
+            }
+            const byteArray = new Uint8Array(byteNumbers)
+            const blob = new Blob([byteArray], { type: storedImageType })
+            const file = new File([blob], storedImageName, { type: storedImageType })
+            
+            setUploadedImage(file)
+            const url = URL.createObjectURL(file)
+            setPreviewUrl(url)
+          } catch (decodeError) {
+            console.error('Error decoding stored image data:', decodeError)
+            // Clear corrupted data
+            sessionStorage.removeItem('posterGenerator_uploadedImage')
+            sessionStorage.removeItem('posterGenerator_uploadedImageName')
+            sessionStorage.removeItem('posterGenerator_uploadedImageType')
           }
-          const byteArray = new Uint8Array(byteNumbers)
-          const blob = new Blob([byteArray], { type: storedImageType })
-          const file = new File([blob], storedImageName, { type: storedImageType })
-          
-          setUploadedImage(file)
-          const url = URL.createObjectURL(file)
-          setPreviewUrl(url)
         }
         imageRestoredRef.current = true
       } catch (error) {
@@ -777,7 +793,61 @@ export default function EnhancedPosterGeneratorWithBranding() {
     }
   }
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Helper function to compress image before storing
+  const compressImage = (file: File, maxSizeKB: number = 500): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          // Calculate compression ratio to fit within maxSizeKB
+          const canvas = document.createElement('canvas')
+          let width = img.width
+          let height = img.height
+          let quality = 0.9
+          
+          // Reduce dimensions if image is too large
+          const maxDimension = 1920
+          if (width > maxDimension || height > maxDimension) {
+            const ratio = Math.min(maxDimension / width, maxDimension / height)
+            width = width * ratio
+            height = height * ratio
+          }
+          
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            reject(new Error('Could not get canvas context'))
+            return
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height)
+          
+          // Try different quality levels until we get under the size limit
+          const tryCompress = (q: number) => {
+            const dataUrl = canvas.toDataURL('image/jpeg', q)
+            const base64Data = dataUrl.split(',')[1] || dataUrl
+            const sizeKB = (base64Data.length * 3) / 4 / 1024 // Approximate size
+            
+            if (sizeKB <= maxSizeKB || q <= 0.1) {
+              resolve(base64Data)
+            } else {
+              tryCompress(q - 0.1)
+            }
+          }
+          
+          tryCompress(quality)
+        }
+        img.onerror = () => reject(new Error('Failed to load image'))
+        img.src = e.target?.result as string
+      }
+      reader.onerror = () => reject(new Error('Failed to read file'))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       // Revoke the old blob URL to prevent memory leaks
@@ -791,16 +861,44 @@ export default function EnhancedPosterGeneratorWithBranding() {
       setError(null)
       
       // Save to sessionStorage to persist across navigation
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const base64String = reader.result as string
-        // Remove data URL prefix (e.g., "data:image/png;base64,")
-        const base64Data = base64String.split(',')[1] || base64String
-        sessionStorage.setItem('posterGenerator_uploadedImage', base64Data)
-        sessionStorage.setItem('posterGenerator_uploadedImageName', file.name)
-        sessionStorage.setItem('posterGenerator_uploadedImageType', file.type)
+      // Compress image first to avoid quota exceeded errors
+      try {
+        const compressedBase64 = await compressImage(file, 500) // Max 500KB
+        
+        // Try to store in sessionStorage with error handling
+        try {
+          sessionStorage.setItem('posterGenerator_uploadedImage', compressedBase64)
+          sessionStorage.setItem('posterGenerator_uploadedImageName', file.name)
+          sessionStorage.setItem('posterGenerator_uploadedImageType', 'image/jpeg') // Compressed images are JPEG
+        } catch (storageError) {
+          // If storage still fails, clear old data and try once more
+          if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
+            console.warn('SessionStorage quota exceeded, clearing old data...')
+            try {
+              // Clear all poster generator related items
+              sessionStorage.removeItem('posterGenerator_uploadedImage')
+              sessionStorage.removeItem('posterGenerator_uploadedImageName')
+              sessionStorage.removeItem('posterGenerator_uploadedImageType')
+              
+              // Try storing again with even smaller size
+              const smallerCompressedBase64 = await compressImage(file, 200) // Max 200KB
+              sessionStorage.setItem('posterGenerator_uploadedImage', smallerCompressedBase64)
+              sessionStorage.setItem('posterGenerator_uploadedImageName', file.name)
+              sessionStorage.setItem('posterGenerator_uploadedImageType', 'image/jpeg')
+            } catch (retryError) {
+              // If it still fails, just log and continue without storing
+              // The image will still work in memory, just won't persist across navigation
+              console.warn('Could not store image in sessionStorage:', retryError)
+              console.warn('Image will work in current session but may not persist across navigation')
+            }
+          } else {
+            throw storageError
+          }
+        }
+      } catch (error) {
+        console.error('Error processing image:', error)
+        // Continue anyway - the image will work in memory
       }
-      reader.readAsDataURL(file)
     }
   }
 
@@ -916,7 +1014,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                     className="bg-gray-100 dark:bg-gray-800 hover:bg-[#800000] dark:hover:bg-[#800000] hover:text-white border-gray-300 dark:border-gray-600"
                   >
                     {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                    <Image className="h-4 w-4" />
+                    <ImageIcon className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

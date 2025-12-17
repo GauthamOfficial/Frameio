@@ -228,6 +228,8 @@ class AICaptionService:
             )
             
             try:
+                logger.info(f"Making API call with prompt length: {len(prompt)}")
+                logger.debug(f"Prompt preview: {prompt[:200]}...")
                 response = self._retry_api_call(
                     self.client.models.generate_content,
                     model="gemini-2.5-flash",
@@ -238,51 +240,119 @@ class AICaptionService:
                         max_output_tokens=4000  # Increased to prevent truncation
                     ),
                 )
+                logger.info(f"API call succeeded. Response type: {type(response)}")
+                logger.info(f"Response has candidates: {hasattr(response, 'candidates') and response.candidates is not None}")
+                if hasattr(response, 'candidates') and response.candidates:
+                    logger.info(f"Number of candidates: {len(response.candidates)}")
             except Exception as api_error:
                 error_str = str(api_error)
                 logger.error(f"Caption API call failed after retries: {error_str}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
                 return {
                     "status": "error",
                     "message": "Caption generation failed due to API error. Please try again." if ('500' in error_str or 'INTERNAL' in error_str) else f"Caption generation failed: {error_str}"
                 }
             
             # Process response with proper error handling
+            if not response:
+                logger.error("API call returned None or empty response")
+                return {"status": "error", "message": "No response from Gemini API"}
+            
             generated_text = ""
-            if response and response.candidates and len(response.candidates) > 0:
-                candidate = response.candidates[0]
-                
-                # Check for finish reason first
-                if candidate.finish_reason:
-                    finish_reason_name = candidate.finish_reason.name if hasattr(candidate.finish_reason, 'name') else str(candidate.finish_reason)
-                    if finish_reason_name == 'MAX_TOKENS':
-                        logger.warning("Response truncated due to MAX_TOKENS limit - retrying with higher limit")
-                        # Retry with higher token limit
-                        try:
-                            response = self._retry_api_call(
-                                self.client.models.generate_content,
-                                model="gemini-2.5-flash",
-                                contents=[prompt],
-                                config=types.GenerateContentConfig(
-                                    response_modalities=['TEXT'],
-                                    temperature=0.8,
-                                    max_output_tokens=8000  # Much higher limit for retry
-                                ),
-                            )
-                            if response and response.candidates and len(response.candidates) > 0:
-                                candidate = response.candidates[0]
-                        except Exception as retry_error:
-                            logger.error(f"Retry failed: {retry_error}")
-                            return {"status": "error", "message": "AI response was too long and retry failed - please try with a shorter prompt"}
-                
-                if candidate.content and candidate.content.parts:
-                    for part in candidate.content.parts:
+            if not hasattr(response, 'candidates') or not response.candidates:
+                logger.error(f"Response missing candidates. Response type: {type(response)}, attributes: {dir(response)}")
+                return {"status": "error", "message": "Invalid response structure from Gemini API"}
+            
+            if len(response.candidates) == 0:
+                logger.error("Response has empty candidates list")
+                return {"status": "error", "message": "No candidates in response from Gemini API"}
+            
+            candidate = response.candidates[0]
+            logger.info(f"Candidate type: {type(candidate)}, finish_reason: {getattr(candidate, 'finish_reason', None)}")
+            
+            # Check for finish reason first - handle MAX_TOKENS retry
+            if candidate.finish_reason:
+                finish_reason_name = candidate.finish_reason.name if hasattr(candidate.finish_reason, 'name') else str(candidate.finish_reason)
+                if finish_reason_name == 'MAX_TOKENS':
+                    logger.warning("Response truncated due to MAX_TOKENS limit - retrying with higher limit")
+                    # Retry with higher token limit
+                    try:
+                        response = self._retry_api_call(
+                            self.client.models.generate_content,
+                            model="gemini-2.5-flash",
+                            contents=[prompt],
+                            config=types.GenerateContentConfig(
+                                response_modalities=['TEXT'],
+                                temperature=0.8,
+                                max_output_tokens=8000  # Much higher limit for retry
+                            ),
+                        )
+                        if response and response.candidates and len(response.candidates) > 0:
+                            candidate = response.candidates[0]
+                            # Re-check finish reason after retry
+                            if candidate.finish_reason:
+                                finish_reason_name = candidate.finish_reason.name if hasattr(candidate.finish_reason, 'name') else str(candidate.finish_reason)
+                                if finish_reason_name not in ['STOP', None]:
+                                    logger.error(f"Retry still has finish reason: {finish_reason_name}")
+                                    return {"status": "error", "message": f"AI response blocked: {finish_reason_name}"}
+                    except Exception as retry_error:
+                        logger.error(f"Retry failed: {retry_error}")
+                        return {"status": "error", "message": "AI response was too long and retry failed - please try with a shorter prompt"}
+                elif finish_reason_name not in ['STOP', None]:
+                    # SAFETY, RECITATION, or other blocking reasons
+                    logger.error(f"Response blocked by finish reason: {finish_reason_name}")
+                    return {"status": "error", "message": f"AI response was blocked: {finish_reason_name}"}
+            
+            # Extract text from response - try multiple methods
+            logger.info(f"Processing candidate. Has content: {bool(candidate.content)}")
+            
+            # Method 1: Try direct text property on candidate
+            if hasattr(candidate, 'text') and candidate.text:
+                generated_text = candidate.text
+                logger.info(f"Extracted text using candidate.text: {len(generated_text)} chars")
+            
+            # Method 2: Try content.parts (standard method)
+            elif candidate.content:
+                logger.info(f"Content has parts: {bool(candidate.content.parts)}")
+                if candidate.content.parts:
+                    logger.info(f"Number of parts: {len(candidate.content.parts)}")
+                    for i, part in enumerate(candidate.content.parts):
+                        logger.info(f"Part {i} type: {type(part)}")
+                        # Try multiple ways to get text from part
+                        part_text = None
                         if hasattr(part, 'text') and part.text:
-                            generated_text += part.text
+                            part_text = part.text
+                        elif isinstance(part, str):
+                            part_text = part
+                        elif hasattr(part, '__dict__'):
+                            # Try to find text in part's attributes
+                            for attr in ['text', 'content', 'data']:
+                                if hasattr(part, attr):
+                                    attr_value = getattr(part, attr)
+                                    if isinstance(attr_value, str) and attr_value:
+                                        part_text = attr_value
+                                        break
+                        
+                        if part_text:
+                            generated_text += part_text
+                            logger.info(f"Extracted {len(part_text)} chars from part {i}")
+                    
+                    if not generated_text:
+                        logger.error(f"No text found in {len(candidate.content.parts)} parts. Finish reason: {candidate.finish_reason}")
+                        logger.error(f"Part details: {[str(p) for p in candidate.content.parts]}")
+                        return {"status": "error", "message": "No text content in AI response"}
                 else:
                     logger.error(f"No content parts in candidate. Finish reason: {candidate.finish_reason}")
-                    return {"status": "error", "message": "No content in response from AI"}
+                    return {"status": "error", "message": "No content parts in response from AI"}
             else:
-                return {"status": "error", "message": "No valid response from Gemini API"}
+                logger.error(f"No content in candidate. Finish reason: {candidate.finish_reason}")
+                return {"status": "error", "message": "No content in response from AI"}
+            
+            # Method 3: Try response.text property (some API versions)
+            if not generated_text and hasattr(response, 'text') and response.text:
+                generated_text = response.text
+                logger.info(f"Extracted text using response.text: {len(generated_text)} chars")
             
             if not generated_text or not generated_text.strip():
                 logger.error("Generated text is empty")
