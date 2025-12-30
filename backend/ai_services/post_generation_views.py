@@ -158,6 +158,7 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
                 post_type="product_showcase",
                 style=style,
                 tone=tone,
+                user=request.user if hasattr(request, 'user') else None,
                 include_hashtags=include_hashtags,
                 include_emoji=include_emoji,
                 call_to_action=True
@@ -436,6 +437,7 @@ class AIPostGenerationViewSet(viewsets.ViewSet):
                 post_type=config['post_type'],
                 style=config['style'],
                 tone=config['tone'],
+                user=request.user if hasattr(request, 'user') else None,
                 include_hashtags=config['include_hashtags'],
                 include_emoji=config['include_emoji'],
                 call_to_action=True

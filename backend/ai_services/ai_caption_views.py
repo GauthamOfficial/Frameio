@@ -55,6 +55,11 @@ def generate_product_caption(request):
         
         logger.info(f"Generating product caption for: {product_name}")
         
+        # Get user from request if available
+        user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+        if user and not user.is_authenticated:
+            user = None
+        
         # Generate caption using AI service
         result = ai_caption_service.generate_product_caption(
             product_name=product_name,
@@ -63,7 +68,8 @@ def generate_product_caption(request):
             tone=tone,
             include_hashtags=include_hashtags,
             include_emoji=include_emoji,
-            max_length=max_length
+            max_length=max_length,
+            user=user
         )
         
         if result.get('status') == 'success':
@@ -129,6 +135,11 @@ def generate_social_media_caption(request):
         
         logger.info(f"Generating social media caption for {platform}")
         
+        # Get user from request if available
+        user = getattr(request, 'user', None) if hasattr(request, 'user') else None
+        if user and not user.is_authenticated:
+            user = None
+        
         # Generate caption using AI service
         result = ai_caption_service.generate_social_media_caption(
             content=content,
@@ -138,7 +149,8 @@ def generate_social_media_caption(request):
             tone=tone,
             include_hashtags=include_hashtags,
             include_emoji=include_emoji,
-            call_to_action=call_to_action
+            call_to_action=call_to_action,
+            user=user
         )
         
         if result.get('status') == 'success':

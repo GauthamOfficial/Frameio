@@ -238,19 +238,8 @@ class AIPosterService:
     
     @classmethod
     def _get_composition_guidance(cls, aspect_ratio: str) -> str:
-        """Generate soft, AI-friendly composition guidance for aspect ratio.
-        Replaces strict aspect ratio language with composition intent.
-        """
-        normalized_ar = cls._normalize_aspect_ratio_value(aspect_ratio)
-        return f"""
-COMPOSITION GUIDE:
-- The image will be displayed in a {normalized_ar} frame
-- Compose the subject so it fits naturally within this frame
-- Keep the main subject centered vertically and horizontally
-- Allow visually calm or gradient areas near the top and bottom
-- Avoid placing critical visual details near extreme edges
-- Ensure all important elements are fully visible within the frame
-"""
+        """Generate composition guidance for aspect ratio."""
+        return ""
 
     @staticmethod
     def _parse_aspect_ratio(aspect_ratio: str) -> Optional[float]:
@@ -461,54 +450,9 @@ COMPOSITION GUIDE:
                 except Exception as e:
                     logger.warning(f"Error checking company profile: {e}")
             
-            # Create base prompt with enhanced instructions for better image generation
+            # Use prompt directly without additional instructions
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
-            composition_guidance = self._get_composition_guidance(normalized_ar)
-            
-            # Enhanced contrast and clarity instructions for main subject with gradient transitions
-            contrast_instructions = """
-            
-            MAIN SUBJECT ENHANCEMENT:
-            - Always enhance the contrast and clarity of the main subject so it stands out clearly from the background
-            - Ensure the main subject has strong visual presence and is the focal point of the image
-            - Use lighting, shadows, and color contrast to make the subject pop
-            - Keep the main subject comfortably away from the extreme top and bottom edges
-            - Maintain clear subject contrast against the background while ensuring smooth tonal transitions
-            """
-            
-            # Determine if prompt is short/simple and handle accordingly
-            is_simple_prompt = len(prompt.strip().split()) <= 5 and not any(word in prompt.lower() for word in ['design', 'create', 'generate', 'make', 'show'])
-            
-            if is_simple_prompt:
-                # For simple prompts, send as-is with minimal additions
-                base_prompt = f"{composition_guidance}\n{contrast_instructions}\n{prompt}"
-            else:
-                # For complex prompts, add more detailed instructions
-                base_prompt = f"{composition_guidance}\n{contrast_instructions}\n{prompt}"
-            
-            if has_branding:
-                # Add instructions for seamless gradient transitions in overlay areas
-                branding_layout_instructions = """
-                
-                LAYOUT REQUIREMENTS:
-                - Keep all main content and primary text comfortably centered, away from the extreme edges
-                - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
-                """
-                base_prompt = f"{base_prompt}{branding_layout_instructions}"
-            else:
-                # Add instructions to avoid random brand names when no branding is provided with gradient transitions
-                no_branding_instructions = """
-                
-                DESIGN REQUIREMENTS:
-                - Do NOT include any company names, brand names, or business names in the design
-                - Do NOT add any random or placeholder brand names, prices, or marketing phrases
-                - Focus purely on the visual design and aesthetic elements with full-bleed composition
-                - Do not include any text that suggests a specific company or brand
-                - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
-                - Keep main content comfortably centered, away from the extreme edges
-                - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
-                """
-                base_prompt = f"{base_prompt}{no_branding_instructions}"
+            base_prompt = prompt
             
             # Configure image generation (prefer explicit dimensions; fallback to aspect_ratio)
             image_config = self._build_image_config_with_dimensions(types, normalized_ar) or \
@@ -1052,54 +996,9 @@ COMPOSITION GUIDE:
                 except Exception as e:
                     logger.warning(f"Error checking company profile: {e}")
             
-            # Create base prompt with enhanced instructions for better image generation
+            # Use prompt directly without additional instructions
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
-            composition_guidance = self._get_composition_guidance(normalized_ar)
-            
-            # Enhanced contrast and clarity instructions for main subject with gradient transitions
-            contrast_instructions = """
-            
-            MAIN SUBJECT ENHANCEMENT:
-            - Always enhance the contrast and clarity of the main subject so it stands out clearly from the background
-            - Ensure the main subject has strong visual presence and is the focal point of the image
-            - Use lighting, shadows, and color contrast to make the subject pop
-            - Keep the main subject comfortably away from the extreme top and bottom edges
-            - Maintain clear subject contrast against the background while ensuring smooth tonal transitions
-            """
-            
-            # Determine if prompt is short/simple and handle accordingly
-            is_simple_prompt = len(prompt.strip().split()) <= 5 and not any(word in prompt.lower() for word in ['design', 'create', 'generate', 'make', 'show'])
-            
-            if is_simple_prompt:
-                # For simple prompts, send as-is with minimal additions
-                base_prompt = f"{composition_guidance}\n{contrast_instructions}\n{prompt}"
-            else:
-                # For complex prompts, add more detailed instructions
-                base_prompt = f"{composition_guidance}\n{contrast_instructions}\n{prompt}"
-            
-            if has_branding:
-                # Add instructions for seamless gradient transitions in overlay areas
-                branding_layout_instructions = """
-                
-                LAYOUT REQUIREMENTS:
-                - Keep all main content and primary text comfortably centered, away from the extreme edges
-                - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
-                """
-                base_prompt = f"{base_prompt}{branding_layout_instructions}"
-            else:
-                # Add instructions to avoid random brand names when no branding is provided with gradient transitions
-                no_branding_instructions = """
-                
-                DESIGN REQUIREMENTS:
-                - Do NOT include any company names, brand names, or business names in the design
-                - Do NOT add any random or placeholder brand names, prices, or marketing phrases
-                - Focus purely on the visual design and aesthetic elements with full-bleed composition
-                - Do not include any text that suggests a specific company or brand
-                - Avoid adding any blank margins or white bands; fill the full canvas edge-to-edge
-                - Keep main content comfortably centered, away from the extreme edges
-                - When generating the poster, make sure any main subject mentioned in the prompt is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
-                """
-                base_prompt = f"{base_prompt}{no_branding_instructions}"
+            base_prompt = prompt
             
             # Load and prepare image from Django storage
             try:
@@ -1426,32 +1325,9 @@ COMPOSITION GUIDE:
             
             logger.info(f"Generating composite poster with {len(image_paths)} images and prompt: {prompt[:50]}...")
             
-            # Create enhanced prompt with smart layout guidance for branding areas
-            # Simplified, AI-friendly safe-zone instructions
-            spacing_instructions = """
-            
-            COMPOSITION GUIDE:
-            - Keep the main subject centered vertically and horizontally
-            - Allow visually calm or gradient areas near the top-right corner (approximately 25% of image width and height)
-            - Allow visually calm or gradient areas near the bottom (bottom 18% of image height)
-            - Place all main text and visual elements in the CENTER and LEFT areas of the image
-            - Ensure text is readable and doesn't overlap with reserved areas
-            - Keep all textual content comfortably centered, away from the extreme edges
-            - Fill the reserved areas with background elements, patterns, or colors - do not leave them blank
-            - Make the design cohesive while keeping logo and contact areas text-free but visually rich
-            - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
-            
-            GRADIENT OVERLAY REQUIREMENT:
-            - Add a black gradient overlay to the bottom 10% of the image
-            - The gradient should transition smoothly from transparent (at the top of the bottom 10% area) to fully black (at the bottom edge)
-            - This gradient overlay should be applied to every poster without exception
-            - Ensure the gradient blends seamlessly with the underlying image content
-            """
-            
-            # Create enhanced prompt with smart branding area guidance and composition guidance
+            # Use prompt directly without additional instructions
             normalized_ar = self._normalize_aspect_ratio_value(aspect_ratio)
-            composition_guidance = self._get_composition_guidance(normalized_ar)
-            enhanced_prompt = f"{composition_guidance}\n{prompt}{spacing_instructions}"
+            enhanced_prompt = prompt
             
             # Load all images
             image_parts = []
@@ -1621,39 +1497,8 @@ COMPOSITION GUIDE:
                 )
             )
             
-            # Create enhanced prompt for text overlay with spacing considerations
-            enhanced_prompt = f"""
-            Add the following text to this textile image: "{text_prompt}"
-            
-            Style requirements:
-            - Text style: {text_style}
-            - Make the text clearly visible and readable
-            - Position the text appropriately on the textile
-            - Use colors that complement the textile design
-            - Ensure the text enhances the overall design
-            - Maintain the textile's aesthetic appeal
-            
-            IMPORTANT DESIGN REQUIREMENTS:
-            - Do NOT include any company names, brand names, or business names in the design
-            - Do NOT add any random or placeholder brand names
-            - Focus purely on the visual design and aesthetic elements
-            - Do not include any text that suggests a specific company or brand
-            - Keep the design clean and focused on the main content only
-            
-            COMPOSITION GUIDE:
-            - Keep the main subject centered vertically and horizontally
-            - Allow visually calm or gradient areas near the top-right corner (approximately 25% of image width and height)
-            - Allow visually calm or gradient areas near the bottom (bottom 18% of image height)
-            - Keep all textual content comfortably centered, away from the extreme edges
-            - Ensure text is readable and doesn't overlap with reserved areas
-            - When generating the poster, make sure any main subject mentioned in the prompt (such as a man, woman, or product) is fully visible and completely inside the frame. Do not crop or cut off the subject's head, body, or important parts. Keep proper framing and composition so the entire subject fits naturally within the image.
-            
-            GRADIENT OVERLAY REQUIREMENT:
-            - Add a black gradient overlay to the bottom 10% of the image
-            - The gradient should transition smoothly from transparent (at the top of the bottom 10% area) to fully black (at the bottom edge)
-            - This gradient overlay should be applied to every poster without exception
-            - Ensure the gradient blends seamlessly with the underlying image content
-            """
+            # Create simple prompt for text overlay
+            enhanced_prompt = f'Add the following text to this textile image: "{text_prompt}". Text style: {text_style}.'
             
             # Configure image generation (version-safe). Text overlay remains square.
             normalized_ar = self._normalize_aspect_ratio_value("1:1")
@@ -1827,6 +1672,7 @@ CRITICAL FORMATTING:
                 post_type="product_showcase",
                 style="engaging",
                 tone="friendly",
+                user=user,
                 include_hashtags=True,
                 include_emoji=True,
                 call_to_action=True

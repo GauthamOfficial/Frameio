@@ -95,6 +95,53 @@ class AICaptionService:
         # If we get here, all retries failed
         raise last_exception
     
+    def _get_contact_details(self, user) -> tuple:
+        """
+        Get contact details from user's company profile
+        
+        Args:
+            user: User object
+            
+        Returns:
+            Tuple of (contact_info_string, company_name)
+        """
+        contact_info = ""
+        company_name = ""
+        
+        if user:
+            try:
+                from users.models import CompanyProfile
+                company_profile = getattr(user, 'company_profile', None)
+                logger.info(f"Company profile found: {company_profile is not None}")
+                if company_profile:
+                    logger.info(f"Company profile complete: {company_profile.has_complete_profile}")
+                    if company_profile.has_complete_profile:
+                        company_name = company_profile.company_name or ""
+                        contact_dict = company_profile.get_contact_info() or {}
+                        logger.info(f"Contact dict: {contact_dict}")
+                        
+                        # Format contact information properly
+                        contact_details = []
+                        if contact_dict.get('whatsapp'):
+                            contact_details.append(f"📱 WhatsApp: {contact_dict['whatsapp']}")
+                        if contact_dict.get('email'):
+                            contact_details.append(f"✉️ Email: {contact_dict['email']}")
+                        if contact_dict.get('facebook'):
+                            contact_details.append(f"📘 Facebook: {contact_dict['facebook']}")
+                        
+                        contact_info = "\n".join(contact_details)
+                        logger.info(f"Retrieved contact info for caption - Company: {company_name}, Contact: {contact_info}")
+                    else:
+                        logger.warning(f"Company profile incomplete for user {user.id}")
+                else:
+                    logger.warning(f"No company profile found for user {user.id}")
+            except Exception as e:
+                logger.error(f"Error getting contact info: {e}", exc_info=True)
+        else:
+            logger.warning("No user provided for contact details")
+        
+        return contact_info, company_name
+    
     def generate_product_caption(self, 
                                 product_name: str, 
                                 product_type: str = "textile",
@@ -102,7 +149,8 @@ class AICaptionService:
                                 tone: str = "professional",
                                 include_hashtags: bool = True,
                                 include_emoji: bool = True,
-                                max_length: int = 200) -> Dict[str, Any]:
+                                max_length: int = 200,
+                                user=None) -> Dict[str, Any]:
         """
         Generate product caption for textile items
         
@@ -114,6 +162,7 @@ class AICaptionService:
             include_hashtags: Whether to include hashtags
             include_emoji: Whether to include emojis
             max_length: Maximum character length
+            user: User object for contact details
             
         Returns:
             Dict containing generated caption
@@ -124,10 +173,14 @@ class AICaptionService:
             
             logger.info(f"Generating product caption for: {product_name}")
             
+            # Get contact details if user provided
+            contact_info, company_name = self._get_contact_details(user)
+            
             # Create enhanced prompt for product caption
             prompt = self._create_product_caption_prompt(
                 product_name, product_type, style, tone, 
-                include_hashtags, include_emoji, max_length
+                include_hashtags, include_emoji, max_length,
+                contact_info, company_name
             )
             
             try:
@@ -175,6 +228,20 @@ class AICaptionService:
                 generated_text, include_hashtags, include_emoji
             )
             
+            # Append contact details to full_caption if available
+            if contact_info and company_name:
+                contact_text = f"\n\nCompany: {company_name}\n{contact_info}"
+                # Get the current full_caption or use main_text as fallback
+                current_full_caption = structured_caption.get('full_caption', '')
+                if not current_full_caption:
+                    current_full_caption = structured_caption.get('main_text', '')
+                # Always append contact details at the end
+                if current_full_caption:
+                    structured_caption['full_caption'] = (current_full_caption + contact_text).strip()
+                else:
+                    structured_caption['full_caption'] = contact_text.strip()
+                logger.info(f"Added contact details to product caption: {contact_text[:50]}...")
+            
             logger.info(f"Product caption generated successfully for: {product_name}")
             return {
                 "status": "success",
@@ -198,7 +265,8 @@ class AICaptionService:
                                     tone: str = "friendly",
                                     include_hashtags: bool = True,
                                     include_emoji: bool = True,
-                                    call_to_action: bool = True) -> Dict[str, Any]:
+                                    call_to_action: bool = True,
+                                    user=None) -> Dict[str, Any]:
         """
         Generate social media caption for textile content
         
@@ -211,6 +279,7 @@ class AICaptionService:
             include_hashtags: Whether to include hashtags
             include_emoji: Whether to include emojis
             call_to_action: Whether to include call-to-action
+            user: User object for contact details
             
         Returns:
             Dict containing generated social media caption
@@ -221,10 +290,14 @@ class AICaptionService:
             
             logger.info(f"Generating social media caption for {platform}")
             
+            # Get contact details if user provided
+            contact_info, company_name = self._get_contact_details(user)
+            
             # Create enhanced prompt for social media
             prompt = self._create_social_media_prompt(
                 content, platform, post_type, style, tone,
-                include_hashtags, include_emoji, call_to_action
+                include_hashtags, include_emoji, call_to_action,
+                contact_info, company_name
             )
             
             try:
@@ -362,6 +435,20 @@ class AICaptionService:
             structured_caption = self._parse_caption_content(
                 generated_text, include_hashtags, include_emoji
             )
+            
+            # Append contact details to full_caption if available
+            if contact_info and company_name:
+                contact_text = f"\n\nCompany: {company_name}\n{contact_info}"
+                # Get the current full_caption or use main_text as fallback
+                current_full_caption = structured_caption.get('full_caption', '')
+                if not current_full_caption:
+                    current_full_caption = structured_caption.get('main_text', '')
+                # Always append contact details at the end
+                if current_full_caption:
+                    structured_caption['full_caption'] = (current_full_caption + contact_text).strip()
+                else:
+                    structured_caption['full_caption'] = contact_text.strip()
+                logger.info(f"Added contact details to social media caption: {contact_text[:50]}...")
             
             logger.info(f"Social media caption generated successfully for {platform}")
             return {
@@ -675,48 +762,22 @@ Do not include any other text, just the JSON array."""
                                      tone: str,
                                      include_hashtags: bool,
                                      include_emoji: bool,
-                                     max_length: int) -> str:
-        """Create enhanced prompt for product caption generation"""
+                                     max_length: int,
+                                     contact_info: str = "",
+                                     company_name: str = "") -> str:
+        """Create prompt for product caption generation"""
         
-        style_instructions = {
-            'modern': 'Use contemporary language and trendy expressions',
-            'traditional': 'Use classic, timeless language',
-            'casual': 'Use relaxed, conversational language',
-            'formal': 'Use professional, business-appropriate language'
-        }
-        
-        tone_instructions = {
-            'professional': 'Maintain a professional, authoritative tone',
-            'friendly': 'Use a warm, approachable tone',
-            'authoritative': 'Use a confident, expert tone',
-            'conversational': 'Use a natural, conversational tone'
-        }
-        
-        prompt = f"""
-        Create a compelling product caption for a {product_type} item named "{product_name}".
-        
-        Requirements:
-        - Style: {style_instructions.get(style, 'Use modern language')}
-        - Tone: {tone_instructions.get(tone, 'Use a professional tone')}
-        - Maximum length: {max_length} characters
-        - Focus on textile/fashion appeal and quality
-        """
+        prompt = f"Create a product caption for a {product_type} named {product_name}."
         
         if include_hashtags:
-            prompt += "\n- Include 3-5 relevant hashtags for textile/fashion industry"
+            prompt += " Include hashtags."
         
         if include_emoji:
-            prompt += "\n- Use 1-2 appropriate emojis"
+            prompt += " Include emojis."
         
-        prompt += """
-        
-        Format the response as:
-        - Main caption text
-        - Hashtags (if requested)
-        - Call-to-action (if appropriate)
-        
-        Make it engaging, informative, and suitable for textile/fashion marketing.
-        """
+        # Add contact details if available
+        if contact_info and company_name:
+            prompt += f"\n\nInclude the following contact information at the end:\nCompany: {company_name}\n{contact_info}"
         
         return prompt
     
@@ -728,61 +789,37 @@ Do not include any other text, just the JSON array."""
                                    tone: str,
                                    include_hashtags: bool,
                                    include_emoji: bool,
-                                   call_to_action: bool) -> str:
-        """Create enhanced prompt for social media caption generation"""
+                                   call_to_action: bool,
+                                   contact_info: str = "",
+                                   company_name: str = "") -> str:
+        """Create prompt for social media caption generation"""
         
-        platform_instructions = {
-            'instagram': 'Create an Instagram-optimized caption with visual appeal',
-            'facebook': 'Create a Facebook post that encourages engagement',
-            'twitter': 'Create a concise Twitter post with impact',
-            'linkedin': 'Create a professional LinkedIn post for business audience'
-        }
-        
-        post_type_instructions = {
-            'product_showcase': 'Focus on highlighting product features and benefits',
-            'behind_scenes': 'Create content that shows the process or story',
-            'educational': 'Provide valuable information about textiles/fashion',
-            'promotional': 'Create compelling promotional content'
-        }
-        
-        prompt = f"""Create a {platform} caption for a {post_type} post about: {content}
-
-CRITICAL REQUIREMENTS:
-- Create a COMPLETE, FULL caption - do not truncate or leave incomplete
-- Engaging and attention-grabbing
-- Use power words like "stunning", "elegant", "breathtaking"
-- Include sensory descriptions
-- Create emotional connection
-- Conversational and relatable tone
-- Write the ENTIRE caption from start to finish - ensure it's complete and polished"""
+        prompt = f"Create a {platform} caption about: {content}"
         
         if include_hashtags:
-            prompt += "\n- Generate 10-15 RELEVANT, AI-GENERATED hashtags based on the content (not generic ones)"
-            prompt += "\n- Hashtags should be specific to the product, style, occasion, and target audience"
-            prompt += "\n- Mix popular and niche hashtags for better reach"
+            prompt += " Include hashtags."
         
         if include_emoji:
-            prompt += "\n- Use 2-3 appropriate emojis strategically placed"
+            prompt += " Include emojis."
         
         if call_to_action:
-            prompt += "\n- Include a compelling call-to-action at the end"
+            prompt += " Include call to action."
         
-        prompt += """
+        # Add contact details if available
+        contact_section = ""
+        if contact_info and company_name:
+            contact_section = f"\n\nMANDATORY: Include the following contact information at the end of the caption:\nCompany: {company_name}\n{contact_info}\n\nFormat contact details exactly as shown above, each on separate line."
+        
+        prompt += f"""
 
-IMPORTANT: 
-- The caption MUST be complete and finished - do not cut off mid-sentence
-- Ensure all parts of the caption are fully written
-- The full_caption should include the main text, contact details (if provided), and hashtags
-- main_text should be the primary caption without hashtags
-
-Return as JSON (MUST be valid JSON):
+Return as JSON:
 {{
-    "main_text": "Complete main caption text without hashtags",
-    "full_caption": "Complete full caption including main text, contact info, and hashtags",
-    "hashtags": ["#specific_tag1", "#specific_tag2", "#relevant_tag3", ...],
+    "main_text": "Main caption text",
+    "full_caption": "Full caption with hashtags{(' and contact details' if contact_info else '')}",
+    "hashtags": ["#tag1", "#tag2"],
     "emoji": "✨",
-    "call_to_action": "Complete CTA text"
-}}"""
+    "call_to_action": "CTA text"
+}}{contact_section}"""
         
         return prompt
     
@@ -793,28 +830,15 @@ Return as JSON (MUST be valid JSON):
                                     tone: str,
                                     include_hashtags: bool,
                                     include_emoji: bool) -> str:
-        """Create enhanced prompt for image caption generation"""
+        """Create prompt for image caption generation"""
         
-        caption_type_instructions = {
-            'descriptive': 'Create a detailed description of the image',
-            'marketing': 'Create a marketing-focused caption that sells',
-            'educational': 'Create an informative caption that teaches',
-            'artistic': 'Create a creative, artistic caption'
-        }
-        
-        prompt = f"""
-        Create a {caption_type} caption for a textile image described as: {image_description}
-        
-        Caption Type: {caption_type_instructions.get(caption_type, 'Create a descriptive caption')}
-        Style: {style} - Use {style} language
-        Tone: {tone} - Maintain a {tone} tone
-        """
+        prompt = f"Create a {caption_type} caption for: {image_description}"
         
         if include_hashtags:
-            prompt += "\n- Include relevant hashtags"
+            prompt += " Include hashtags."
         
         if include_emoji:
-            prompt += "\n- Use appropriate emojis"
+            prompt += " Include emojis."
         
         prompt += """
         

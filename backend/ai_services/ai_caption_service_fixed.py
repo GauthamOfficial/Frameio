@@ -362,47 +362,15 @@ class AICaptionService:
                                      include_hashtags: bool,
                                      include_emoji: bool,
                                      max_length: int) -> str:
-        """Create enhanced prompt for product caption generation"""
+        """Create prompt for product caption generation"""
         
-        style_instructions = {
-            'modern': 'Use contemporary language and trendy expressions',
-            'traditional': 'Use classic, timeless language',
-            'casual': 'Use relaxed, conversational language',
-            'formal': 'Use professional, business-appropriate language'
-        }
-        
-        tone_instructions = {
-            'professional': 'Maintain a professional, authoritative tone',
-            'friendly': 'Use a warm, approachable tone',
-            'authoritative': 'Use a confident, expert tone',
-            'conversational': 'Use a natural, conversational tone'
-        }
-        
-        prompt = f"""
-        Create a compelling product caption for a {product_type} item named "{product_name}".
-        
-        Requirements:
-        - Style: {style_instructions.get(style, 'Use modern language')}
-        - Tone: {tone_instructions.get(tone, 'Use a professional tone')}
-        - Maximum length: {max_length} characters
-        - Focus on textile/fashion appeal and quality
-        """
+        prompt = f"Create a product caption for a {product_type} named {product_name}."
         
         if include_hashtags:
-            prompt += "\n- Include 3-5 relevant hashtags for textile/fashion industry"
+            prompt += " Include hashtags."
         
         if include_emoji:
-            prompt += "\n- Use 1-2 appropriate emojis"
-        
-        prompt += """
-        
-        Format the response as:
-        - Main caption text
-        - Hashtags (if requested)
-        - Call-to-action (if appropriate)
-        
-        Make it engaging, informative, and suitable for textile/fashion marketing.
-        """
+            prompt += " Include emojis."
         
         return prompt
     
@@ -415,49 +383,18 @@ class AICaptionService:
                                    include_hashtags: bool,
                                    include_emoji: bool,
                                    call_to_action: bool) -> str:
-        """Create enhanced prompt for social media caption generation"""
+        """Create prompt for social media caption generation"""
         
-        platform_instructions = {
-            'instagram': 'Create an Instagram-optimized caption with visual appeal',
-            'facebook': 'Create a Facebook post that encourages engagement',
-            'twitter': 'Create a concise Twitter post with impact',
-            'linkedin': 'Create a professional LinkedIn post for business audience'
-        }
-        
-        post_type_instructions = {
-            'product_showcase': 'Focus on highlighting product features and benefits',
-            'behind_scenes': 'Create content that shows the process or story',
-            'educational': 'Provide valuable information about textiles/fashion',
-            'promotional': 'Create compelling promotional content'
-        }
-        
-        prompt = f"""
-        Create a {platform} caption for a {post_type} post about: {content}
-        
-        Platform: {platform_instructions.get(platform, 'Create an engaging social media post')}
-        Post Type: {post_type_instructions.get(post_type, 'Create engaging content')}
-        Style: {style} - Use {style} language and approach
-        Tone: {tone} - Maintain a {tone} tone throughout
-        """
+        prompt = f"Create a {platform} caption about: {content}"
         
         if include_hashtags:
-            prompt += "\n- Include 5-10 relevant hashtags for textile/fashion industry"
+            prompt += " Include hashtags."
         
         if include_emoji:
-            prompt += "\n- Use 2-3 appropriate emojis"
+            prompt += " Include emojis."
         
         if call_to_action:
-            prompt += "\n- Include a compelling call-to-action"
-        
-        prompt += """
-        
-        Format the response as:
-        - Main caption text
-        - Hashtags (if requested)
-        - Call-to-action (if requested)
-        
-        Make it highly engaging and optimized for the specified platform.
-        """
+            prompt += " Include call to action."
         
         return prompt
     
@@ -468,28 +405,15 @@ class AICaptionService:
                                     tone: str,
                                     include_hashtags: bool,
                                     include_emoji: bool) -> str:
-        """Create enhanced prompt for image caption generation"""
+        """Create prompt for image caption generation"""
         
-        caption_type_instructions = {
-            'descriptive': 'Create a detailed description of the image',
-            'marketing': 'Create a marketing-focused caption that sells',
-            'educational': 'Create an informative caption that teaches',
-            'artistic': 'Create a creative, artistic caption'
-        }
-        
-        prompt = f"""
-        Create a {caption_type} caption for a textile image described as: {image_description}
-        
-        Caption Type: {caption_type_instructions.get(caption_type, 'Create a descriptive caption')}
-        Style: {style} - Use {style} language
-        Tone: {tone} - Maintain a {tone} tone
-        """
+        prompt = f"Create a {caption_type} caption for: {image_description}"
         
         if include_hashtags:
-            prompt += "\n- Include relevant hashtags"
+            prompt += " Include hashtags."
         
         if include_emoji:
-            prompt += "\n- Use appropriate emojis"
+            prompt += " Include emojis."
         
         prompt += """
         
