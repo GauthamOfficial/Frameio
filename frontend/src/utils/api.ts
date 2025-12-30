@@ -131,6 +131,29 @@ async function handleResponse<T>(response: Response): Promise<T> {
     } catch {
       errorData = { error: errorText };
     }
+    
+    // Create error with full error data for limit errors (403)
+    if (response.status === 403 && errorData.error) {
+      const error = new Error(errorData.error);
+      // Attach additional error data to the error object for limit errors
+      // Always attach these properties if they exist in errorData
+      if (errorData.limit_type !== undefined) {
+        (error as any).limit_type = errorData.limit_type;
+      }
+      if (errorData.current_count !== undefined) {
+        (error as any).current_count = errorData.current_count;
+      }
+      if (errorData.limit !== undefined) {
+        (error as any).limit = errorData.limit;
+      }
+      if (errorData.reset_date !== undefined) {
+        (error as any).reset_date = errorData.reset_date;
+      }
+      // Mark this as a limit error so it can be handled specially
+      (error as any).isLimitError = true;
+      throw error;
+    }
+    
     throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
   }
   

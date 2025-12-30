@@ -18,6 +18,7 @@ from django.db.models import Q
 from .ai_poster_service import AIPosterService
 from .models import GeneratedPoster
 from .utils.storage_handler import get_domain_url
+from .utils.usage_limits import check_poster_limit
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +147,15 @@ def generate_poster(request):
                 logger.error(f"Error checking company profile: {e}")
         else:
             logger.warning("⚠️ No user identified - branding will not be applied")
+        
+        # Check usage limit before generating
+        can_generate, limit_error = check_poster_limit(user)
+        if not can_generate:
+            logger.warning(f"Poster generation blocked - limit reached for user: {user.email if user and hasattr(user, 'email') else 'anonymous'}")
+            return Response({
+                "success": False,
+                **limit_error
+            }, status=status.HTTP_403_FORBIDDEN)
         
         # Pass request context to service for proper URL generation
         ai_poster_service._request = request
@@ -644,6 +654,20 @@ def edit_poster(request):
                     logger.error(f"Error checking company profile: {e}")
             else:
                 logger.warning("⚠️ No user identified - branding will not be applied")
+            
+            # Check usage limit before generating
+            can_generate, limit_error = check_poster_limit(user)
+            if not can_generate:
+                logger.warning(f"Poster editing blocked - limit reached for user: {user.email if user and hasattr(user, 'email') else 'anonymous'}")
+                # Clean up temp file before returning
+                try:
+                    default_storage.delete(saved_path)
+                except:
+                    pass
+                return Response({
+                    "success": False,
+                    **limit_error
+                }, status=status.HTTP_403_FORBIDDEN)
             
             # Generate edited poster using AI service with user for branding
             logger.info(f"Calling generate_with_image with path: {saved_path}")

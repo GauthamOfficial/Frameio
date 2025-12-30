@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Wand2, Eye, Download, RefreshCw } from "lucide-react"
+import { Wand2, Eye, Download, RefreshCw, AlertCircle, Calendar } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { apiPost } from "@/utils/api"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 
 interface BrandingKitData {
   logo?: {
@@ -29,6 +30,12 @@ export default function BrandingKitPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [brandingData, setBrandingData] = useState<BrandingKitData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [limitReached, setLimitReached] = useState<{
+    message: string
+    currentCount: number
+    limit: number
+    resetDate: string
+  } | null>(null)
   const { getToken } = useAuth()
   
   // Textarea auto-resize functionality
@@ -60,7 +67,7 @@ export default function BrandingKitPage() {
     try {
       const token = await getToken()
       
-      const result = await apiPost<{ success: boolean; data?: { branding_kit: BrandingKitData }; error?: string }>(
+      const result = await apiPost<{ success: boolean; data?: { branding_kit: BrandingKitData }; error?: string; limit_type?: string; current_count?: number; limit?: number; reset_date?: string }>(
         '/api/ai/branding-kit/generate/',
         {
           prompt: prompt.trim(),
@@ -77,13 +84,69 @@ export default function BrandingKitPage() {
           window.dispatchEvent(new CustomEvent('branding-kit-generated'))
         }
       } else {
-        setError(result.error || 'Failed to generate branding kit')
+        // Handle limit errors with popup
+        if (result.limit_type) {
+          const resetDate = result.reset_date ? new Date(result.reset_date).toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric',
+            year: 'numeric'
+          }) : 'next month'
+          setLimitReached({
+            message: result.error || `You have reached your monthly free limit of ${result.limit || 3} ${result.limit_type}.`,
+            currentCount: result.current_count || result.limit || 3,
+            limit: result.limit || 3,
+            resetDate: resetDate
+          })
+        } else {
+          setError(result.error || 'Failed to generate branding kit')
+        }
       }
     } catch (err) {
+      const limitErr = err as any
+      
+      // Check if this is a limit error first (before other checks)
+      if (limitErr.isLimitError || limitErr.limit_type) {
+        // Clear any previous error state
+        setError(null)
+        
+        // Extract limit info from error object
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+        const resetDate = limitErr.reset_date ? new Date(limitErr.reset_date).toLocaleDateString('en-US', { 
+          month: 'long', 
+          day: 'numeric',
+          year: 'numeric'
+        }) : 'next month'
+        
+        setLimitReached({
+          message: errorMessage,
+          currentCount: limitErr.current_count ?? limitErr.limit ?? 3,
+          limit: limitErr.limit ?? 3,
+          resetDate: resetDate
+        })
+        // Don't log limit errors to console - they're expected and handled gracefully
+        return
+      }
+      
       if (err instanceof SyntaxError) {
         setError('Invalid response from server. Please check if the backend is running.')
       } else {
-        setError(`Network error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`)
+        // Extract error message from the error object
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+        
+        // Check if it's a limit error by checking the error message (fallback)
+        if (errorMessage.includes('monthly free limit') || errorMessage.includes('reached your') || errorMessage.includes('Please upgrade')) {
+          setError(null)
+          const resetDate = 'next month'
+          setLimitReached({
+            message: errorMessage,
+            currentCount: 3,
+            limit: 3,
+            resetDate: resetDate
+          })
+          return
+        }
+        
+        setError(`Network error: ${errorMessage}`)
       }
       console.error('Error generating branding kit:', err)
     } finally {
@@ -481,6 +544,54 @@ This branding kit was generated using AI and is ready for use in your marketing 
           </CardContent>
         </Card>
       </div>
+
+      {/* Limit Reached Dialog */}
+      <Dialog open={!!limitReached} onOpenChange={(open) => !open && setLimitReached(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-full">
+                <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <DialogTitle className="text-xl">Monthly Limit Reached</DialogTitle>
+            </div>
+            <DialogDescription className="text-base mt-2">
+              {limitReached?.message}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Usage this month:</span>
+                <span className="font-semibold text-foreground">
+                  {limitReached?.currentCount} / {limitReached?.limit}
+                </span>
+              </div>
+              <div className="w-full bg-background rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-amber-500 h-full transition-all"
+                  style={{ width: `${((limitReached?.currentCount || 0) / (limitReached?.limit || 3)) * 100}%` }}
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>Limit resets on <span className="font-medium text-foreground">{limitReached?.resetDate}</span></span>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              onClick={() => setLimitReached(null)}
+              className="w-full sm:w-auto"
+            >
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
   )
 }

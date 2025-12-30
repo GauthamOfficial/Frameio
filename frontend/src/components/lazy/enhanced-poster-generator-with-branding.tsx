@@ -18,13 +18,15 @@ import {
   ExternalLink,
   Facebook,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Calendar
 } from "lucide-react"
 import React, { useState, useRef, useEffect } from "react"
 import { useUser, useAuth } from '@/hooks/useAuth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCompanyProfile } from '@/hooks/use-company-profile'
 import { API_BASE_URL, getFullUrl } from '@/utils/api'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 
 interface GenerationResult {
   success: boolean
@@ -68,6 +70,12 @@ export default function EnhancedPosterGeneratorWithBranding() {
   const [aspectRatio, setAspectRatio] = useState("4:5")
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [limitReached, setLimitReached] = useState<{
+    message: string
+    currentCount: number
+    limit: number
+    resetDate: string
+  } | null>(null)
 
   // Image upload functionality
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
@@ -603,19 +611,63 @@ export default function EnhancedPosterGeneratorWithBranding() {
       
       if (!response.ok) {
         let message = `HTTP ${response.status}`
+        let errorData: any = null
         
         // Clone the response so we can read it multiple times
         const clonedResponse = response.clone()
         
+        // Check for 403 (limit error) first to handle it gracefully
+        const isLimitError = response.status === 403
+        
         try {
           // First try to parse as JSON
-          const errorData = await response.json()
-          console.error('Error response data:', errorData)
+          errorData = await response.json()
+          
+          // Only log non-limit errors to avoid cluttering console
+          if (!isLimitError) {
+            console.error('Error response data:', errorData)
+          }
           
           // Handle null, undefined, or empty object case
           if (!errorData || (typeof errorData === 'object' && Object.keys(errorData).length === 0)) {
-            message = `HTTP ${response.status}: Server returned empty error response. Check backend logs for details.`
-            console.error('Empty error response received - backend may have encountered a serialization error')
+            // For 403 errors with empty response, it's a limit error
+            if (isLimitError) {
+              // Try to get error from response text as fallback
+              try {
+                const responseText = await clonedResponse.text()
+                if (responseText && responseText.trim()) {
+                  try {
+                    errorData = JSON.parse(responseText)
+                  } catch {
+                    // Not JSON, create a default limit error
+                    errorData = {
+                      error: 'You have reached your monthly free limit of 3 posters. Please upgrade or wait until next month.',
+                      limit_type: 'posters',
+                      current_count: 3,
+                      limit: 3
+                    }
+                  }
+                } else {
+                  // Empty 403 response - assume it's a limit error
+                  errorData = {
+                    error: 'You have reached your monthly free limit of 3 posters. Please upgrade or wait until next month.',
+                    limit_type: 'posters',
+                    current_count: 3,
+                    limit: 3
+                  }
+                }
+              } catch {
+                errorData = {
+                  error: 'You have reached your monthly free limit of 3 posters. Please upgrade or wait until next month.',
+                  limit_type: 'posters',
+                  current_count: 3,
+                  limit: 3
+                }
+              }
+            } else {
+              message = `HTTP ${response.status}: Server returned empty error response. Check backend logs for details.`
+              console.error('Empty error response received - backend may have encountered a serialization error')
+            }
           } else {
             // Extract error message from various possible fields
             const errorMsg = errorData?.error || errorData?.message || errorData?.detail || errorData?.error_message
@@ -632,32 +684,82 @@ export default function EnhancedPosterGeneratorWithBranding() {
           }
         } catch (jsonError) {
           // If JSON parsing fails, try as text
-          console.error('Failed to parse error response as JSON:', jsonError)
+          if (!isLimitError) {
+            console.error('Failed to parse error response as JSON:', jsonError)
+          }
           try {
             const responseText = await clonedResponse.text()
-            console.error('Error response text (raw):', responseText)
+            
+            if (!isLimitError) {
+              console.error('Error response text (raw):', responseText)
+            }
             
             if (responseText && responseText.trim()) {
               // Try to parse as JSON one more time from text
               try {
-                const errorData = JSON.parse(responseText)
+                errorData = JSON.parse(responseText)
                 message = errorData?.error || errorData?.message || errorData?.detail || message
               } catch {
                 // Not JSON, use text as message
                 message = responseText.length > 200 ? responseText.substring(0, 200) + '...' : responseText
               }
             } else {
-              // Empty response - provide helpful message
-              message = `HTTP ${response.status}: Server returned empty response. Check backend logs for details.`
-              console.error('Empty error response received')
+              // Empty response - for 403, assume limit error
+              if (isLimitError) {
+                errorData = {
+                  error: 'You have reached your monthly free limit of 3 posters. Please upgrade or wait until next month.',
+                  limit_type: 'posters',
+                  current_count: 3,
+                  limit: 3
+                }
+                message = errorData.error
+              } else {
+                message = `HTTP ${response.status}: Server returned empty response. Check backend logs for details.`
+                console.error('Empty error response received')
+              }
             }
           } catch {
-            console.error('Failed to read error response')
-            message = `HTTP ${response.status}: Unable to read error response. Check backend logs.`
+            if (!isLimitError) {
+              console.error('Failed to read error response')
+            }
+            if (isLimitError) {
+              errorData = {
+                error: 'You have reached your monthly free limit of 3 posters. Please upgrade or wait until next month.',
+                limit_type: 'posters',
+                current_count: 3,
+                limit: 3
+              }
+              message = errorData.error
+            } else {
+              message = `HTTP ${response.status}: Unable to read error response. Check backend logs.`
+            }
           }
         }
         
-        console.error('Full error message:', message)
+        // Check if this is a limit error (403 with limit_type or message contains limit keywords)
+        if (isLimitError && (errorData?.limit_type || message.includes('monthly free limit') || message.includes('reached your'))) {
+          // Clear error state and show limit popup
+          setError(null)
+          const resetDate = errorData?.reset_date ? new Date(errorData.reset_date).toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric',
+            year: 'numeric'
+          }) : 'next month'
+          
+          setLimitReached({
+            message: message,
+            currentCount: errorData?.current_count ?? errorData?.limit ?? 3,
+            limit: errorData?.limit ?? 3,
+            resetDate: resetDate
+          })
+          setIsGenerating(false)
+          return // Don't throw error, we've handled it with the popup
+        }
+        
+        // Only log non-limit errors
+        if (!isLimitError) {
+          console.error('Full error message:', message)
+        }
         throw new Error(message)
       }
 
@@ -1323,6 +1425,54 @@ export default function EnhancedPosterGeneratorWithBranding() {
           </CardContent>
         </Card>
         </div>
+
+        {/* Limit Reached Dialog */}
+        <Dialog open={!!limitReached} onOpenChange={(open) => !open && setLimitReached(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-full">
+                  <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <DialogTitle className="text-xl">Monthly Limit Reached</DialogTitle>
+              </div>
+              <DialogDescription className="text-base mt-2">
+                {limitReached?.message}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 mt-4">
+              <div className="bg-muted rounded-lg p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Usage this month:</span>
+                  <span className="font-semibold text-foreground">
+                    {limitReached?.currentCount} / {limitReached?.limit}
+                  </span>
+                </div>
+                <div className="w-full bg-background rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-amber-500 h-full transition-all"
+                    style={{ width: `${((limitReached?.currentCount || 0) / (limitReached?.limit || 3)) * 100}%` }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>Limit resets on <span className="font-medium text-foreground">{limitReached?.resetDate}</span></span>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button 
+                onClick={() => setLimitReached(null)}
+                className="w-full sm:w-auto"
+              >
+                Got it
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     )
   } catch (error) {

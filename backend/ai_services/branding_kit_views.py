@@ -13,6 +13,7 @@ from django.conf import settings
 from django.db.models import Q
 from .branding_kit_service import BrandingKitService
 from .models import GeneratedBrandingKit
+from .utils.usage_limits import check_brand_kit_limit, count_user_brand_kits, FREE_BRAND_KIT_LIMIT
 
 logger = logging.getLogger(__name__)
 
@@ -50,36 +51,46 @@ def generate_branding_kit(request):
                 'error': 'Branding kit service not available'
             }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         
+        # Get user and organization from request if available (before generating)
+        user = None
+        organization = None
+        
+        # Check if user is authenticated
+        logger.info(f"Request user: {request.user}, is_authenticated: {getattr(request.user, 'is_authenticated', False)}")
+        
+        if hasattr(request, 'user') and request.user and getattr(request.user, 'is_authenticated', False):
+            user = request.user
+            logger.info(f"Authenticated user: {user.email if hasattr(user, 'email') else user.username}")
+            
+            # Try to get organization from user
+            if hasattr(user, 'organization') and user.organization:
+                organization = user.organization
+                logger.info(f"Found organization from user: {organization}")
+            else:
+                try:
+                    from users.models import CompanyProfile
+                    company_profile = getattr(user, 'company_profile', None)
+                    if company_profile and hasattr(company_profile, 'organization') and company_profile.organization:
+                        organization = company_profile.organization
+                        logger.info(f"Found organization from company profile: {organization}")
+                except Exception as e:
+                    logger.warning(f"Could not get organization: {e}")
+        else:
+            logger.warning("No authenticated user found - branding kit will be saved without user association")
+        
+        # Check usage limit before generating
+        can_generate, limit_error = check_brand_kit_limit(user)
+        if not can_generate:
+            logger.warning(f"Brand kit generation blocked - limit reached for user: {user.email if user and hasattr(user, 'email') else 'anonymous'}, current_count: {limit_error.get('current_count', 'unknown')}, limit: {limit_error.get('limit', 'unknown')}")
+            return Response({
+                'success': False,
+                **limit_error
+            }, status=status.HTTP_403_FORBIDDEN)
+        
         # Generate the branding kit
         result = branding_kit_service.generate_branding_kit(prompt, style)
         
         if result.get('success'):
-            # Get user and organization from request if available
-            user = None
-            organization = None
-            
-            # Check if user is authenticated
-            logger.info(f"Request user: {request.user}, is_authenticated: {getattr(request.user, 'is_authenticated', False)}")
-            
-            if hasattr(request, 'user') and request.user and getattr(request.user, 'is_authenticated', False):
-                user = request.user
-                logger.info(f"Authenticated user: {user.email if hasattr(user, 'email') else user.username}")
-                
-                # Try to get organization from user
-                if hasattr(user, 'organization') and user.organization:
-                    organization = user.organization
-                    logger.info(f"Found organization from user: {organization}")
-                else:
-                    try:
-                        from users.models import CompanyProfile
-                        company_profile = getattr(user, 'company_profile', None)
-                        if company_profile and hasattr(company_profile, 'organization') and company_profile.organization:
-                            organization = company_profile.organization
-                            logger.info(f"Found organization from company profile: {organization}")
-                    except Exception as e:
-                        logger.warning(f"Could not get organization: {e}")
-            else:
-                logger.warning("No authenticated user found - branding kit will be saved without user association")
             
             # Save the generated branding kit to database
             try:
@@ -236,6 +247,53 @@ def generate_color_palette(request):
             
     except Exception as e:
         logger.error(f"Error in generate_color_palette: {str(e)}")
+        return Response({
+            'success': False,
+            'error': 'Internal server error'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_usage_status(request):
+    """
+    GET /api/ai/branding-kit/usage/
+    Get current usage status for the authenticated user
+    """
+    try:
+        # Get user from request if authenticated
+        user = None
+        
+        if hasattr(request, 'user') and request.user and getattr(request.user, 'is_authenticated', False):
+            user = request.user
+        
+        if not user:
+            return Response({
+                'success': True,
+                'authenticated': False,
+                'current_count': 0,
+                'limit': FREE_BRAND_KIT_LIMIT,
+                'remaining': FREE_BRAND_KIT_LIMIT
+            }, status=status.HTTP_200_OK)
+        
+        current_count = count_user_brand_kits(user)
+        remaining = max(0, FREE_BRAND_KIT_LIMIT - current_count)
+        
+        from .utils.usage_limits import get_next_month_start
+        next_reset = get_next_month_start()
+        
+        return Response({
+            'success': True,
+            'authenticated': True,
+            'current_count': current_count,
+            'limit': FREE_BRAND_KIT_LIMIT,
+            'remaining': remaining,
+            'reset_date': next_reset.strftime("%Y-%m-%d")
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error getting usage status: {str(e)}")
         return Response({
             'success': False,
             'error': 'Internal server error'
