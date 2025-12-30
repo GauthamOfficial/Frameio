@@ -6,12 +6,18 @@ export async function GET(request: NextRequest) {
   const refreshToken = searchParams.get('refresh');
   const redirectTo = searchParams.get('redirect') || '/dashboard';
 
+  // Get base URL from environment variable or extract from request
+  // Use NEXT_PUBLIC_APP_URL for production, fallback to request origin
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    (typeof request.url !== 'undefined' ? new URL(request.url).origin : 'http://localhost:3000');
+
   if (!accessToken || !refreshToken) {
-    return NextResponse.redirect(new URL('/sign-in?error=invalid_tokens', request.url));
+    return NextResponse.redirect(new URL('/sign-in?error=invalid_tokens', baseUrl));
   }
 
   // Create response with redirect - add verified parameter to trigger user data refresh
-  const redirectUrl = new URL(redirectTo, request.url);
+  // Use baseUrl to ensure redirect goes to production domain, not localhost
+  const redirectUrl = new URL(redirectTo, baseUrl);
   redirectUrl.searchParams.set('verified', 'true');
   const response = NextResponse.redirect(redirectUrl);
 
