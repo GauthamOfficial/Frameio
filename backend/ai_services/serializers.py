@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     AIProvider, AIGenerationRequest, AIUsageQuota, 
-    AITemplate, AIGenerationHistory
+    AITemplate, AIGenerationHistory, PosterTemplate
 )
 from .scheduling_models import ScheduledPost
 
@@ -139,6 +139,49 @@ class AITemplatePublicSerializer(serializers.ModelSerializer):
             'id', 'name', 'description', 'category', 'usage_count', 'created_at'
         ]
         read_only_fields = ['id', 'name', 'description', 'category', 'usage_count', 'created_at']
+
+
+class PosterTemplateSerializer(serializers.ModelSerializer):
+    """Serializer for Poster Template model"""
+    thumbnail_url = serializers.SerializerMethodField()
+    created_by_email = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PosterTemplate
+        fields = [
+            'id', 'organization', 'created_by', 'created_by_email', 'name', 'description', 
+            'prompt', 'thumbnail', 'thumbnail_url', 'category', 'subcategory', 
+            'audience', 'offer', 'is_active', 'is_featured', 
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'organization', 'created_by', 'created_by_email', 'created_at', 'updated_at']
+    
+    def get_thumbnail_url(self, obj):
+        """Return full URL for thumbnail if available"""
+        if obj.thumbnail:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.thumbnail.url)
+            return obj.thumbnail.url
+        return None
+    
+    def get_created_by_email(self, obj):
+        """Return created_by email if available"""
+        if obj.created_by:
+            return obj.created_by.email
+        return None
+    
+    def validate_prompt(self, value):
+        """Validate prompt is not empty"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Prompt cannot be empty")
+        return value.strip()
+    
+    def validate_audience(self, value):
+        """Validate audience is a list"""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Audience must be a list")
+        return value
 
 
 class AIGenerationHistorySerializer(serializers.ModelSerializer):

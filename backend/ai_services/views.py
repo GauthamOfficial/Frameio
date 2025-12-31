@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, Count, Avg, Sum
 from django.utils import timezone
 from datetime import timedelta
@@ -8,16 +9,18 @@ import logging
 
 from .models import (
     AIProvider, AIGenerationRequest, AIUsageQuota, 
-    AITemplate, AIGenerationHistory
+    AITemplate, AIGenerationHistory, PosterTemplate
 )
 from .serializers import (
     AIProviderSerializer, AIGenerationRequestSerializer, 
     AIGenerationRequestCreateSerializer, AIUsageQuotaSerializer,
     AITemplateSerializer, AITemplatePublicSerializer,
-    AIGenerationHistorySerializer, AIAnalyticsSerializer
+    AIGenerationHistorySerializer, AIAnalyticsSerializer,
+    PosterTemplateSerializer
 )
 from organizations.middleware import get_current_organization
 from .services import AIGenerationService
+from users.permissions import IsAuthenticatedOrAdmin
 # Removed image generation imports
 
 logger = logging.getLogger(__name__)
@@ -146,6 +149,73 @@ class AITemplateViewSet(viewsets.ModelViewSet):
             raise ValueError("No organization context available")
         
         serializer.save(organization=organization)
+
+
+class NoPagination(PageNumberPagination):
+    """Custom pagination class that returns all results"""
+    page_size = None
+
+
+class PosterTemplateViewSet(viewsets.ModelViewSet):
+    """ViewSet for Poster Templates - Admin or Authenticated users"""
+    serializer_class = PosterTemplateSerializer
+    permission_classes = [IsAuthenticatedOrAdmin]
+    pagination_class = NoPagination  # Return all templates without pagination
+    
+    def get_queryset(self):
+        """Return templates for current organization and global templates (organization=None)"""
+        try:
+            organization = get_current_organization()
+        except Exception:
+            # If get_current_organization fails, try to get from request
+            organization = getattr(self.request, 'organization', None)
+        
+        # Return all templates (global + organization-specific) if organization is available
+        # Otherwise return global templates only
+        if organization:
+            queryset = PosterTemplate.objects.filter(
+                Q(organization=organization) | Q(organization__isnull=True)
+            )
+        else:
+            # If no organization context, return global templates only
+            queryset = PosterTemplate.objects.filter(organization__isnull=True)
+        
+        # Filter by active status if provided
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+        
+        # Filter by category if provided
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        
+        # Filter by featured if provided
+        is_featured = self.request.query_params.get('is_featured')
+        if is_featured is not None:
+            queryset = queryset.filter(is_featured=is_featured.lower() == 'true')
+        
+        return queryset.order_by('-is_featured', '-created_at')
+    
+    def perform_create(self, serializer):
+        """Create template with current organization and user"""
+        try:
+            organization = get_current_organization()
+        except Exception:
+            # If get_current_organization fails, try to get from request
+            organization = getattr(self.request, 'organization', None)
+        
+        serializer.save(
+            organization=organization,
+            created_by=self.request.user if self.request.user.is_authenticated else None
+        )
+    
+    def perform_update(self, serializer):
+        """Update template - ensure organization context is maintained"""
+        # Don't allow changing organization on update
+        if 'organization' in serializer.validated_data:
+            del serializer.validated_data['organization']
+        serializer.save()
 
 
 class AIAnalyticsViewSet(viewsets.ViewSet):

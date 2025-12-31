@@ -11,6 +11,7 @@ import {
   LogOut,
   Shield,
   X,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
@@ -25,6 +26,11 @@ const navItems = [
     title: 'Users',
     href: '/admin/users',
     icon: Users,
+  },
+  {
+    title: 'Templates',
+    href: '/admin/templates',
+    icon: FileText,
   },
   {
     title: 'Analytics',

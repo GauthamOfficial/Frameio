@@ -308,3 +308,44 @@ class GeneratedBrandingKit(models.Model):
     
     def __str__(self):
         return f"Branding Kit - {self.prompt[:50]}... ({self.created_at.strftime('%Y-%m-%d')})"
+
+
+class PosterTemplate(models.Model):
+    """Model to store poster templates with prompts and thumbnails"""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='poster_templates', null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_poster_templates', null=True, blank=True)
+    
+    # Template details
+    name = models.CharField(max_length=255, help_text="Template name/title")
+    description = models.TextField(blank=True, help_text="Template description")
+    prompt = models.TextField(help_text="The actual prompt text used for poster generation")
+    
+    # Template image
+    thumbnail = models.ImageField(upload_to='poster_templates/thumbnails/', blank=True, null=True, help_text="Template thumbnail image")
+    
+    # Categorization
+    category = models.CharField(max_length=100, blank=True, help_text="Template category")
+    subcategory = models.CharField(max_length=100, blank=True, help_text="Template subcategory")
+    audience = models.JSONField(default=list, blank=True, help_text="List of target audiences (e.g., ['Men', 'Women', 'Kids'])")
+    offer = models.CharField(max_length=255, blank=True, default="No Offer", help_text="Offer text or 'No Offer'")
+    
+    # Status flags
+    is_active = models.BooleanField(default=True, help_text="Whether template is active and visible")
+    is_featured = models.BooleanField(default=False, help_text="Whether template is featured")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-is_featured', '-created_at']
+        indexes = [
+            models.Index(fields=['organization', 'is_active']),
+            models.Index(fields=['organization', 'category']),
+            models.Index(fields=['is_active', 'is_featured']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.category})"

@@ -76,6 +76,18 @@ export default function EnhancedPosterGeneratorWithBranding() {
     limit: number
     resetDate: string
   } | null>(null)
+  
+  // Template management
+  const [templates, setTemplates] = useState<Array<{
+    id: string
+    name: string
+    description: string
+    prompt: string
+    thumbnail_url: string | null
+    category: string
+    subcategory: string
+  }>>([])
+  const [templatesLoading, setTemplatesLoading] = useState(true)
 
   // Image upload functionality
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
@@ -225,6 +237,66 @@ export default function EnhancedPosterGeneratorWithBranding() {
       textarea.style.height = `${newHeight}px`
     }
   }, [])
+
+  // Fetch templates from API
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        setTemplatesLoading(true)
+        const token = await getToken()
+        const authHeaders: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {}
+        
+        // Multitenancy: pass organization context if available
+        try {
+          const orgSlug = (typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null)
+            || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
+          if (orgSlug) {
+            authHeaders['X-Organization'] = orgSlug
+          }
+          const devOrgId = (typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null)
+            || process.env.NEXT_PUBLIC_DEV_ORG_ID
+          if (devOrgId) {
+            authHeaders['X-Dev-Org-Id'] = devOrgId
+          }
+        } catch {}
+        
+        const response = await fetch(`${API_BASE_URL}/api/ai/poster-templates/?is_active=true`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+          credentials: 'include',
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          // Handle both list and paginated responses
+          const templatesList = Array.isArray(data) ? data : (data.results || [])
+          // Only show featured templates or limit to 4 most recent
+          const featuredTemplates = templatesList
+            .filter((t: any) => t.is_active)
+            .sort((a: any, b: any) => {
+              if (a.is_featured && !b.is_featured) return -1
+              if (!a.is_featured && b.is_featured) return 1
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            })
+            .slice(0, 4)
+          setTemplates(featuredTemplates)
+        } else {
+          console.warn('Failed to fetch templates, using empty list')
+          setTemplates([])
+        }
+      } catch (err) {
+        console.error('Error fetching templates:', err)
+        setTemplates([])
+      } finally {
+        setTemplatesLoading(false)
+      }
+    }
+    
+    fetchTemplates()
+  }, [getToken])
 
   // Read prompt from URL query parameters
   useEffect(() => {
@@ -1124,89 +1196,61 @@ export default function EnhancedPosterGeneratorWithBranding() {
             {/* Template Section */}
             <div className="space-y-2">
               <Label>Templates</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPrompt("Create a stylish product post featuring a dummy model wearing the uploaded white party frock. Set the background in a moody, misty outdoor atmosphere with soft cinematic lighting. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
-                  className="p-2 sm:p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-xs sm:text-sm"
-                  disabled={isGenerating}
-                >
-                  <div className="w-full aspect-[4/5] rounded-md mb-1 sm:mb-2 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src="/Wedding Frock.jpg" 
-                      alt="Wedding Frock" 
-                      className="w-full h-full object-cover"
-                    />
+              {templatesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : templates.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                    {templates.map((template) => (
+                      <button
+                        key={template.id}
+                        type="button"
+                        onClick={() => {
+                          setPrompt(template.prompt)
+                          setTimeout(() => adjustTextareaHeight(), 100)
+                        }}
+                        className="p-2 sm:p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-xs sm:text-sm"
+                        disabled={isGenerating}
+                      >
+                        <div className="w-full aspect-[4/5] rounded-md mb-1 sm:mb-2 overflow-hidden bg-muted">
+                          {template.thumbnail_url ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img 
+                              src={template.thumbnail_url} 
+                              alt={template.name} 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="font-medium text-gray-700 text-xs sm:text-sm line-clamp-1">{template.name}</div>
+                        {template.subcategory && (
+                          <div className="text-gray-500 text-xs mt-1 hidden sm:block line-clamp-1">{template.subcategory}</div>
+                        )}
+                      </button>
+                    ))}
                   </div>
-                  <div className="font-medium text-gray-700 text-xs sm:text-sm">Wedding Frock</div>
-                  <div className="text-gray-500 text-xs mt-1 hidden sm:block">Moody outdoor style</div>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setPrompt("Create a stylish product post featuring a real man wearing the uploaded shirt. Set the background with cinematic buildings and dramatic lighting for a modern, urban look. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
-                  className="p-2 sm:p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-xs sm:text-sm"
-                  disabled={isGenerating}
-                >
-                  <div className="w-full aspect-[4/5] rounded-md mb-1 sm:mb-2 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src="/Men Shirt.png" 
-                      alt="Men's Shirt" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="font-medium text-gray-700 text-xs sm:text-sm">Men&apos;s Denim Shirt</div>
-                  <div className="text-gray-500 text-xs mt-1 hidden sm:block">Urban Casual Style</div>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setPrompt("Create a stylish product post featuring a dummy model wearing the uploaded saree. Set the background in a premium, elegant environment with cinematic lighting for a luxurious look. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
-                  className="p-2 sm:p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-xs sm:text-sm"
-                  disabled={isGenerating}
-                >
-                  <div className="w-full aspect-[4/5] rounded-md mb-1 sm:mb-2 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src="/Saaree.jpg" 
-                      alt="Elegant Silk Saree" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="font-medium text-gray-700 text-xs sm:text-sm">Elegant Silk Saree</div>
-                  <div className="text-gray-500 text-xs mt-1 hidden sm:block">Premium Luxurious Style</div>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setPrompt("Create a stylish product post featuring a dummy wearing the uploaded men's T-shirt. Set the background at a cinematic premium dress shop. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.")}
-                  className="p-2 sm:p-3 text-center border border-gray-200 rounded-md hover:border-gray-300 hover:bg-gray-50 transition-colors text-xs sm:text-sm"
-                  disabled={isGenerating}
-                >
-                  <div className="w-full aspect-[4/5] rounded-md mb-1 sm:mb-2 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src="/T_shirt.png" 
-                      alt="Men's Casual T-shirt" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="font-medium text-gray-700 text-xs sm:text-sm">Men&apos;s Casual T-shirt</div>
-                  <div className="text-gray-500 text-xs mt-1 hidden sm:block">Premium dress shop style</div>
-                </button>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push('/dashboard/templates')}
-                className="w-full mt-2 text-xs sm:text-sm"
-                disabled={isGenerating}
-              >
-                More Templates
-                <ExternalLink className="ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-              </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push('/dashboard/templates')}
+                    className="w-full mt-2 text-xs sm:text-sm"
+                    disabled={isGenerating}
+                  >
+                    More Templates
+                    <ExternalLink className="ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-4 text-sm text-muted-foreground">
+                  No templates available. Check back later!
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

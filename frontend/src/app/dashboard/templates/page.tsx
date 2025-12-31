@@ -6,18 +6,21 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Sparkles } from "lucide-react"
+import { Search, Sparkles, AlertCircle } from "lucide-react"
 import Image from "next/image"
 
 interface Template {
   id: string
-  title: string
+  name: string
+  description: string
   category: string
   subcategory: string
   audience: string[]
   offer: string
-  image: string
-  caption: string
+  thumbnail_url: string | null
+  prompt: string
+  is_active: boolean
+  is_featured: boolean
 }
 
 export default function TemplatesPage() {
@@ -28,16 +31,70 @@ export default function TemplatesPage() {
   const [selectedAudience, setSelectedAudience] = useState<string>("All")
   const [selectedOffer, setSelectedOffer] = useState<string>("All")
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Load templates from JSON file
+  // Load templates from API
   useEffect(() => {
     const loadTemplates = async () => {
       try {
-        const response = await fetch("/Templates/prompts.txt")
+        setLoading(true)
+        setError(null)
+        
+        // Get auth token if available
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        const authHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+        }
+        if (token) {
+          authHeaders['Authorization'] = `Bearer ${token}`
+        }
+        
+        // Add organization context if available
+        try {
+          const orgSlug = typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null
+          if (orgSlug) {
+            authHeaders['X-Organization'] = orgSlug
+          }
+        } catch {}
+        
+        const API_BASE_URL = process.env.NODE_ENV === 'development'
+          ? 'http://localhost:8000'
+          : (process.env.NEXT_PUBLIC_API_URL || 'http://13.213.53.199/api')
+        
+        const response = await fetch(`${API_BASE_URL}/api/ai/poster-templates/?is_active=true`, {
+          method: 'GET',
+          headers: authHeaders,
+          credentials: 'include',
+        })
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load templates: ${response.statusText}`)
+        }
+        
         const data = await response.json()
-        setTemplates(data)
-      } catch (error) {
-        console.error("Error loading templates:", error)
+        // Handle both list and paginated responses
+        const templatesList = Array.isArray(data) ? data : (data.results || [])
+        
+        // Transform API response to match expected format
+        const transformedTemplates = templatesList.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          description: t.description || '',
+          category: t.category || '',
+          subcategory: t.subcategory || '',
+          audience: Array.isArray(t.audience) ? t.audience : [],
+          offer: t.offer || 'No Offer',
+          thumbnail_url: t.thumbnail_url || null,
+          prompt: t.prompt,
+          is_active: t.is_active,
+          is_featured: t.is_featured,
+        }))
+        
+        setTemplates(transformedTemplates)
+      } catch (err) {
+        console.error("Error loading templates:", err)
+        setError(err instanceof Error ? err.message : 'Failed to load templates')
+        setTemplates([])
       } finally {
         setLoading(false)
       }
@@ -47,7 +104,7 @@ export default function TemplatesPage() {
 
   // Get unique categories
   const categories = useMemo(() => {
-    const cats = new Set(templates.map(t => t.category))
+    const cats = new Set(templates.map(t => t.category).filter(Boolean))
     return ["All", ...Array.from(cats).sort()]
   }, [templates])
 
@@ -55,7 +112,8 @@ export default function TemplatesPage() {
   const filteredTemplates = useMemo(() => {
     return templates.filter(template => {
       const matchesSearch = 
-        template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        template.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         template.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         template.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
         template.audience.some(aud => aud.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -83,12 +141,12 @@ export default function TemplatesPage() {
     // Navigate to poster-generator with prompt as query parameter
     try {
       // Use encodeURIComponent to properly encode the prompt
-      const encodedPrompt = encodeURIComponent(template.caption)
+      const encodedPrompt = encodeURIComponent(template.prompt)
       router.push(`/dashboard/poster-generator?prompt=${encodedPrompt}`)
     } catch (error) {
       console.error('Error encoding prompt:', error)
       // Fallback: try to navigate with a basic encoding
-      const safePrompt = template.caption.replace(/\s+/g, '+')
+      const safePrompt = template.prompt.replace(/\s+/g, '+')
       router.push(`/dashboard/poster-generator?prompt=${safePrompt}`)
     }
   }
@@ -99,6 +157,18 @@ export default function TemplatesPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading templates...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8 lg:space-y-12">
+        <div className="text-center py-12">
+          <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Error Loading Templates</h2>
+          <p className="text-muted-foreground">{error}</p>
         </div>
       </div>
     )
@@ -211,37 +281,54 @@ export default function TemplatesPage() {
             >
               <CardContent className="p-0">
                 <div className="aspect-[4/3] relative bg-muted rounded-t-lg overflow-hidden">
-                  <Image
-                    src={`/Templates/${template.image}`}
-                    alt={template.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    unoptimized
-                  />
+                  {template.thumbnail_url ? (
+                    <Image
+                      src={template.thumbnail_url}
+                      alt={template.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <Sparkles className="h-12 w-12 text-gray-400" />
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center">
                     <Sparkles className="h-8 w-8 text-white opacity-0 hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-foreground line-clamp-1">{template.title}</h3>
-                    <Badge variant="outline" className="text-xs">
-                      {template.category}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {template.audience.map((aud, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {aud}
+                    <h3 className="font-semibold text-foreground line-clamp-1">{template.name}</h3>
+                    {template.category && (
+                      <Badge variant="outline" className="text-xs">
+                        {template.category}
                       </Badge>
-                    ))}
+                    )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      {template.subcategory}
+                  {template.description && (
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                      {template.description}
                     </p>
-                    {template.offer !== "No Offer" && (
+                  )}
+                  {template.audience && template.audience.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {template.audience.map((aud, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {aud}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    {template.subcategory && (
+                      <p className="text-xs text-muted-foreground">
+                        {template.subcategory}
+                      </p>
+                    )}
+                    {template.offer && template.offer !== "No Offer" && (
                       <Badge className="text-xs bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700 hover:bg-orange-500/20">
                         {template.offer}
                       </Badge>

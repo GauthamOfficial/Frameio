@@ -9,6 +9,7 @@ router.register(r'providers', views.AIProviderViewSet, basename='ai-provider')
 router.register(r'generation-requests', views.AIGenerationRequestViewSet, basename='ai-generation-request')
 router.register(r'quotas', views.AIUsageQuotaViewSet, basename='ai-quota')
 router.register(r'templates', views.AITemplateViewSet, basename='ai-template')
+router.register(r'poster-templates', views.PosterTemplateViewSet, basename='poster-template')
 router.register(r'analytics', views.AIAnalyticsViewSet, basename='ai-analytics')
 
 # Text generation and content analysis endpoints
