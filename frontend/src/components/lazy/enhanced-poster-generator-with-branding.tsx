@@ -273,22 +273,27 @@ export default function EnhancedPosterGeneratorWithBranding() {
           const data = await response.json()
           // Handle both list and paginated responses
           const templatesList = Array.isArray(data) ? data : (data.results || [])
+          console.log(`[Templates] Loaded ${templatesList.length} templates from API`)
+          
           // Only show featured templates or limit to 4 most recent
           const featuredTemplates = templatesList
             .filter((t: any) => t.is_active)
             .sort((a: any, b: any) => {
               if (a.is_featured && !b.is_featured) return -1
               if (!a.is_featured && b.is_featured) return 1
-              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
             })
             .slice(0, 4)
+          
+          console.log(`[Templates] Showing ${featuredTemplates.length} featured templates`)
           setTemplates(featuredTemplates)
         } else {
-          console.warn('Failed to fetch templates, using empty list')
+          const errorText = await response.text().catch(() => 'Unknown error')
+          console.warn(`[Templates] Failed to fetch templates (${response.status}):`, errorText)
           setTemplates([])
         }
       } catch (err) {
-        console.error('Error fetching templates:', err)
+        console.error('[Templates] Error fetching templates:', err)
         setTemplates([])
       } finally {
         setTemplatesLoading(false)

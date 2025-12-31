@@ -81,6 +81,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for User model."""
+    has_active_subscription = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -89,28 +90,48 @@ class UserSerializer(serializers.ModelSerializer):
             'is_active', 'is_staff', 'is_superuser', 'date_joined',
             'avatar', 'phone_number', 'bio', 'location', 'website',
             'timezone', 'language', 'theme', 'is_verified', 'last_active',
+            'subscription_expires_at', 'subscription_plan', 'has_active_subscription',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'date_joined', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'date_joined', 'created_at', 'updated_at', 'has_active_subscription']
+    
+    def get_has_active_subscription(self, obj):
+        """Return whether user has an active subscription."""
+        return getattr(obj, 'has_active_subscription', False)
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating User model."""
+    has_active_subscription = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
             'first_name', 'last_name', 'avatar', 'phone_number',
-            'bio', 'location', 'website', 'timezone', 'language', 'theme'
+            'bio', 'location', 'website', 'timezone', 'language', 'theme',
+            'subscription_expires_at', 'subscription_plan', 'has_active_subscription'
         ]
+        read_only_fields = ['has_active_subscription']
+    
+    def get_has_active_subscription(self, obj):
+        """Return whether user has an active subscription."""
+        return getattr(obj, 'has_active_subscription', False)
 
 
 class UserListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for listing users."""
+    has_active_subscription = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_active']
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name', 'is_active',
+            'subscription_expires_at', 'subscription_plan', 'has_active_subscription'
+        ]
+    
+    def get_has_active_subscription(self, obj):
+        """Return whether user has an active subscription."""
+        return getattr(obj, 'has_active_subscription', False)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

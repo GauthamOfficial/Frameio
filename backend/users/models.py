@@ -36,6 +36,23 @@ class User(AbstractUser):
     is_verified = models.BooleanField(default=False)
     last_active = models.DateTimeField(blank=True, null=True)
     
+    # Subscription and payment tracking
+    subscription_expires_at = models.DateTimeField(
+        blank=True, 
+        null=True,
+        help_text="When the user's paid subscription expires. If set and in the future, user has unlimited access."
+    )
+    subscription_plan = models.CharField(
+        max_length=50,
+        choices=[
+            ('free', 'Free'),
+            ('monthly', 'Monthly'),
+            ('yearly', 'Yearly'),
+        ],
+        default='free',
+        blank=True
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -63,6 +80,13 @@ class User(AbstractUser):
             is_active=True
         ).first()
         return active_membership.organization if active_membership else None
+    
+    @property
+    def has_active_subscription(self):
+        """Check if user has an active paid subscription."""
+        if not self.subscription_expires_at:
+            return False
+        return timezone.now() < self.subscription_expires_at
     
     def update_last_active(self):
         """Update the user's last active timestamp."""

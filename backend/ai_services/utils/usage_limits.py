@@ -141,6 +141,10 @@ def check_poster_limit(user: Optional[User]) -> Tuple[bool, Dict]:
             "reset_date": next_reset.strftime("%Y-%m-%d")
         }
     
+    # Check if user has active paid subscription - bypass limits if active
+    if getattr(user, 'has_active_subscription', False):
+        return True, {}
+    
     current_count = count_user_posters(user)
     
     # Allow generation if current count is less than limit (so they can generate exactly LIMIT times)
@@ -178,6 +182,10 @@ def check_brand_kit_limit(user: Optional[User]) -> Tuple[bool, Dict]:
             "limit": FREE_BRAND_KIT_LIMIT,
             "reset_date": next_reset.strftime("%Y-%m-%d")
         }
+    
+    # Check if user has active paid subscription - bypass limits if active
+    if getattr(user, 'has_active_subscription', False):
+        return True, {}
     
     current_count = count_user_brand_kits(user)
     

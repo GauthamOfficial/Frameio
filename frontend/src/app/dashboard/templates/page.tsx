@@ -68,10 +68,13 @@ export default function TemplatesPage() {
         })
         
         if (!response.ok) {
-          throw new Error(`Failed to load templates: ${response.statusText}`)
+          const errorText = await response.text().catch(() => response.statusText)
+          console.error(`[Templates Page] API error (${response.status}):`, errorText)
+          throw new Error(`Failed to load templates: ${response.status} ${errorText}`)
         }
         
         const data = await response.json()
+        console.log(`[Templates Page] Received ${Array.isArray(data) ? data.length : (data.results?.length || 0)} templates`)
         // Handle both list and paginated responses
         const templatesList = Array.isArray(data) ? data : (data.results || [])
         

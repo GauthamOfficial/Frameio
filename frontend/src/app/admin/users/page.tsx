@@ -158,6 +158,9 @@ export default function AdminUsersPage() {
         signupDate: du.date_joined ? new Date(du.date_joined).toLocaleDateString() : 'N/A',
         lastActivity: du.last_login ? new Date(du.last_login).toLocaleDateString() : 'Never',
         status: du.is_active ? 'active' : 'inactive',
+        subscription_expires_at: du.subscription_expires_at || null,
+        subscription_plan: du.subscription_plan || 'free',
+        has_active_subscription: du.has_active_subscription || false,
       }));
 
       console.log('[Admin Users] Loaded users:', transformedUsers.length);
@@ -204,17 +207,26 @@ export default function AdminUsersPage() {
   const handleSaveUser = async (updatedUser: User) => {
     try {
       // Use Next.js API proxy route that handles admin authentication
+      const nameParts = updatedUser.name.split(' ');
+      const requestBody: any = {
+        first_name: nameParts[0] || updatedUser.name,
+        last_name: nameParts.slice(1).join(' ') || '',
+      };
+      
+      // Include subscription fields if they exist
+      if ('subscription_expires_at' in updatedUser) {
+        requestBody.subscription_expires_at = updatedUser.subscription_expires_at;
+      }
+      if ('subscription_plan' in updatedUser) {
+        requestBody.subscription_plan = updatedUser.subscription_plan;
+      }
+      
       const response = await fetch(`/api/admin/users/${updatedUser.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          first_name: updatedUser.name.split(' ')[0] || updatedUser.name,
-          last_name: updatedUser.name.split(' ').slice(1).join(' ') || '',
-          // Note: email and status updates may require different endpoints
-          // This updates basic user profile fields
-        }),
+        body: JSON.stringify(requestBody),
         credentials: 'include',
       });
 
@@ -222,6 +234,14 @@ export default function AdminUsersPage() {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || errorData.detail || errorData.message || `Failed to update user: ${response.statusText}`);
       }
+
+      const updatedData = await response.json().catch(() => ({}));
+      console.log('[Admin Users] User updated, response:', updatedData);
+      console.log('[Admin Users] Subscription data:', {
+        expires_at: updatedData.subscription_expires_at,
+        plan: updatedData.subscription_plan,
+        has_active: updatedData.has_active_subscription
+      });
 
       // Reload users to get fresh data
       await loadUsers();

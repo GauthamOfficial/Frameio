@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny
 from django.db.models import Q, Count, Avg, Sum
 from django.utils import timezone
 from datetime import timedelta
@@ -157,10 +158,17 @@ class NoPagination(PageNumberPagination):
 
 
 class PosterTemplateViewSet(viewsets.ModelViewSet):
-    """ViewSet for Poster Templates - Admin or Authenticated users"""
+    """ViewSet for Poster Templates - Public read access, authenticated write access"""
     serializer_class = PosterTemplateSerializer
-    permission_classes = [IsAuthenticatedOrAdmin]
     pagination_class = NoPagination  # Return all templates without pagination
+    
+    def get_permissions(self):
+        """Allow public read access, require authentication for write operations"""
+        if self.action in ['list', 'retrieve']:
+            # Allow anyone to view templates
+            return [AllowAny()]
+        # Require authentication for create, update, delete
+        return [IsAuthenticatedOrAdmin()]
     
     def get_queryset(self):
         """Return templates for current organization and global templates (organization=None)"""

@@ -21,6 +21,9 @@ export interface User {
   signupDate: string;
   lastActivity: string;
   status: 'active' | 'inactive' | 'suspended';
+  subscription_expires_at?: string | null;
+  subscription_plan?: 'free' | 'monthly' | 'yearly' | string;
+  has_active_subscription?: boolean;
 }
 
 interface UserTableProps {
@@ -53,6 +56,18 @@ export function UserTable({ users, onView, onEdit, onDelete }: UserTableProps) {
     }
   };
 
+  const formatSubscriptionStatus = (user: User) => {
+    if (user.has_active_subscription && user.subscription_expires_at) {
+      const expiresAt = new Date(user.subscription_expires_at);
+      const daysUntilExpiry = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysUntilExpiry <= 7) {
+        return { text: `Expires in ${daysUntilExpiry}d`, color: 'bg-yellow-100 text-yellow-800' };
+      }
+      return { text: 'Active', color: 'bg-blue-100 text-blue-800' };
+    }
+    return { text: 'Free', color: 'bg-gray-100 text-gray-600' };
+  };
+
   return (
     <div className="space-y-4">
       {/* Desktop Table View */}
@@ -66,6 +81,7 @@ export function UserTable({ users, onView, onEdit, onDelete }: UserTableProps) {
               <TableHead>Signup Date</TableHead>
               <TableHead>Last Activity</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Subscription</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -80,6 +96,11 @@ export function UserTable({ users, onView, onEdit, onDelete }: UserTableProps) {
                 <TableCell>
                   <Badge className={getStatusColor(user.status)}>
                     {user.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className={formatSubscriptionStatus(user).color}>
+                    {formatSubscriptionStatus(user).text}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -148,6 +169,12 @@ export function UserTable({ users, onView, onEdit, onDelete }: UserTableProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Last Activity</p>
                 <p className="font-medium">{user.lastActivity}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Subscription</p>
+                <Badge className={formatSubscriptionStatus(user).color}>
+                  {formatSubscriptionStatus(user).text}
+                </Badge>
               </div>
             </div>
 
