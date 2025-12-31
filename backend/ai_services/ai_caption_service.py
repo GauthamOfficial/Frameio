@@ -112,33 +112,23 @@ class AICaptionService:
             try:
                 from users.models import CompanyProfile
                 company_profile = getattr(user, 'company_profile', None)
-                logger.info(f"Company profile found: {company_profile is not None}")
-                if company_profile:
-                    logger.info(f"Company profile complete: {company_profile.has_complete_profile}")
-                    if company_profile.has_complete_profile:
-                        company_name = company_profile.company_name or ""
-                        contact_dict = company_profile.get_contact_info() or {}
-                        logger.info(f"Contact dict: {contact_dict}")
-                        
-                        # Format contact information properly
-                        contact_details = []
-                        if contact_dict.get('whatsapp'):
-                            contact_details.append(f"📱 WhatsApp: {contact_dict['whatsapp']}")
-                        if contact_dict.get('email'):
-                            contact_details.append(f"✉️ Email: {contact_dict['email']}")
-                        if contact_dict.get('facebook'):
-                            contact_details.append(f"📘 Facebook: {contact_dict['facebook']}")
-                        
-                        contact_info = "\n".join(contact_details)
-                        logger.info(f"Retrieved contact info for caption - Company: {company_name}, Contact: {contact_info}")
-                    else:
-                        logger.warning(f"Company profile incomplete for user {user.id}")
-                else:
-                    logger.warning(f"No company profile found for user {user.id}")
+                if company_profile and company_profile.has_complete_profile:
+                    company_name = company_profile.company_name or ""
+                    contact_dict = company_profile.get_contact_info() or {}
+                    
+                    # Format contact information properly
+                    contact_details = []
+                    if contact_dict.get('whatsapp'):
+                        contact_details.append(f"📱 WhatsApp: {contact_dict['whatsapp']}")
+                    if contact_dict.get('email'):
+                        contact_details.append(f"✉️ Email: {contact_dict['email']}")
+                    if contact_dict.get('facebook'):
+                        contact_details.append(f"📘 Facebook: {contact_dict['facebook']}")
+                    
+                    contact_info = "\n".join(contact_details)
+                    logger.info(f"Retrieved contact info for caption: {contact_info}")
             except Exception as e:
-                logger.error(f"Error getting contact info: {e}", exc_info=True)
-        else:
-            logger.warning("No user provided for contact details")
+                logger.warning(f"Error getting contact info: {e}")
         
         return contact_info, company_name
     
@@ -228,19 +218,11 @@ class AICaptionService:
                 generated_text, include_hashtags, include_emoji
             )
             
-            # Append contact details to full_caption if available
+            # Append contact details to full_caption if available and not already included
             if contact_info and company_name:
                 contact_text = f"\n\nCompany: {company_name}\n{contact_info}"
-                # Get the current full_caption or use main_text as fallback
-                current_full_caption = structured_caption.get('full_caption', '')
-                if not current_full_caption:
-                    current_full_caption = structured_caption.get('main_text', '')
-                # Always append contact details at the end
-                if current_full_caption:
-                    structured_caption['full_caption'] = (current_full_caption + contact_text).strip()
-                else:
-                    structured_caption['full_caption'] = contact_text.strip()
-                logger.info(f"Added contact details to product caption: {contact_text[:50]}...")
+                if contact_text not in structured_caption.get('full_caption', ''):
+                    structured_caption['full_caption'] = (structured_caption.get('full_caption', '') + contact_text).strip()
             
             logger.info(f"Product caption generated successfully for: {product_name}")
             return {
@@ -436,19 +418,12 @@ class AICaptionService:
                 generated_text, include_hashtags, include_emoji
             )
             
-            # Append contact details to full_caption if available
+            # Append contact details to full_caption if available and not already included
             if contact_info and company_name:
                 contact_text = f"\n\nCompany: {company_name}\n{contact_info}"
-                # Get the current full_caption or use main_text as fallback
-                current_full_caption = structured_caption.get('full_caption', '')
-                if not current_full_caption:
-                    current_full_caption = structured_caption.get('main_text', '')
-                # Always append contact details at the end
-                if current_full_caption:
-                    structured_caption['full_caption'] = (current_full_caption + contact_text).strip()
-                else:
-                    structured_caption['full_caption'] = contact_text.strip()
-                logger.info(f"Added contact details to social media caption: {contact_text[:50]}...")
+                full_caption = structured_caption.get('full_caption', '')
+                if contact_text not in full_caption and company_name not in full_caption:
+                    structured_caption['full_caption'] = (full_caption + contact_text).strip()
             
             logger.info(f"Social media caption generated successfully for {platform}")
             return {

@@ -1341,7 +1341,8 @@ export default function EnhancedPosterGeneratorWithBranding() {
                     <div className="space-y-4 sm:space-y-6">
                         {/* AI Generated Caption and Hashtags as Single Text */}
                         {(result.caption || result.full_caption || result.hashtags) ? (() => {
-                          const parsedCaption = parseCaption(result.caption || result.full_caption || '')
+                          // Prioritize full_caption over caption since full_caption includes contact details
+                          const parsedCaption = parseCaption(result.full_caption || result.caption || '')
                           const allHashtags = [...(result.hashtags || []), ...(parsedCaption.hashtags || [])]
                           const uniqueHashtags = [...new Set(allHashtags)]
                           
@@ -1434,10 +1435,12 @@ export default function EnhancedPosterGeneratorWithBranding() {
                 <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-full">
                   <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                 </div>
-                <DialogTitle className="text-xl">Monthly Limit Reached</DialogTitle>
+                <DialogTitle>
+                  <span className="text-xl">Monthly Limit Reached</span>
+                </DialogTitle>
               </div>
-              <DialogDescription className="text-base mt-2">
-                {limitReached?.message}
+              <DialogDescription>
+                <span className="text-base mt-2 block">{limitReached?.message}</span>
               </DialogDescription>
             </DialogHeader>
             

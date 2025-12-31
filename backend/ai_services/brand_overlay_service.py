@@ -57,7 +57,7 @@ class BrandOverlayService:
             # Convert to RGBA for transparency support
             poster_image = poster_image.convert("RGBA")
             
-            # Add logo overlay (optional - won't fail if logo is missing)
+            # Add logo overlay (required for branding)
             logo_metadata = None
             logo_added = False
             if company_profile.logo:
@@ -72,30 +72,16 @@ class BrandOverlayService:
                     logger.warning(f"Logo overlay failed but continuing: {logo_error}")
                     logo_added = False
             
-            # Add contact information overlay (required for branding)
-            contact_info = company_profile.get_contact_info()
+            # Contact information overlay removed - only logo is needed
             contact_metadata = None
             contact_added = False
-            if contact_info:
-                try:
-                    poster_image, contact_metadata = self._add_contact_overlay(poster_image, contact_info, company_profile)
-                    contact_added = contact_metadata is not None
-                    if contact_added:
-                        logger.info("✅ Contact info overlay added successfully")
-                    else:
-                        logger.warning("⚠️ Contact info overlay failed")
-                except Exception as contact_error:
-                    logger.error(f"Contact info overlay failed: {contact_error}")
-                    contact_added = False
-            else:
-                logger.warning("⚠️ No contact information available for overlay")
             
-            # If neither logo nor contact info was added, this is an error
-            if not logo_added and not contact_added:
-                logger.error("❌ Failed to add both logo and contact info - branding not applied")
+            # Only require logo to be added (contact info is optional/removed)
+            if not logo_added:
+                logger.error("❌ Failed to add logo - branding not applied")
                 return {
                     "status": "error",
-                    "message": "Failed to add logo and contact information overlays",
+                    "message": "Failed to add logo overlay",
                     "image_path": poster_path,
                     "image_url": default_storage.url(poster_path),
                     "branding_applied": False
