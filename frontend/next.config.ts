@@ -2,12 +2,22 @@ import type { NextConfig } from "next";
 import path from "path";
 
 // Get API base URL from environment, with fallback for development
+// Priority: NEXT_PUBLIC_API_URL env var > NEXT_PUBLIC_API_BASE_URL > development localhost > production fallback
 const getApiBaseUrl = () => {
-  if (process.env.NODE_ENV === 'development') {
-    return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  // Always prioritize NEXT_PUBLIC_API_URL if set (for production deployments)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
   }
-  // Production: use NEXT_PUBLIC_API_URL or fallback to EC2
-  return process.env.NEXT_PUBLIC_API_URL || 'http://13.213.53.199/api';
+  // Then check NEXT_PUBLIC_API_BASE_URL
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  // Fallback based on NODE_ENV
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000';
+  }
+  // Production fallback
+  return 'http://13.213.53.199/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

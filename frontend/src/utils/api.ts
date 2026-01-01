@@ -12,10 +12,12 @@ interface LimitError extends Error {
 }
 
 // Determine API base URL based on environment
+// Priority: NEXT_PUBLIC_API_URL env var > development localhost > production fallback
 export const API_BASE_URL = 
-  process.env.NODE_ENV === 'development'
+  process.env.NEXT_PUBLIC_API_URL || 
+  (process.env.NODE_ENV === 'development'
     ? 'http://localhost:8000'
-    : (process.env.NEXT_PUBLIC_API_URL || 'http://13.213.53.199/api');
+    : 'http://13.213.53.199/api');
 
 /**
  * Helper function to build full API URLs, handling /api prefix correctly
@@ -381,17 +383,19 @@ export function getFullUrl(path: string): string {
   
   // Media files are served directly by nginx, not through API
   if (path.startsWith('/media/')) {
-    const baseUrl = process.env.NODE_ENV === 'development'
-      ? 'http://localhost:8000'
-      : (process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://13.213.53.199');
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
+      (process.env.NODE_ENV === 'development'
+        ? 'http://localhost:8000'
+        : 'http://13.213.53.199');
     return `${baseUrl}${path}`;
   }
   
   // Static files are also served directly
   if (path.startsWith('/static/')) {
-    const baseUrl = process.env.NODE_ENV === 'development'
-      ? 'http://localhost:8000'
-      : (process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://13.213.53.199');
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
+      (process.env.NODE_ENV === 'development'
+        ? 'http://localhost:8000'
+        : 'http://13.213.53.199');
     return `${baseUrl}${path}`;
   }
   

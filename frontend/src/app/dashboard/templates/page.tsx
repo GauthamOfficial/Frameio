@@ -71,9 +71,10 @@ export default function TemplatesPage() {
           }
         } catch {}
         
-        const API_BASE_URL = process.env.NODE_ENV === 'development'
-          ? 'http://localhost:8000'
-          : (process.env.NEXT_PUBLIC_API_URL || 'http://13.213.53.199/api')
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
+          (process.env.NODE_ENV === 'development'
+            ? 'http://localhost:8000'
+            : 'http://13.213.53.199/api')
         
         const response = await fetch(`${API_BASE_URL}/api/ai/poster-templates/?is_active=true`, {
           method: 'GET',
