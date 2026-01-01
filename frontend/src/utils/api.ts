@@ -12,12 +12,41 @@ interface LimitError extends Error {
 }
 
 // Determine API base URL based on environment
-// Priority: NEXT_PUBLIC_API_URL env var > development localhost > production fallback
-export const API_BASE_URL = 
-  process.env.NEXT_PUBLIC_API_URL || 
-  (process.env.NODE_ENV === 'development'
-    ? 'http://localhost:8000'
-    : 'http://13.213.53.199/api');
+// Priority: NEXT_PUBLIC_API_URL env var > runtime detection > development localhost > production fallback
+function getApiBaseUrl(): string {
+  // First, check for explicit environment variable (highest priority)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Runtime detection: if running in browser and not on localhost, use production URL
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // If not localhost or 127.0.0.1, assume production
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.')) {
+      return 'http://13.213.53.199/api';
+    }
+  }
+  
+  // Fallback to NODE_ENV check
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000';
+  }
+  
+  // Production fallback
+  return 'http://13.213.53.199/api';
+}
+
+export const API_BASE_URL = getApiBaseUrl();
+
+/**
+ * Get base URL without /api suffix (for media/static files)
+ */
+function getBaseUrlWithoutApi(): string {
+  const apiUrl = getApiBaseUrl();
+  // Remove /api suffix if present
+  return apiUrl.replace(/\/api\/?$/, '');
+}
 
 /**
  * Helper function to build full API URLs, handling /api prefix correctly
@@ -383,19 +412,13 @@ export function getFullUrl(path: string): string {
   
   // Media files are served directly by nginx, not through API
   if (path.startsWith('/media/')) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
-      (process.env.NODE_ENV === 'development'
-        ? 'http://localhost:8000'
-        : 'http://13.213.53.199');
+    const baseUrl = getBaseUrlWithoutApi();
     return `${baseUrl}${path}`;
   }
   
   // Static files are also served directly
   if (path.startsWith('/static/')) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
-      (process.env.NODE_ENV === 'development'
-        ? 'http://localhost:8000'
-        : 'http://13.213.53.199');
+    const baseUrl = getBaseUrlWithoutApi();
     return `${baseUrl}${path}`;
   }
   

@@ -71,10 +71,19 @@ export default function TemplatesPage() {
           }
         } catch {}
         
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
-          (process.env.NODE_ENV === 'development'
+        // Runtime detection: if running in browser and not on localhost, use production URL
+        let API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+        if (!API_BASE_URL && typeof window !== 'undefined') {
+          const hostname = window.location.hostname;
+          if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.')) {
+            API_BASE_URL = 'http://13.213.53.199/api';
+          }
+        }
+        if (!API_BASE_URL) {
+          API_BASE_URL = process.env.NODE_ENV === 'development'
             ? 'http://localhost:8000'
-            : 'http://13.213.53.199/api')
+            : 'http://13.213.53.199/api';
+        }
         
         const response = await fetch(`${API_BASE_URL}/api/ai/poster-templates/?is_active=true`, {
           method: 'GET',
