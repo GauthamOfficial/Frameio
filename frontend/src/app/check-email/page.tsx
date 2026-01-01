@@ -57,17 +57,34 @@ function CheckEmailContent() {
           
           // Use server-side API route to set cookies and redirect
           // This ensures cookies are set before redirect happens
-          // Use NEXT_PUBLIC_APP_URL for production (https://frameio.co), fallback to current origin
-          // Redirect to dashboard after email verification
+          // CRITICAL: Always use NEXT_PUBLIC_APP_URL in production, never fallback to window.location.origin
+          // because window.location.origin might be the backend IP (13.213.53.199) instead of the frontend domain
           let frontendUrl = process.env.NEXT_PUBLIC_APP_URL;
-          if (!frontendUrl && typeof window !== 'undefined') {
-            frontendUrl = window.location.origin;
+          
+          // Runtime production detection: check if we're on the production domain
+          const isProductionDomain = typeof window !== 'undefined' && 
+            (window.location.hostname === 'frameio.co' || window.location.hostname.includes('frameio.co'));
+          
+          // If NEXT_PUBLIC_APP_URL is not set, use production URL if on production domain
+          if (!frontendUrl) {
+            if (isProductionDomain) {
+              // We're on production domain - use it
+              frontendUrl = 'https://frameio.co';
+              console.warn('NEXT_PUBLIC_APP_URL not set. Using https://frameio.co as fallback.');
+            } else {
+              // Development fallback
+              frontendUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+            }
           }
-          // Safety check: never use localhost in production
-          if (process.env.NODE_ENV === 'production' && frontendUrl?.includes('localhost')) {
-            console.error('Warning: localhost detected in production redirect. Using current origin instead.');
-            frontendUrl = typeof window !== 'undefined' ? window.location.origin : 'https://frameio.co';
+          
+          // Final safety check: never use localhost or backend IP when on production domain
+          if (isProductionDomain) {
+            if (frontendUrl?.includes('localhost') || frontendUrl?.includes('13.213.53.199')) {
+              console.error('Warning: Invalid URL detected. Using https://frameio.co');
+              frontendUrl = 'https://frameio.co';
+            }
           }
+          
           const redirectUrl = `${frontendUrl}/api/auth/set-tokens?access=${encodeURIComponent(data.access)}&refresh=${encodeURIComponent(data.refresh)}&redirect=/dashboard`
           console.log('Redirecting to:', redirectUrl)
           window.location.href = redirectUrl

@@ -8,14 +8,32 @@ export async function GET(request: NextRequest) {
   const redirectTo = searchParams.get('redirect') || '/dashboard';
 
   // Get base URL from environment variable or extract from request
-  // Use NEXT_PUBLIC_APP_URL for production (e.g., https://frameio.co)
-  // In Next.js API routes, request.url is always defined, so we can safely use it as fallback
-  let baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+  // CRITICAL: In production, always use NEXT_PUBLIC_APP_URL, never fallback to request.url.origin
+  // because request.url.origin might be the backend IP (13.213.53.199) instead of the frontend domain
+  let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
   
-  // Safety check: never use localhost in production
-  if (process.env.NODE_ENV === 'production' && baseUrl.includes('localhost')) {
-    console.error('Warning: localhost detected in production redirect. Using request origin instead.');
-    baseUrl = new URL(request.url).origin;
+  // Runtime production detection: check if request is from production domain
+  const requestOrigin = new URL(request.url).origin;
+  const isProductionDomain = requestOrigin.includes('frameio.co') || 
+    request.headers.get('host')?.includes('frameio.co');
+  
+  if (!baseUrl) {
+    if (isProductionDomain) {
+      // We're on production domain - use it
+      baseUrl = 'https://frameio.co';
+      console.warn('NEXT_PUBLIC_APP_URL not set. Using https://frameio.co as fallback.');
+    } else {
+      // Development fallback
+      baseUrl = requestOrigin;
+    }
+  }
+  
+  // Final safety check: never use localhost or backend IP when on production domain
+  if (isProductionDomain) {
+    if (baseUrl.includes('localhost') || baseUrl.includes('13.213.53.199')) {
+      console.error('Warning: Invalid URL detected. Using https://frameio.co');
+      baseUrl = 'https://frameio.co';
+    }
   }
 
   if (!accessToken || !refreshToken) {

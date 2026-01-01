@@ -236,10 +236,18 @@ def register(request):
             )
             
             # Build verification URL - redirect to frontend page
-            domain_url = settings.DOMAIN_URL or request.build_absolute_uri('/')[:-1]
-            # Frontend URL for verification page
+            # CRITICAL: Use NEXT_PUBLIC_APP_URL for production frontend domain (https://frameio.co)
+            # Never use backend IP or domain_url which might be the backend server
             import os
-            frontend_url = os.getenv('NEXT_PUBLIC_APP_URL', domain_url.replace('/api', ''))
+            frontend_url = os.getenv('NEXT_PUBLIC_APP_URL')
+            if not frontend_url:
+                # Production fallback - use hardcoded production URL
+                if not settings.DEBUG:
+                    frontend_url = 'https://frameio.co'
+                else:
+                    # Development fallback
+                    domain_url = settings.DOMAIN_URL or request.build_absolute_uri('/')[:-1]
+                    frontend_url = domain_url.replace('/api', '')
             verification_link = f"{frontend_url}/check-email?token={token}"
             
             # Send verification email
