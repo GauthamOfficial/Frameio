@@ -1,6 +1,9 @@
 /**
  * Centralized API utility for making requests to the Django backend
- * Automatically switches between localhost (development) and production URL
+ * 
+ * URL Strategy:
+ * - Client-side (browser): Uses relative paths like '/api/...' which are routed through Nginx
+ * - Server-side (SSR): Uses absolute URLs from NEXT_PUBLIC_API_BASE_URL environment variable
  */
 
 interface LimitError extends Error {
@@ -11,36 +14,42 @@ interface LimitError extends Error {
   isLimitError?: boolean;
 }
 
-// Determine API base URL based on environment
-// Priority: NEXT_PUBLIC_API_URL env var > runtime detection > development localhost > production fallback
+/**
+ * Get the API base URL for the current execution context
+ * 
+ * - In browser (client-side): Returns empty string to use relative paths
+ * - In server-side (SSR/build): Returns absolute URL from NEXT_PUBLIC_API_BASE_URL
+ * 
+ * @returns Base URL string (empty for client-side, absolute URL for server-side)
+ */
 function getApiBaseUrl(): string {
-  // First, check for explicit environment variable (highest priority)
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
-  
-  // Runtime detection: if running in browser and not on localhost, use production URL
+  // Client-side: use relative paths (routed through Nginx)
   if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    // If not localhost or 127.0.0.1, assume production
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.')) {
-      return 'http://13.213.53.199/api';
-    }
+    return '';
   }
   
-  // Fallback to NODE_ENV check
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:8000';
+  // Server-side: use absolute URL from environment variable
+  // NEXT_PUBLIC_API_BASE_URL must be set for SSR to work correctly
+  // Example: NEXT_PUBLIC_API_BASE_URL=http://13.213.53.199 (without /api suffix)
+  // For development: NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+  const serverBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (serverBaseUrl) {
+    // Remove trailing slashes
+    return serverBaseUrl.replace(/\/+$/, '');
   }
   
-  // Production fallback
-  return 'http://13.213.53.199/api';
+  // If NEXT_PUBLIC_API_BASE_URL is not set, return empty string
+  // This will cause buildApiUrl to use relative paths, which won't work in SSR
+  // but will work in client-side code. Developers should set NEXT_PUBLIC_API_BASE_URL
+  // for proper SSR support.
+  return '';
 }
 
 export const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Get base URL without /api suffix (for media/static files)
+ * Only used in server-side contexts
  */
 function getBaseUrlWithoutApi(): string {
   const apiUrl = getApiBaseUrl();
@@ -49,9 +58,18 @@ function getBaseUrlWithoutApi(): string {
 }
 
 /**
- * Helper function to build full API URLs, handling /api prefix correctly
+ * Build API URL for the current execution context
+ * 
+ * Client-side (browser):
+ *   - Returns relative paths like '/api/users/auth/login/'
+ *   - These are routed through Nginx to the backend
+ * 
+ * Server-side (SSR):
+ *   - Returns absolute URLs like 'http://13.213.53.199/api/users/auth/login/'
+ *   - Uses NEXT_PUBLIC_API_BASE_URL environment variable
+ * 
  * @param endpoint - API endpoint path (e.g., '/api/users/' or '/users/')
- * @returns Full URL with proper /api handling
+ * @returns Full URL (relative for client, absolute for server)
  */
 export function buildApiUrl(endpoint: string): string {
   // If endpoint is already absolute, return as-is
@@ -59,17 +77,37 @@ export function buildApiUrl(endpoint: string): string {
     return endpoint;
   }
   
-  const baseUrl = API_BASE_URL.replace(/\/+$/, '');
+  // Normalize endpoint to start with /
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   
-  // If baseUrl already ends with /api and endpoint starts with /api/, remove /api from endpoint
-  if (baseUrl.endsWith('/api') && normalizedEndpoint.startsWith('/api/')) {
-    return `${baseUrl}${normalizedEndpoint.replace(/^\/api/, '')}`;
+  // Client-side: return relative path (will be routed through Nginx)
+  if (typeof window !== 'undefined') {
+    // Ensure endpoint starts with /api/
+    if (normalizedEndpoint.startsWith('/api/')) {
+      return normalizedEndpoint;
+    }
+    // If endpoint doesn't start with /api/, add it
+    return `/api${normalizedEndpoint}`;
   }
   
-  // If baseUrl doesn't end with /api but endpoint starts with /api/, use as-is
-  // If baseUrl ends with /api but endpoint doesn't start with /api/, use as-is
-  return `${baseUrl}${normalizedEndpoint}`;
+  // Server-side: build absolute URL
+  const baseUrl = API_BASE_URL;
+  
+  // If baseUrl is empty (shouldn't happen, but handle gracefully)
+  if (!baseUrl) {
+    // Fallback to relative path even in SSR (not ideal, but better than breaking)
+    return normalizedEndpoint.startsWith('/api/') ? normalizedEndpoint : `/api${normalizedEndpoint}`;
+  }
+  
+  // Server-side: construct absolute URL
+  // Handle /api prefix correctly
+  if (normalizedEndpoint.startsWith('/api/')) {
+    // Endpoint already has /api/, append to base URL
+    return `${baseUrl}${normalizedEndpoint}`;
+  } else {
+    // Endpoint doesn't have /api/, add it
+    return `${baseUrl}/api${normalizedEndpoint}`;
+  }
 }
 
 /**
@@ -113,28 +151,11 @@ function getDevHeaders(): Record<string, string> {
 }
 
 /**
- * Build full URL from endpoint path
+ * Build full URL from endpoint path (used by apiGet, apiPost, etc.)
+ * Delegates to buildApiUrl for consistency
  */
 function buildUrl(endpoint: string): string {
-  // If endpoint is already absolute, return as-is
-  if (/^https?:\/\//i.test(endpoint)) {
-    return endpoint;
-  }
-  
-  // Ensure endpoint starts with /
-  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  
-  // Handle /api prefix in base URL
-  const baseUrl = API_BASE_URL.endsWith('/api') 
-    ? API_BASE_URL 
-    : API_BASE_URL;
-  
-  // Avoid double /api when baseUrl already contains /api
-  if (baseUrl.endsWith('/api') && normalizedEndpoint.startsWith('/api/')) {
-    return `${baseUrl}${normalizedEndpoint.replace(/^\/api/, '')}`;
-  }
-  
-  return `${baseUrl}${normalizedEndpoint}`;
+  return buildApiUrl(endpoint);
 }
 
 /**
@@ -401,6 +422,9 @@ export async function apiDelete<T = unknown>(
 /**
  * Helper to get full URL for an image or asset
  * Useful when backend returns relative paths
+ * 
+ * Client-side: Returns relative paths (routed through Nginx)
+ * Server-side: Returns absolute URLs using NEXT_PUBLIC_API_BASE_URL
  */
 export function getFullUrl(path: string): string {
   if (!path) return '';
@@ -410,24 +434,31 @@ export function getFullUrl(path: string): string {
     return path;
   }
   
+  // Client-side: return relative paths
+  if (typeof window !== 'undefined') {
+    // Ensure path starts with /
+    return path.startsWith('/') ? path : `/${path}`;
+  }
+  
+  // Server-side: build absolute URLs for media/static files
+  const baseUrl = getBaseUrlWithoutApi();
+  
   // Media files are served directly by nginx, not through API
-  if (path.startsWith('/media/')) {
-    const baseUrl = getBaseUrlWithoutApi();
-    return `${baseUrl}${path}`;
+  if (path.startsWith('/media/') || path.startsWith('/static/')) {
+    if (baseUrl) {
+      return `${baseUrl}${path}`;
+    }
+    // Fallback to relative if baseUrl not set
+    return path;
   }
   
-  // Static files are also served directly
-  if (path.startsWith('/static/')) {
-    const baseUrl = getBaseUrlWithoutApi();
-    return `${baseUrl}${path}`;
+  // For other paths, use API base URL
+  if (baseUrl) {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${baseUrl}${normalizedPath}`;
   }
   
-  // If path starts with /, it's relative to API base
-  if (path.startsWith('/')) {
-    return `${API_BASE_URL}${path}`;
-  }
-  
-  // Otherwise, assume it's relative to API base
-  return `${API_BASE_URL}/${path}`;
+  // Fallback to relative path
+  return path.startsWith('/') ? path : `/${path}`;
 }
 

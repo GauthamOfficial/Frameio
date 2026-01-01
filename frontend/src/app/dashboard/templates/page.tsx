@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Sparkles, AlertCircle } from "lucide-react"
 import Image from "next/image"
+import { buildApiUrl } from "@/utils/api"
 
 interface Template {
   id: string
@@ -71,21 +72,10 @@ export default function TemplatesPage() {
           }
         } catch {}
         
-        // Runtime detection: if running in browser and not on localhost, use production URL
-        let API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-        if (!API_BASE_URL && typeof window !== 'undefined') {
-          const hostname = window.location.hostname;
-          if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.')) {
-            API_BASE_URL = 'http://13.213.53.199/api';
-          }
-        }
-        if (!API_BASE_URL) {
-          API_BASE_URL = process.env.NODE_ENV === 'development'
-            ? 'http://localhost:8000'
-            : 'http://13.213.53.199/api';
-        }
+        // Use buildApiUrl to get the correct URL (relative in browser, absolute in SSR)
+        const apiUrl = buildApiUrl('/api/ai/poster-templates/?is_active=true');
         
-        const response = await fetch(`${API_BASE_URL}/api/ai/poster-templates/?is_active=true`, {
+        const response = await fetch(apiUrl, {
           method: 'GET',
           headers: authHeaders,
           credentials: 'include',
