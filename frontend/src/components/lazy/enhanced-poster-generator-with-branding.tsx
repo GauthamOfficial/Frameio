@@ -48,6 +48,21 @@ interface GenerationResult {
   contact_info_added?: boolean
 }
 
+interface TemplateResponse {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  subcategory?: string;
+  audience?: string[];
+  offer?: string;
+  thumbnail_url?: string | null;
+  prompt: string;
+  is_active: boolean;
+  is_featured: boolean;
+  created_at?: string;
+}
+
 export default function EnhancedPosterGeneratorWithBranding() {
   // Authentication
   const { user } = useUser()
@@ -277,8 +292,8 @@ export default function EnhancedPosterGeneratorWithBranding() {
           
           // Only show featured templates or limit to 4 most recent
           const featuredTemplates = templatesList
-            .filter((t: any) => t.is_active)
-            .sort((a: any, b: any) => {
+            .filter((t: TemplateResponse) => t.is_active)
+            .sort((a: TemplateResponse, b: TemplateResponse) => {
               if (a.is_featured && !b.is_featured) return -1
               if (!a.is_featured && b.is_featured) return 1
               return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
@@ -688,7 +703,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
       
       if (!response.ok) {
         let message = `HTTP ${response.status}`
-        let errorData: any = null
+        let errorData: Record<string, unknown> | null = null
         
         // Clone the response so we can read it multiple times
         const clonedResponse = response.clone()
@@ -775,7 +790,12 @@ export default function EnhancedPosterGeneratorWithBranding() {
               // Try to parse as JSON one more time from text
               try {
                 errorData = JSON.parse(responseText)
-                message = errorData?.error || errorData?.message || errorData?.detail || message
+                const errorMsg = errorData && typeof errorData === 'object' 
+                  ? (typeof errorData.error === 'string' ? errorData.error : 
+                     typeof errorData.message === 'string' ? errorData.message :
+                     typeof errorData.detail === 'string' ? errorData.detail : null)
+                  : null
+                message = errorMsg || message
               } catch {
                 // Not JSON, use text as message
                 message = responseText.length > 200 ? responseText.substring(0, 200) + '...' : responseText
@@ -789,7 +809,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                   current_count: 3,
                   limit: 3
                 }
-                message = errorData.error
+                message = typeof errorData.error === 'string' ? errorData.error : message
               } else {
                 message = `HTTP ${response.status}: Server returned empty response. Check backend logs for details.`
                 console.error('Empty error response received')
@@ -806,7 +826,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
                 current_count: 3,
                 limit: 3
               }
-              message = errorData.error
+              message = typeof errorData.error === 'string' ? errorData.error : message
             } else {
               message = `HTTP ${response.status}: Unable to read error response. Check backend logs.`
             }
@@ -817,16 +837,19 @@ export default function EnhancedPosterGeneratorWithBranding() {
         if (isLimitError && (errorData?.limit_type || message.includes('monthly free limit') || message.includes('reached your'))) {
           // Clear error state and show limit popup
           setError(null)
-          const resetDate = errorData?.reset_date ? new Date(errorData.reset_date).toLocaleDateString('en-US', { 
-            month: 'long', 
-            day: 'numeric',
-            year: 'numeric'
-          }) : 'next month'
+          const resetDate = errorData?.reset_date && (typeof errorData.reset_date === 'string' || typeof errorData.reset_date === 'number' || errorData.reset_date instanceof Date)
+            ? new Date(errorData.reset_date as string | number | Date).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+              })
+            : 'next month'
           
           setLimitReached({
             message: message,
-            currentCount: errorData?.current_count ?? errorData?.limit ?? 3,
-            limit: errorData?.limit ?? 3,
+            currentCount: typeof errorData?.current_count === 'number' ? errorData.current_count : 
+                         typeof errorData?.limit === 'number' ? errorData.limit : 3,
+            limit: typeof errorData?.limit === 'number' ? errorData.limit : 3,
             resetDate: resetDate
           })
           setIsGenerating(false)

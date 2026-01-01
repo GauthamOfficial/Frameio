@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, AlertCircle, Image as ImageIcon, X } from 'lucide-react';
+import Image from 'next/image';
 
 interface PosterTemplate {
   id: string;
@@ -200,11 +201,14 @@ export default function TemplateForm({ template, onSuccess, onCancel }: Template
         <div className="space-y-4">
           {thumbnailPreview ? (
             <div className="relative inline-block">
-              <div className="aspect-[4/3] w-64 rounded-lg overflow-hidden border-2 border-dashed border-gray-300">
-                <img
+              <div className="aspect-[4/3] w-64 rounded-lg overflow-hidden border-2 border-dashed border-gray-300 relative">
+                <Image
                   src={thumbnailPreview}
                   alt="Thumbnail preview"
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="256px"
+                  unoptimized
                 />
               </div>
               <Button

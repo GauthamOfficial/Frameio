@@ -198,8 +198,6 @@ export function EditUserDialog({ open, onOpenChange, user, onSave }: EditUserDia
                   onChange={(e) => {
                     const value = e.target.value;
                     if (value) {
-                      // Convert to ISO string for backend
-                      const date = new Date(value);
                       setFormData({ ...formData, subscription_expires_at: value });
                     } else {
                       setFormData({ ...formData, subscription_expires_at: null });

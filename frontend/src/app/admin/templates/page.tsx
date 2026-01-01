@@ -29,6 +29,7 @@ import {
   Star,
   StarOff,
 } from 'lucide-react';
+import Image from 'next/image';
 import TemplateForm from '@/components/admin/TemplateForm';
 
 interface PosterTemplate {
@@ -354,11 +355,14 @@ export default function AdminTemplatesPage() {
               <CardContent>
                 {/* Thumbnail */}
                 {template.thumbnail_url ? (
-                  <div className="aspect-[4/3] rounded-lg overflow-hidden mb-4 bg-muted">
-                    <img
+                  <div className="aspect-[4/3] rounded-lg overflow-hidden mb-4 bg-muted relative">
+                    <Image
                       src={template.thumbnail_url}
                       alt={template.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      unoptimized
                     />
                   </div>
                 ) : (

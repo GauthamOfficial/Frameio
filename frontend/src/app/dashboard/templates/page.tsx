@@ -23,6 +23,20 @@ interface Template {
   is_featured: boolean
 }
 
+interface TemplateResponse {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  subcategory?: string;
+  audience?: string[];
+  offer?: string;
+  thumbnail_url?: string | null;
+  prompt: string;
+  is_active: boolean;
+  is_featured: boolean;
+}
+
 export default function TemplatesPage() {
   const router = useRouter()
   const [templates, setTemplates] = useState<Template[]>([])
@@ -79,7 +93,7 @@ export default function TemplatesPage() {
         const templatesList = Array.isArray(data) ? data : (data.results || [])
         
         // Transform API response to match expected format
-        const transformedTemplates = templatesList.map((t: any) => ({
+        const transformedTemplates = templatesList.map((t: TemplateResponse) => ({
           id: t.id,
           name: t.name,
           description: t.description || '',

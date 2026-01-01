@@ -25,6 +25,14 @@ interface BrandingKitData {
   }
 }
 
+interface LimitError extends Error {
+  isLimitError?: boolean;
+  limit_type?: string;
+  current_count?: number;
+  limit?: number;
+  reset_date?: string;
+}
+
 export default function BrandingKitPage() {
   const [prompt, setPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
@@ -102,7 +110,7 @@ export default function BrandingKitPage() {
         }
       }
     } catch (err) {
-      const limitErr = err as any
+      const limitErr = err as LimitError
       
       // Check if this is a limit error first (before other checks)
       if (limitErr.isLimitError || limitErr.limit_type) {

@@ -17,18 +17,22 @@ interface DialogContentProps {
 
 interface DialogHeaderProps {
   children: React.ReactNode;
+  className?: string;
 }
 
 interface DialogTitleProps {
   children: React.ReactNode;
+  className?: string;
 }
 
 interface DialogDescriptionProps {
   children: React.ReactNode;
+  className?: string;
 }
 
 interface DialogFooterProps {
   children: React.ReactNode;
+  className?: string;
 }
 
 export function Dialog({ open, onOpenChange, children }: DialogProps) {
@@ -73,20 +77,20 @@ export function DialogContent({ children, className = '' }: DialogContentProps) 
   );
 }
 
-export function DialogHeader({ children }: DialogHeaderProps) {
-  return <div className="mb-4">{children}</div>;
+export function DialogHeader({ children, className = '' }: DialogHeaderProps) {
+  return <div className={`mb-4 ${className}`}>{children}</div>;
 }
 
-export function DialogTitle({ children }: DialogTitleProps) {
-  return <h2 className="text-lg font-semibold text-foreground">{children}</h2>;
+export function DialogTitle({ children, className = '' }: DialogTitleProps) {
+  return <h2 className={`text-lg font-semibold text-foreground ${className}`}>{children}</h2>;
 }
 
-export function DialogDescription({ children }: DialogDescriptionProps) {
-  return <p className="text-sm text-muted-foreground mt-1">{children}</p>;
+export function DialogDescription({ children, className = '' }: DialogDescriptionProps) {
+  return <p className={`text-sm text-muted-foreground mt-1 ${className}`}>{children}</p>;
 }
 
-export function DialogFooter({ children }: DialogFooterProps) {
-  return <div className="flex justify-end gap-2 mt-6">{children}</div>;
+export function DialogFooter({ children, className = '' }: DialogFooterProps) {
+  return <div className={`flex justify-end gap-2 mt-6 ${className}`}>{children}</div>;
 }
 
 export function DialogClose({ onClose }: { onClose: () => void }) {

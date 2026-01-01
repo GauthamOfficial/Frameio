@@ -19,6 +19,9 @@ interface DjangoUser {
   is_active?: boolean;
   date_joined?: string;
   last_login?: string;
+  subscription_expires_at?: string | null;
+  subscription_plan?: string;
+  has_active_subscription?: boolean;
 }
 
 export default function AdminUsersPage() {
@@ -208,7 +211,12 @@ export default function AdminUsersPage() {
     try {
       // Use Next.js API proxy route that handles admin authentication
       const nameParts = updatedUser.name.split(' ');
-      const requestBody: any = {
+      const requestBody: {
+        first_name: string;
+        last_name: string;
+        subscription_expires_at?: string | null;
+        subscription_plan?: string;
+      } = {
         first_name: nameParts[0] || updatedUser.name,
         last_name: nameParts.slice(1).join(' ') || '',
       };

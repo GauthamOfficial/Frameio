@@ -4,7 +4,7 @@ import { buildApiUrl } from '@/utils/api';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getAdminSession();
@@ -15,7 +15,8 @@ export async function GET(
       );
     }
 
-    const url = buildApiUrl(`/api/ai/poster-templates/${params.id}/`);
+    const { id } = await params;
+    const url = buildApiUrl(`/api/ai/poster-templates/${id}/`);
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -38,7 +39,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getAdminSession();
@@ -49,8 +50,9 @@ export async function PUT(
       );
     }
 
+    const { id } = await params;
     const formData = await request.formData();
-    const url = buildApiUrl(`/api/ai/poster-templates/${params.id}/`);
+    const url = buildApiUrl(`/api/ai/poster-templates/${id}/`);
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -95,7 +97,7 @@ export async function PUT(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getAdminSession();
@@ -106,8 +108,9 @@ export async function PATCH(
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
-    const url = buildApiUrl(`/api/ai/poster-templates/${params.id}/`);
+    const url = buildApiUrl(`/api/ai/poster-templates/${id}/`);
     
     const response = await fetch(url, {
       method: 'PATCH',
@@ -132,7 +135,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getAdminSession();
@@ -143,7 +146,8 @@ export async function DELETE(
       );
     }
 
-    const url = buildApiUrl(`/api/ai/poster-templates/${params.id}/`);
+    const { id } = await params;
+    const url = buildApiUrl(`/api/ai/poster-templates/${id}/`);
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {

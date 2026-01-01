@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let data: Record<string, unknown>;
+    let data: Record<string, unknown> | unknown[];
     try {
       const text = await response.text();
       if (text) {
@@ -59,19 +59,20 @@ export async function GET(request: NextRequest) {
     }
 
     if (!response.ok) {
+      const errorData = Array.isArray(data) ? {} : data as Record<string, unknown>;
       if (response.status === 401 || response.status === 403) {
         return NextResponse.json(
           { 
-            error: data.error || 'Authentication failed',
-            detail: data.detail || data.message || 'Please ensure you are logged into the admin panel'
+            error: errorData.error || 'Authentication failed',
+            detail: errorData.detail || errorData.message || 'Please ensure you are logged into the admin panel'
           },
           { status: response.status }
         );
       }
       return NextResponse.json(
         { 
-          error: data.error || data.detail || data.message || `Failed to fetch templates (${response.status})`,
-          detail: data.detail || data.message || `Backend returned status ${response.status}`
+          error: errorData.error || errorData.detail || errorData.message || `Failed to fetch templates (${response.status})`,
+          detail: errorData.detail || errorData.message || `Backend returned status ${response.status}`
         },
         { status: response.status }
       );

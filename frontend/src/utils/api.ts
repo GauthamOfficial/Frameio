@@ -3,6 +3,14 @@
  * Automatically switches between localhost (development) and production URL
  */
 
+interface LimitError extends Error {
+  limit_type?: string;
+  current_count?: number;
+  limit?: number;
+  reset_date?: string;
+  isLimitError?: boolean;
+}
+
 // Determine API base URL based on environment
 export const API_BASE_URL = 
   process.env.NODE_ENV === 'development'
@@ -134,23 +142,23 @@ async function handleResponse<T>(response: Response): Promise<T> {
     
     // Create error with full error data for limit errors (403)
     if (response.status === 403 && errorData.error) {
-      const error = new Error(errorData.error);
+      const error = new Error(errorData.error) as LimitError;
       // Attach additional error data to the error object for limit errors
       // Always attach these properties if they exist in errorData
       if (errorData.limit_type !== undefined) {
-        (error as any).limit_type = errorData.limit_type;
+        error.limit_type = errorData.limit_type as string;
       }
       if (errorData.current_count !== undefined) {
-        (error as any).current_count = errorData.current_count;
+        error.current_count = errorData.current_count as number;
       }
       if (errorData.limit !== undefined) {
-        (error as any).limit = errorData.limit;
+        error.limit = errorData.limit as number;
       }
       if (errorData.reset_date !== undefined) {
-        (error as any).reset_date = errorData.reset_date;
+        error.reset_date = errorData.reset_date as string;
       }
       // Mark this as a limit error so it can be handled specially
-      (error as any).isLimitError = true;
+      error.isLimitError = true;
       throw error;
     }
     

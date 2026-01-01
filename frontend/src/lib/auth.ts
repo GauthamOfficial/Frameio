@@ -33,6 +33,41 @@ export interface AuthResponse {
 }
 
 /**
+ * Authentication error types
+ */
+export enum AuthErrorType {
+  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
+  NOT_VERIFIED = 'NOT_VERIFIED',
+  SERVER_ERROR = 'SERVER_ERROR',
+}
+
+/**
+ * Typed authentication error
+ */
+export class AuthError extends Error {
+  type: AuthErrorType
+  status: number
+  email?: string
+  requiresVerification?: boolean
+
+  constructor(
+    type: AuthErrorType,
+    message: string,
+    status: number,
+    email?: string
+  ) {
+    super(message)
+    this.name = 'AuthError'
+    this.type = type
+    this.status = status
+    this.email = email
+    if (type === AuthErrorType.NOT_VERIFIED) {
+      this.requiresVerification = true
+    }
+  }
+}
+
+/**
  * Store authentication tokens in both localStorage and cookies
  */
 export function setTokens(accessToken: string, refreshToken: string): void {
@@ -109,55 +144,192 @@ export function clearAuth(): void {
  * Login with email and password
  */
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const response = await fetch(buildApiUrl('/api/users/auth/login/'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email,
-      password,
-    }),
-  })
+  let response: Response
+  
+  try {
+    response = await fetch(buildApiUrl('/api/users/auth/login/'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    })
+  } catch (networkError) {
+    // Network failure - unexpected error, log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Login network error:', networkError)
+    }
+    throw new AuthError(
+      AuthErrorType.SERVER_ERROR,
+      'Network error. Please check your connection and try again.',
+      0
+    )
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Login failed' }))
-    console.error('Login error response:', error)
-    
-    // Check if error is about email verification
-    if (response.status === 403 && (error.requires_verification || error.detail?.toLowerCase().includes('verify'))) {
-      const errorMessage = error.detail || error.error || 'Please verify your email address before logging in.'
-      const verificationError = new Error(errorMessage) as Error & { requiresVerification?: boolean; email?: string }
-      verificationError.requiresVerification = true
-      verificationError.email = error.email
-      throw verificationError
+    // Handle expected user errors (401, 403) - don't log these
+    if (response.status === 401) {
+      throw new AuthError(
+        AuthErrorType.INVALID_CREDENTIALS,
+        'Invalid email or password',
+        response.status
+      )
     }
-    
-    // Extract error message - prefer detail field as it has the specific reason
-    const errorMessage = error.detail || error.error || error.message || 'Login failed'
-    throw new Error(errorMessage)
+
+    if (response.status === 403) {
+      // Check if it's a verification error
+      let errorData: Record<string, unknown> = {}
+      try {
+        const text = await response.text()
+        if (text && text.trim()) {
+          try {
+            errorData = JSON.parse(text)
+          } catch {
+            // Not valid JSON, ignore
+          }
+        }
+      } catch {
+        // Ignore parsing errors for expected user errors
+      }
+
+      const isVerificationError =
+        (typeof errorData.requires_verification === 'boolean' && errorData.requires_verification) ||
+        (typeof errorData.detail === 'string' && errorData.detail.toLowerCase().includes('verify'))
+
+      if (isVerificationError) {
+        const message =
+          typeof errorData.detail === 'string'
+            ? errorData.detail
+            : 'Please verify your email address before logging in.'
+        throw new AuthError(
+          AuthErrorType.NOT_VERIFIED,
+          message,
+          response.status,
+          typeof errorData.email === 'string' ? errorData.email : email
+        )
+      }
+
+      throw new AuthError(
+        AuthErrorType.NOT_VERIFIED,
+        'Access forbidden',
+        response.status
+      )
+    }
+
+    // Handle unexpected server errors (5xx) - log these
+    if (response.status >= 500) {
+      let errorMessage = 'Server error. Please try again later.'
+      try {
+        const text = await response.text()
+        if (text && text.trim()) {
+          try {
+            const errorData = JSON.parse(text)
+            if (typeof errorData.detail === 'string' && errorData.detail.trim()) {
+              errorMessage = errorData.detail
+            } else if (typeof errorData.error === 'string' && errorData.error.trim()) {
+              errorMessage = errorData.error
+            }
+          } catch {
+            // Not valid JSON, use default message
+          }
+        }
+      } catch {
+        // Ignore parsing errors, use default message
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Login server error:', {
+          status: response.status,
+          message: errorMessage,
+        })
+      }
+
+      throw new AuthError(AuthErrorType.SERVER_ERROR, errorMessage, response.status)
+    }
+
+    // Handle other unexpected errors (4xx except 401, 403)
+    let errorMessage = `Login failed (${response.status})`
+    try {
+      const text = await response.text()
+      if (text && text.trim()) {
+        try {
+          const errorData = JSON.parse(text)
+          if (typeof errorData.detail === 'string' && errorData.detail.trim()) {
+            errorMessage = errorData.detail
+          } else if (typeof errorData.error === 'string' && errorData.error.trim()) {
+            errorMessage = errorData.error
+          } else if (typeof errorData.message === 'string' && errorData.message.trim()) {
+            errorMessage = errorData.message
+          }
+        } catch (parseError) {
+          // JSON parsing failed - unexpected error, log in development
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Login error response parsing failed:', parseError, {
+              status: response.status,
+              responseText: text.substring(0, 200),
+            })
+          }
+        }
+      }
+    } catch (readError) {
+      // Response reading failed - unexpected error, log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Login error response read failed:', readError, {
+          status: response.status,
+        })
+      }
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Login unexpected error:', {
+        status: response.status,
+        message: errorMessage,
+      })
+    }
+
+    throw new AuthError(AuthErrorType.SERVER_ERROR, errorMessage, response.status)
   }
 
-  const data = await response.json()
-  
+  // Success - parse response
+  let responseData: unknown
+  try {
+    responseData = await response.json()
+  } catch (parseError) {
+    // JSON parsing failed on success response - unexpected error, log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Login success response parsing failed:', parseError)
+    }
+    throw new AuthError(
+      AuthErrorType.SERVER_ERROR,
+      'Invalid response from server. Please try again.',
+      response.status
+    )
+  }
+
+  // Handle response data - API may return tokens at top level or nested
+  const data = responseData as Record<string, unknown>
+  const accessToken = (data.access as string) || (data.tokens as { access?: string })?.access
+  const refreshToken = (data.refresh as string) || (data.tokens as { refresh?: string })?.refresh
+  const user = data.user as User | undefined
+
   // Store tokens and user
-  if (data.access && data.refresh) {
-    setTokens(data.access, data.refresh)
-  } else if (data.tokens?.access && data.tokens?.refresh) {
-    setTokens(data.tokens.access, data.tokens.refresh)
-  }
-  
-  if (data.user) {
-    setUser(data.user)
+  if (accessToken && refreshToken) {
+    setTokens(accessToken, refreshToken)
   }
 
-  return {
-    user: data.user || data,
-    tokens: {
-      access: data.access || data.tokens?.access,
-      refresh: data.refresh || data.tokens?.refresh,
-    },
+  if (user) {
+    setUser(user)
   }
+
+  const result: AuthResponse = {
+    user: user,
+    tokens: accessToken && refreshToken ? { access: accessToken, refresh: refreshToken } : undefined,
+  }
+
+  return result
 }
 
 /**
