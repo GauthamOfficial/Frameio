@@ -8,9 +8,15 @@ export async function GET(request: NextRequest) {
   const redirectTo = searchParams.get('redirect') || '/dashboard';
 
   // Get base URL from environment variable or extract from request
-  // Use NEXT_PUBLIC_APP_URL for production (e.g., https://frameio.co), fallback to request origin
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-    (typeof request.url !== 'undefined' ? new URL(request.url).origin : 'http://localhost:3000');
+  // Use NEXT_PUBLIC_APP_URL for production (e.g., https://frameio.co)
+  // In Next.js API routes, request.url is always defined, so we can safely use it as fallback
+  let baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+  
+  // Safety check: never use localhost in production
+  if (process.env.NODE_ENV === 'production' && baseUrl.includes('localhost')) {
+    console.error('Warning: localhost detected in production redirect. Using request origin instead.');
+    baseUrl = new URL(request.url).origin;
+  }
 
   if (!accessToken || !refreshToken) {
     return NextResponse.redirect(new URL('/sign-in?error=invalid_tokens', baseUrl));

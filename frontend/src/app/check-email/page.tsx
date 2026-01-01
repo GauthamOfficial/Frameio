@@ -59,8 +59,15 @@ function CheckEmailContent() {
           // This ensures cookies are set before redirect happens
           // Use NEXT_PUBLIC_APP_URL for production (https://frameio.co), fallback to current origin
           // Redirect to dashboard after email verification
-          const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || 
-            (typeof window !== 'undefined' ? window.location.origin : '')
+          let frontendUrl = process.env.NEXT_PUBLIC_APP_URL;
+          if (!frontendUrl && typeof window !== 'undefined') {
+            frontendUrl = window.location.origin;
+          }
+          // Safety check: never use localhost in production
+          if (process.env.NODE_ENV === 'production' && frontendUrl?.includes('localhost')) {
+            console.error('Warning: localhost detected in production redirect. Using current origin instead.');
+            frontendUrl = typeof window !== 'undefined' ? window.location.origin : 'https://frameio.co';
+          }
           const redirectUrl = `${frontendUrl}/api/auth/set-tokens?access=${encodeURIComponent(data.access)}&refresh=${encodeURIComponent(data.refresh)}&redirect=/dashboard`
           console.log('Redirecting to:', redirectUrl)
           window.location.href = redirectUrl
