@@ -46,8 +46,10 @@ function VerifyEmailContent() {
         
         // Use server-side API route to set cookies and redirect
         // This ensures cookies are set before redirect happens
-        // Use absolute frontend URL to avoid redirecting to backend domain
-        const frontendUrl = typeof window !== 'undefined' ? window.location.origin : ''
+        // Use NEXT_PUBLIC_APP_URL for production (https://frameio.co), fallback to current origin
+        // Redirect to dashboard after email verification
+        const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || 
+          (typeof window !== 'undefined' ? window.location.origin : '')
         const redirectUrl = `${frontendUrl}/api/auth/set-tokens?access=${encodeURIComponent(result.access)}&refresh=${encodeURIComponent(result.refresh)}&redirect=/dashboard`
         window.location.href = redirectUrl
       } else {

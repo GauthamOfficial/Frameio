@@ -4,10 +4,11 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const accessToken = searchParams.get('access');
   const refreshToken = searchParams.get('refresh');
+  // Default redirect to dashboard after email verification
   const redirectTo = searchParams.get('redirect') || '/dashboard';
 
   // Get base URL from environment variable or extract from request
-  // Use NEXT_PUBLIC_APP_URL for production, fallback to request origin
+  // Use NEXT_PUBLIC_APP_URL for production (e.g., https://frameio.co), fallback to request origin
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
     (typeof request.url !== 'undefined' ? new URL(request.url).origin : 'http://localhost:3000');
 
@@ -15,10 +16,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/sign-in?error=invalid_tokens', baseUrl));
   }
 
-  // Create response with redirect - add verified parameter to trigger user data refresh
-  // Use baseUrl to ensure redirect goes to production domain, not localhost
+  // Create response with redirect
+  // Use baseUrl to ensure redirect goes to production domain (https://frameio.co), not localhost
+  // For sign-in page, we don't need the verified parameter
   const redirectUrl = new URL(redirectTo, baseUrl);
-  redirectUrl.searchParams.set('verified', 'true');
+  // Only add verified parameter if redirecting to dashboard
+  if (redirectTo === '/dashboard') {
+    redirectUrl.searchParams.set('verified', 'true');
+  }
   const response = NextResponse.redirect(redirectUrl);
 
   // Set cookies with proper configuration
