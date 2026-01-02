@@ -120,20 +120,24 @@ class BrandingKitService:
         
         try:
             # Enhanced prompt for logo generation - keep it simple and direct
-            enhanced_prompt = f"Create a professional {style} style logo for {prompt}. Simple, clean design with high contrast, suitable for both light and dark backgrounds."
+            # Use a very simple, direct prompt that focuses on image generation
+            enhanced_prompt = f"Logo design for {prompt}, {style} style"
             
             # Use GenerateContentConfig to ensure image generation
             config_kwargs = {"response_modalities": ['Image']}
             
             # Try to get image config for aspect ratio (square for logos)
+            # If this fails, we'll proceed without it - the model should still generate images
             try:
                 image_config = types.ImageConfig(
                     aspect_ratio="1:1",  # Square logo
                     output_mime_type="image/png"
                 )
                 config_kwargs["image_config"] = image_config
+                logger.info("Image config set: 1:1 aspect ratio, PNG format")
             except Exception as config_error:
-                logger.warning(f"Could not create image config: {config_error}, using default")
+                logger.warning(f"Could not create image config: {config_error}, proceeding without image config")
+                # Continue without image_config - the API should still work
             
             # Use retry logic for API call
             try:
@@ -181,66 +185,78 @@ class BrandingKitService:
                         logger.info(f"Number of parts: {len(candidate.content.parts) if candidate.content.parts else 0}")
             
             # Check finish_reason FIRST (this tells us why generation stopped)
-            if hasattr(candidate, 'finish_reason') and candidate.finish_reason:
+            finish_reason_name = None
+            if hasattr(candidate, 'finish_reason'):
                 finish_reason = candidate.finish_reason
                 logger.info(f"Finish reason: {finish_reason} (type: {type(finish_reason)})")
                 
-                # Handle enum (has .name attribute) or integer values
-                if hasattr(finish_reason, 'name'):
-                    # It's an enum - use the name directly
-                    finish_reason_name = finish_reason.name
+                if finish_reason is not None:
+                    # Handle enum (has .name attribute) or integer values
+                    if hasattr(finish_reason, 'name'):
+                        # It's an enum - use the name directly
+                        finish_reason_name = finish_reason.name
+                    else:
+                        # It's an integer - map it
+                        finish_reason_map = {
+                            0: 'FINISH_REASON_UNSPECIFIED',
+                            1: 'STOP',
+                            2: 'MAX_TOKENS',
+                            3: 'SAFETY',
+                            4: 'RECITATION',
+                            5: 'OTHER'
+                        }
+                        finish_reason_name = finish_reason_map.get(finish_reason, f'UNKNOWN({finish_reason})')
+                    
+                    logger.info(f"Finish reason name: {finish_reason_name}")
+                    
+                    # Only proceed if finish reason is STOP (success)
+                    if finish_reason_name not in ['STOP', None]:
+                        logger.error(f"Generation stopped due to: {finish_reason_name}")
+                        
+                        # Check safety ratings if available
+                        if hasattr(candidate, 'safety_ratings'):
+                            logger.error(f"Safety ratings: {candidate.safety_ratings}")
+                        
+                        # Provide user-friendly error messages
+                        error_msg = f'AI model stopped generation: {finish_reason_name}'
+                        
+                        if finish_reason_name == 'SAFETY':
+                            error_msg += '. The prompt may have triggered safety filters. Try a different description.'
+                        elif finish_reason_name == 'NO_IMAGE':
+                            error_msg += '. The model could not generate an image. Try a different prompt or description.'
+                        elif finish_reason_name == 'MAX_TOKENS':
+                            error_msg += '. The response was too long. Try a shorter prompt.'
+                        elif finish_reason_name == 'RECITATION':
+                            error_msg += '. The content was blocked due to recitation policy.'
+                        
+                        return {
+                            'success': False,
+                            'error': error_msg
+                        }
                 else:
-                    # It's an integer - map it
-                    finish_reason_map = {
-                        0: 'FINISH_REASON_UNSPECIFIED',
-                        1: 'STOP',
-                        2: 'MAX_TOKENS',
-                        3: 'SAFETY',
-                        4: 'RECITATION',
-                        5: 'OTHER'
-                    }
-                    finish_reason_name = finish_reason_map.get(finish_reason, f'UNKNOWN({finish_reason})')
-                
-                logger.info(f"Finish reason name: {finish_reason_name}")
-                
-                # Only proceed if finish reason is STOP (success)
-                if finish_reason_name not in ['STOP', None]:
-                    logger.error(f"Generation stopped due to: {finish_reason_name}")
-                    
-                    # Check safety ratings if available
-                    if hasattr(candidate, 'safety_ratings'):
-                        logger.error(f"Safety ratings: {candidate.safety_ratings}")
-                    
-                    # Provide user-friendly error messages
-                    error_msg = f'AI model stopped generation: {finish_reason_name}'
-                    
-                    if finish_reason_name == 'SAFETY':
-                        error_msg += '. The prompt may have triggered safety filters. Try a different description.'
-                    elif finish_reason_name == 'NO_IMAGE':
-                        error_msg += '. The model could not generate an image. Try a different prompt or description.'
-                    elif finish_reason_name == 'MAX_TOKENS':
-                        error_msg += '. The response was too long. Try a shorter prompt.'
-                    elif finish_reason_name == 'RECITATION':
-                        error_msg += '. The content was blocked due to recitation policy.'
-                    
-                    return {
-                        'success': False,
-                        'error': error_msg
-                    }
+                    logger.info("Finish reason is None")
             
             # Check for content
             if not candidate.content:
                 logger.error("No content in Gemini response candidate")
                 logger.error(f"Candidate attributes: {dir(candidate)}")
-                logger.error(f"Finish reason: {getattr(candidate, 'finish_reason', 'N/A')}")
+                logger.error(f"Finish reason: {finish_reason_name if finish_reason_name else getattr(candidate, 'finish_reason', 'N/A')}")
                 
                 # Check safety ratings
                 if hasattr(candidate, 'safety_ratings'):
                     logger.error(f"Safety ratings: {candidate.safety_ratings}")
                 
+                # Provide more specific error based on finish reason
+                if finish_reason_name == 'STOP':
+                    error_msg = 'AI model returned STOP but no content was generated. This may be a temporary API issue. Please try again.'
+                elif finish_reason_name == 'NO_IMAGE':
+                    error_msg = 'The model could not generate an image. Try a different prompt or description.'
+                else:
+                    error_msg = 'No content returned from AI model. This may be due to safety filters or API restrictions.'
+                
                 return {
                     'success': False,
-                    'error': 'No content returned from AI model. This may be due to safety filters or API restrictions.'
+                    'error': error_msg
                 }
             
             if not candidate.content.parts:
