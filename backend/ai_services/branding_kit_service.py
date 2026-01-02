@@ -119,23 +119,8 @@ class BrandingKitService:
             }
         
         try:
-            # Enhanced prompt for logo generation
-            enhanced_prompt = f"""
-            Create a professional logo for: {prompt}
-            
-            Style: {style}
-            Requirements:
-            - Clean, scalable design
-            - Works on both light and dark backgrounds
-            - Professional appearance
-            - Simple and memorable
-            - High contrast for readability
-            - Vector-style design
-            - No complex details that won't scale
-            - Modern typography if text is included
-            
-            The logo should be centered and well-composed.
-            """
+            # Enhanced prompt for logo generation - keep it simple and direct
+            enhanced_prompt = f"Create a professional {style} style logo for {prompt}. Simple, clean design with high contrast, suitable for both light and dark backgrounds."
             
             # Use GenerateContentConfig to ensure image generation
             config_kwargs = {"response_modalities": ['Image']}
@@ -196,12 +181,16 @@ class BrandingKitService:
                         logger.info(f"Number of parts: {len(candidate.content.parts) if candidate.content.parts else 0}")
             
             # Check finish_reason FIRST (this tells us why generation stopped)
-            if hasattr(candidate, 'finish_reason'):
+            if hasattr(candidate, 'finish_reason') and candidate.finish_reason:
                 finish_reason = candidate.finish_reason
                 logger.info(f"Finish reason: {finish_reason} (type: {type(finish_reason)})")
                 
-                # Finish reason values: 0=UNSPECIFIED, 1=STOP (success), 2=MAX_TOKENS, 3=SAFETY, 4=RECITATION, 5=OTHER
-                if finish_reason is not None and finish_reason != 1:  # 1 = STOP (success)
+                # Handle enum (has .name attribute) or integer values
+                if hasattr(finish_reason, 'name'):
+                    # It's an enum - use the name directly
+                    finish_reason_name = finish_reason.name
+                else:
+                    # It's an integer - map it
                     finish_reason_map = {
                         0: 'FINISH_REASON_UNSPECIFIED',
                         1: 'STOP',
@@ -210,16 +199,30 @@ class BrandingKitService:
                         4: 'RECITATION',
                         5: 'OTHER'
                     }
-                    reason_name = finish_reason_map.get(finish_reason, f'UNKNOWN({finish_reason})')
-                    logger.error(f"Generation stopped due to: {reason_name}")
+                    finish_reason_name = finish_reason_map.get(finish_reason, f'UNKNOWN({finish_reason})')
+                
+                logger.info(f"Finish reason name: {finish_reason_name}")
+                
+                # Only proceed if finish reason is STOP (success)
+                if finish_reason_name not in ['STOP', None]:
+                    logger.error(f"Generation stopped due to: {finish_reason_name}")
                     
                     # Check safety ratings if available
                     if hasattr(candidate, 'safety_ratings'):
                         logger.error(f"Safety ratings: {candidate.safety_ratings}")
                     
-                    error_msg = f'AI model stopped generation: {reason_name}'
-                    if finish_reason == 3:  # SAFETY
+                    # Provide user-friendly error messages
+                    error_msg = f'AI model stopped generation: {finish_reason_name}'
+                    
+                    if finish_reason_name == 'SAFETY':
                         error_msg += '. The prompt may have triggered safety filters. Try a different description.'
+                    elif finish_reason_name == 'NO_IMAGE':
+                        error_msg += '. The model could not generate an image. Try a different prompt or description.'
+                    elif finish_reason_name == 'MAX_TOKENS':
+                        error_msg += '. The response was too long. Try a shorter prompt.'
+                    elif finish_reason_name == 'RECITATION':
+                        error_msg += '. The content was blocked due to recitation policy.'
+                    
                     return {
                         'success': False,
                         'error': error_msg
