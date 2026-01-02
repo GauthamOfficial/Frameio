@@ -32,6 +32,8 @@ class BrandingKitService:
         """Initialize the branding kit service"""
         self.api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, 'GEMINI_API_KEY', None)
         self.client = None
+        self.max_retries = 3
+        self.retry_delay_base = 1.0  # Base delay in seconds
         
         if not GENAI_AVAILABLE:
             logger.error("Google GenAI library not available")
@@ -47,6 +49,57 @@ class BrandingKitService:
         except Exception as e:
             logger.error(f"Failed to initialize Gemini client: {str(e)}")
             self.client = None
+    
+    def _retry_api_call(self, api_func, *args, **kwargs):
+        """
+        Retry API call with exponential backoff for transient errors
+        
+        Args:
+            api_func: The API function to call
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+            
+        Returns:
+            The result from the API call
+            
+        Raises:
+            Exception: If all retries fail
+        """
+        import time
+        import random
+        
+        last_exception = None
+        
+        for attempt in range(self.max_retries):
+            try:
+                return api_func(*args, **kwargs)
+            except Exception as e:
+                last_exception = e
+                error_str = str(e)
+                
+                # Check if it's a retryable error (500, 503, rate limit, etc.)
+                is_retryable = (
+                    '500' in error_str or 
+                    '503' in error_str or 
+                    'INTERNAL' in error_str or
+                    'rate limit' in error_str.lower() or
+                    'quota' in error_str.lower() or
+                    'temporarily unavailable' in error_str.lower() or
+                    'timeout' in error_str.lower()
+                )
+                
+                if not is_retryable or attempt == self.max_retries - 1:
+                    # Not retryable or last attempt
+                    raise
+                
+                # Calculate exponential backoff with jitter
+                delay = self.retry_delay_base * (2 ** attempt) + random.uniform(0, 1)
+                logger.warning(f"Branding kit API call failed (attempt {attempt + 1}/{self.max_retries}): {error_str}")
+                logger.info(f"Retrying in {delay:.2f} seconds...")
+                time.sleep(delay)
+        
+        # If we get here, all retries failed
+        raise last_exception
     
     def generate_logo(self, prompt: str, style: str = "modern") -> Dict[str, Any]:
         """
@@ -97,14 +150,30 @@ class BrandingKitService:
             except Exception as config_error:
                 logger.warning(f"Could not create image config: {config_error}, using default")
             
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash-image",
-                contents=[enhanced_prompt],
-                config=types.GenerateContentConfig(**config_kwargs)
-            )
+            # Use retry logic for API call
+            try:
+                response = self._retry_api_call(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash-image",
+                    contents=[enhanced_prompt],
+                    config=types.GenerateContentConfig(**config_kwargs)
+                )
+            except Exception as api_error:
+                error_str = str(api_error)
+                logger.error(f"API call failed after retries: {error_str}")
+                return {
+                    'success': False,
+                    'error': f'Logo generation failed: {error_str}'
+                }
             
             # Log response structure for debugging
             logger.info(f"Gemini response received. Candidates: {len(response.candidates) if response.candidates else 0}")
+            
+            # Check for prompt feedback (safety issues)
+            if hasattr(response, 'prompt_feedback'):
+                logger.info(f"Prompt feedback: {response.prompt_feedback}")
+                if hasattr(response.prompt_feedback, 'block_reason'):
+                    logger.warning(f"Prompt blocked: {response.prompt_feedback.block_reason}")
             
             if not response.candidates:
                 logger.error("No candidates in Gemini response")
@@ -113,19 +182,68 @@ class BrandingKitService:
                     'error': 'No response from AI model'
                 }
             
-            # Process response similar to poster service
+            # Process response
             candidate = response.candidates[0]
-            logger.info(f"Gemini response candidate received")
             
+            # Log detailed candidate information
+            logger.info(f"Candidate object type: {type(candidate)}")
+            logger.info(f"Candidate has content: {hasattr(candidate, 'content')}")
+            if hasattr(candidate, 'content'):
+                logger.info(f"Content is None: {candidate.content is None}")
+                if candidate.content:
+                    logger.info(f"Content has parts: {hasattr(candidate.content, 'parts')}")
+                    if hasattr(candidate.content, 'parts'):
+                        logger.info(f"Number of parts: {len(candidate.content.parts) if candidate.content.parts else 0}")
+            
+            # Check finish_reason FIRST (this tells us why generation stopped)
+            if hasattr(candidate, 'finish_reason'):
+                finish_reason = candidate.finish_reason
+                logger.info(f"Finish reason: {finish_reason} (type: {type(finish_reason)})")
+                
+                # Finish reason values: 0=UNSPECIFIED, 1=STOP (success), 2=MAX_TOKENS, 3=SAFETY, 4=RECITATION, 5=OTHER
+                if finish_reason is not None and finish_reason != 1:  # 1 = STOP (success)
+                    finish_reason_map = {
+                        0: 'FINISH_REASON_UNSPECIFIED',
+                        1: 'STOP',
+                        2: 'MAX_TOKENS',
+                        3: 'SAFETY',
+                        4: 'RECITATION',
+                        5: 'OTHER'
+                    }
+                    reason_name = finish_reason_map.get(finish_reason, f'UNKNOWN({finish_reason})')
+                    logger.error(f"Generation stopped due to: {reason_name}")
+                    
+                    # Check safety ratings if available
+                    if hasattr(candidate, 'safety_ratings'):
+                        logger.error(f"Safety ratings: {candidate.safety_ratings}")
+                    
+                    error_msg = f'AI model stopped generation: {reason_name}'
+                    if finish_reason == 3:  # SAFETY
+                        error_msg += '. The prompt may have triggered safety filters. Try a different description.'
+                    return {
+                        'success': False,
+                        'error': error_msg
+                    }
+            
+            # Check for content
             if not candidate.content:
                 logger.error("No content in Gemini response candidate")
+                logger.error(f"Candidate attributes: {dir(candidate)}")
+                logger.error(f"Finish reason: {getattr(candidate, 'finish_reason', 'N/A')}")
+                
+                # Check safety ratings
+                if hasattr(candidate, 'safety_ratings'):
+                    logger.error(f"Safety ratings: {candidate.safety_ratings}")
+                
                 return {
                     'success': False,
-                    'error': 'No content returned from AI model'
+                    'error': 'No content returned from AI model. This may be due to safety filters or API restrictions.'
                 }
             
             if not candidate.content.parts:
                 logger.error("No content parts in Gemini response")
+                logger.error(f"Content object: {candidate.content}")
+                logger.error(f"Content attributes: {dir(candidate.content)}")
                 return {
                     'success': False,
                     'error': 'No content parts returned from AI model'
@@ -135,16 +253,23 @@ class BrandingKitService:
             
             # Extract image data from parts
             image_data = None
-            for part in candidate.content.parts:
+            for i, part in enumerate(candidate.content.parts):
+                logger.info(f"Part {i} type: {type(part)}")
+                logger.info(f"Part {i} attributes: {[attr for attr in dir(part) if not attr.startswith('_')]}")
+                
                 if hasattr(part, 'inline_data') and part.inline_data is not None:
+                    logger.info(f"Part {i} has inline_data")
                     if hasattr(part.inline_data, 'data') and part.inline_data.data:
                         image_data = part.inline_data.data
                         logger.info(f"Found image data in inline_data, size: {len(image_data)} bytes")
                         break
+                else:
+                    logger.warning(f"Part {i} does not have inline_data or it is None")
             
             if not image_data:
                 logger.error("No image data found in response parts")
                 logger.error(f"Part types: {[type(p).__name__ for p in candidate.content.parts]}")
+                logger.error(f"Part details: {[str(p)[:200] for p in candidate.content.parts]}")
                 return {
                     'success': False,
                     'error': 'No image generated - AI model did not return image data'
