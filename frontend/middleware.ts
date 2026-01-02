@@ -22,13 +22,14 @@ const isPublicRoute = (pathname: string): boolean => {
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Handle admin routes with custom authentication
-  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    // Admin API routes - allow through
-    if (pathname.startsWith('/api/admin')) {
-      return NextResponse.next();
-    }
+  // CRITICAL: Allow all API routes to pass through without authentication checks
+  // API routes handle their own authentication or proxy to Django backend
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
 
+  // Handle admin routes with custom authentication
+  if (pathname.startsWith('/admin')) {
     // Admin login route - redirect if already authenticated
     if (pathname === '/admin/login') {
       const authToken = req.cookies.get('auth_token');
@@ -53,7 +54,7 @@ export default function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for authentication token
+  // Check for authentication token for frontend pages only
   const authToken = req.cookies.get('auth_token')?.value || 
                     req.headers.get('authorization')?.replace('Bearer ', '');
 

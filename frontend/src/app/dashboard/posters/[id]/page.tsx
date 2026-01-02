@@ -49,10 +49,26 @@ export default function PosterPreviewPage() {
       
       const data = await apiGet(`/api/ai/ai-poster/posters/${posterId}/`, {}, token) as { success?: boolean; poster?: Poster }
       if (data.success && data.poster) {
-        // Ensure image_url is absolute
+        // Ensure image_url is absolute using helper
         const posterData = data.poster
-        if (posterData.image_url && !posterData.image_url.startsWith('http')) {
-          posterData.image_url = getFullUrl(posterData.image_url)
+        // Helper to get correct image URL
+        const getImageUrl = (imageUrl: string | undefined): string => {
+          if (!imageUrl) return ''
+          if (imageUrl.startsWith('http')) return imageUrl
+          // In development, use Django backend URL directly
+          if (process.env.NODE_ENV === 'development') {
+            const backendUrl = process.env.NEXT_PUBLIC_API_URL 
+              ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+              : process.env.NEXT_PUBLIC_API_BASE_URL
+              ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+              : 'http://localhost:8000'
+            const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`
+            return `${backendUrl}${normalizedPath}`
+          }
+          return getFullUrl(imageUrl)
+        }
+        if (posterData.image_url) {
+          posterData.image_url = getImageUrl(posterData.image_url)
         }
         setPoster(posterData)
       } else {
@@ -187,10 +203,34 @@ export default function PosterPreviewPage() {
               className="max-w-full max-h-[600px] w-auto h-auto object-contain"
               onError={(e) => {
                 const target = e.target as HTMLImageElement
-                if (poster.image_url && !poster.image_url.startsWith('http')) {
-                  const fixedUrl = getFullUrl(poster.image_url)
-                  target.src = fixedUrl
+                console.error('❌ Image load error for poster:', poster.id)
+                console.error('Attempted URL:', poster.image_url)
+                // Helper to get correct image URL
+                const getImageUrl = (imageUrl: string | undefined): string => {
+                  if (!imageUrl) return ''
+                  if (imageUrl.startsWith('http')) return imageUrl
+                  // In development, use Django backend URL directly
+                  if (process.env.NODE_ENV === 'development') {
+                    const backendUrl = process.env.NEXT_PUBLIC_API_URL 
+                      ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+                      : process.env.NEXT_PUBLIC_API_BASE_URL
+                      ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+                      : 'http://localhost:8000'
+                    const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`
+                    return `${backendUrl}${normalizedPath}`
+                  }
+                  return getFullUrl(imageUrl)
                 }
+                const fixedUrl = getImageUrl(poster.image_url)
+                if (fixedUrl && fixedUrl !== poster.image_url) {
+                  console.log('🔄 Retrying with fixed URL:', fixedUrl)
+                  target.src = fixedUrl
+                } else {
+                  console.error('❌ Could not fix URL')
+                }
+              }}
+              onLoad={() => {
+                console.log('✅ Image loaded successfully for poster:', poster.id)
               }}
             />
           </div>

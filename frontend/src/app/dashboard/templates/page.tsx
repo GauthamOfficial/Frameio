@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Sparkles, AlertCircle } from "lucide-react"
 import Image from "next/image"
 import { buildApiUrl } from "@/utils/api"
+import { useAuth } from "@/hooks/useAuth"
 
 interface Template {
   id: string
@@ -40,6 +41,7 @@ interface TemplateResponse {
 
 export default function TemplatesPage() {
   const router = useRouter()
+  const { getToken } = useAuth()
   const [templates, setTemplates] = useState<Template[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("All")
@@ -55,8 +57,8 @@ export default function TemplatesPage() {
         setLoading(true)
         setError(null)
         
-        // Get auth token if available
-        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        // Get auth token using useAuth hook (same as enhanced-poster-generator)
+        const token = await getToken()
         const authHeaders: Record<string, string> = {
           'Content-Type': 'application/json',
         }
@@ -64,16 +66,45 @@ export default function TemplatesPage() {
           authHeaders['Authorization'] = `Bearer ${token}`
         }
         
-        // Add organization context if available
+        // Multitenancy: pass organization context if available (same as enhanced-poster-generator)
         try {
-          const orgSlug = typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null
+          const orgSlug = (typeof window !== 'undefined' ? window.localStorage.getItem('organizationSlug') : null)
+            || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
           if (orgSlug) {
             authHeaders['X-Organization'] = orgSlug
           }
+          const devOrgId = (typeof window !== 'undefined' ? window.localStorage.getItem('devOrgId') : null)
+            || process.env.NEXT_PUBLIC_DEV_ORG_ID
+          if (devOrgId) {
+            authHeaders['X-Dev-Org-Id'] = devOrgId
+          }
         } catch {}
         
-        // Use buildApiUrl to get the correct URL (relative in browser, absolute in SSR)
-        const apiUrl = buildApiUrl('/api/ai/poster-templates/?is_active=true');
+        // Get Django backend URL - same logic as other API routes
+        const getDjangoBackendUrl = () => {
+          // Priority: NEXT_PUBLIC_API_URL > NEXT_PUBLIC_API_BASE_URL > development localhost
+          if (process.env.NEXT_PUBLIC_API_URL) {
+            return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+          }
+          if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+            return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '');
+          }
+          // Development fallback
+          if (process.env.NODE_ENV === 'development') {
+            return 'http://localhost:8000';
+          }
+          // Production fallback
+          return 'http://13.213.53.199';
+        }
+        
+        // In development, use absolute URL to bypass Next.js rewrites
+        // In production, use buildApiUrl for relative paths
+        // Fetch all templates (both active and inactive) - frontend will filter by is_active if needed
+        const apiUrl = process.env.NODE_ENV === 'development'
+          ? `${getDjangoBackendUrl()}/api/ai/poster-templates/`
+          : buildApiUrl('/api/ai/poster-templates/');
+        
+        console.log('[Templates Page] Fetching from:', apiUrl);
         
         const response = await fetch(apiUrl, {
           method: 'GET',
@@ -87,12 +118,26 @@ export default function TemplatesPage() {
           throw new Error(`Failed to load templates: ${response.status} ${errorText}`)
         }
         
-        const data = await response.json()
-        console.log(`[Templates Page] Received ${Array.isArray(data) ? data.length : (data.results?.length || 0)} templates`)
-        // Handle both list and paginated responses
+        // Safely parse JSON, checking for HTML
+        const text = await response.text()
+        if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<!')) {
+          throw new Error('Backend returned HTML error page instead of JSON')
+        }
+        const data = JSON.parse(text)
+        
+        // Enhanced logging to debug response structure
+        console.log('[Templates Page] Response status:', response.status)
+        console.log('[Templates Page] Response data type:', typeof data)
+        console.log('[Templates Page] Response is array:', Array.isArray(data))
+        console.log('[Templates Page] Response keys:', data && typeof data === 'object' ? Object.keys(data) : 'N/A')
+        console.log('[Templates Page] Full response data:', data)
+        
+        // Handle both list and paginated responses (same as enhanced-poster-generator)
         const templatesList = Array.isArray(data) ? data : (data.results || [])
+        console.log(`[Templates Page] Loaded ${templatesList.length} templates from API`)
         
         // Transform API response to match expected format
+        // Show all templates (both active and inactive) - user can filter if needed
         const transformedTemplates = templatesList.map((t: TemplateResponse) => ({
           id: t.id,
           name: t.name,
@@ -107,6 +152,7 @@ export default function TemplatesPage() {
           is_featured: t.is_featured,
         }))
         
+        console.log(`[Templates Page] Transformed ${transformedTemplates.length} templates`)
         setTemplates(transformedTemplates)
       } catch (err) {
         console.error("Error loading templates:", err)
@@ -117,6 +163,7 @@ export default function TemplatesPage() {
       }
     }
     loadTemplates()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Get unique categories

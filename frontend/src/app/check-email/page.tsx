@@ -35,7 +35,12 @@ function CheckEmailContent() {
       console.log('Verification response status:', response.status)
 
       if (response.ok) {
-        const data = await response.json()
+        // Safely parse JSON, checking for HTML
+        const text = await response.text()
+        if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<!')) {
+          throw new Error('Backend returned HTML error page instead of JSON')
+        }
+        const data = JSON.parse(text)
         console.log('Verification response data:', data)
         
         // Verify that user data includes is_verified: true
@@ -97,7 +102,16 @@ function CheckEmailContent() {
           }, 2000)
         }
       } else {
-        const error = await response.json().catch(() => ({ error: 'Verification failed' }))
+        // Safely parse error response
+        const text = await response.text().catch(() => '')
+        let error: { error?: string; detail?: string } = { error: 'Verification failed' }
+        if (text && !text.trim().startsWith('<!DOCTYPE') && !text.trim().startsWith('<html')) {
+          try {
+            error = JSON.parse(text)
+          } catch {
+            error = { error: text || 'Verification failed' }
+          }
+        }
         console.error('Verification failed:', error)
         setVerificationStatus('error')
         showError(error.error || error.detail || 'Verification failed. The link may have expired.')

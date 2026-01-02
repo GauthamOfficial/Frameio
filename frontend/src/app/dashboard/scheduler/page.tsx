@@ -114,6 +114,28 @@ export default function SchedulerPage() {
   const { getToken } = useAuth()
   const { showError, showSuccess } = useToastHelpers()
 
+  // Helper to get Django backend URL in development
+  const getDjangoBackendUrl = () => {
+    if (process.env.NODE_ENV === 'development') {
+      return 'http://localhost:8000'
+    }
+    if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+      return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+    }
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+    }
+    return 'http://13.213.53.199'
+  }
+
+  // Helper to build API URL with absolute URL in development
+  const buildApiUrl = (endpoint: string) => {
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? getDjangoBackendUrl()
+      : ''
+    return `${baseUrl}${endpoint}`
+  }
+
   // Helper to get organization context from user profile if not in localStorage
   const getOrganizationContext = async () => {
     try {
@@ -160,7 +182,7 @@ export default function SchedulerPage() {
   const fetchPosters = async () => {
     try {
       const token = await getToken()
-      const url = '/api/ai/ai-poster/posters/'
+      const url = buildApiUrl('/api/ai/ai-poster/posters/')
       
       console.log('Fetching posters from:', url)
       
@@ -237,7 +259,26 @@ export default function SchedulerPage() {
   const fetchScheduledPosts = async () => {
     try {
       const token = await getToken()
-      const url = '/api/ai/schedule/'
+      
+      // In development, use absolute URL to bypass Next.js rewrites
+      const getDjangoBackendUrl = () => {
+        if (process.env.NODE_ENV === 'development') {
+          return 'http://localhost:8000'
+        }
+        if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+          return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+        }
+        if (process.env.NEXT_PUBLIC_API_URL) {
+          return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+        }
+        return 'http://13.213.53.199'
+      }
+      
+      const baseUrl = process.env.NODE_ENV === 'development'
+        ? getDjangoBackendUrl()
+        : ''
+      
+      const url = `${baseUrl}/api/ai/schedule/`
       
       // Build custom headers for organization context
       const customHeaders: Record<string, string> = {}
@@ -253,6 +294,10 @@ export default function SchedulerPage() {
           || null
         if (devOrgId) {
           customHeaders['X-Dev-Org-Id'] = devOrgId
+        }
+        const devUserId = (typeof window !== 'undefined' ? window.localStorage.getItem('dev-user-id') : null)
+        if (devUserId) {
+          customHeaders['X-Dev-User-Id'] = devUserId
         }
       } catch {}
       
@@ -335,7 +380,7 @@ export default function SchedulerPage() {
     setScheduling(true)
     try {
       const token = await getToken()
-      const url = '/api/ai/schedule/'
+      const url = buildApiUrl('/api/ai/schedule/')
       
       // Build custom headers for organization context
       const customHeaders: Record<string, string> = {}
@@ -343,12 +388,16 @@ export default function SchedulerPage() {
         const orgContext = await getOrganizationContext()
         const orgSlug = orgContext.orgSlug || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
         const devOrgId = orgContext.devOrgId || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        const devUserId = (typeof window !== 'undefined' ? window.localStorage.getItem('dev-user-id') : null)
         
         if (orgSlug) {
           customHeaders['X-Organization'] = orgSlug
         }
         if (devOrgId) {
           customHeaders['X-Dev-Org-Id'] = devOrgId
+        }
+        if (devUserId) {
+          customHeaders['X-Dev-User-Id'] = devUserId
         }
       } catch (e) {
         console.error('Error setting organization headers:', e)
@@ -446,7 +495,7 @@ export default function SchedulerPage() {
     setEditing(true)
     try {
       const token = await getToken()
-      const url = `/api/ai/schedule/${selectedScheduledPost.id}/`
+      const url = buildApiUrl(`/api/ai/schedule/${selectedScheduledPost.id}/`)
       
       // Build custom headers for organization context
       const customHeaders: Record<string, string> = {}
@@ -454,12 +503,16 @@ export default function SchedulerPage() {
         const orgContext = await getOrganizationContext()
         const orgSlug = orgContext.orgSlug || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
         const devOrgId = orgContext.devOrgId || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        const devUserId = (typeof window !== 'undefined' ? window.localStorage.getItem('dev-user-id') : null)
         
         if (orgSlug) {
           customHeaders['X-Organization'] = orgSlug
         }
         if (devOrgId) {
           customHeaders['X-Dev-Org-Id'] = devOrgId
+        }
+        if (devUserId) {
+          customHeaders['X-Dev-User-Id'] = devUserId
         }
       } catch (e) {
         console.error('Error setting organization headers:', e)
@@ -513,7 +566,7 @@ export default function SchedulerPage() {
     setShowDeleteConfirm(false)
     try {
       const token = await getToken()
-      const url = `/api/ai/schedule/${postToDelete.id}/`
+      const url = buildApiUrl(`/api/ai/schedule/${postToDelete.id}/`)
       
       // Build custom headers for organization context
       const customHeaders: Record<string, string> = {}
@@ -521,12 +574,16 @@ export default function SchedulerPage() {
         const orgContext = await getOrganizationContext()
         const orgSlug = orgContext.orgSlug || process.env.NEXT_PUBLIC_ORGANIZATION_SLUG
         const devOrgId = orgContext.devOrgId || process.env.NEXT_PUBLIC_DEV_ORG_ID
+        const devUserId = (typeof window !== 'undefined' ? window.localStorage.getItem('dev-user-id') : null)
         
         if (orgSlug) {
           customHeaders['X-Organization'] = orgSlug
         }
         if (devOrgId) {
           customHeaders['X-Dev-Org-Id'] = devOrgId
+        }
+        if (devUserId) {
+          customHeaders['X-Dev-User-Id'] = devUserId
         }
       } catch (e) {
         console.error('Error setting organization headers:', e)

@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../ui/badge'
 import { Upload, Image as ImageIcon, Save, Palette } from 'lucide-react'
 import { useToastHelpers } from '@/components/common'
-import { API_ENDPOINTS, API_BASE_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/lib/config'
+import { buildApiUrl } from '@/utils/api'
 
 interface CompanyProfile {
   id?: string
@@ -127,12 +128,30 @@ const CompanyProfileSettings: React.FC = () => {
       }
       
       // Fetch with proper error handling
+      // In development, use absolute URL to bypass Next.js rewrites
+      const getDjangoBackendUrl = () => {
+        if (process.env.NODE_ENV === 'development') {
+          return 'http://localhost:8000'
+        }
+        if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+          return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+        }
+        if (process.env.NEXT_PUBLIC_API_URL) {
+          return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+        }
+        return 'http://13.213.53.199'
+      }
+      
+      const profileUrl = process.env.NODE_ENV === 'development'
+        ? `${getDjangoBackendUrl()}/api/company-profiles/`
+        : buildApiUrl('/api/company-profiles/')
+      
       let response: Response
       try {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
         
-        response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
+        response = await fetch(profileUrl, {
           method: 'GET',
           headers: {
             'Authorization': authHeader || '',
@@ -164,62 +183,85 @@ const CompanyProfileSettings: React.FC = () => {
       if (!response.ok) {
         // Handle different error responses
         let errorMessage = 'Failed to load profile information'
+        
+        // Check content type before parsing
+        const contentType = response.headers.get('content-type') || ''
+        const isJson = contentType.includes('application/json')
+        
         try {
-          const errorData = await response.json()
+          // Get response text first (can only read once)
+          const text = await response.text()
           
-          // Check if response is empty or contains no useful error information
-          if (!errorData || Object.keys(errorData).length === 0) {
-            console.warn('⚠️ Empty response received from server')
-            errorMessage = response.statusText || `HTTP ${response.status}`
-          } else {
-            // Only log debug info if we have valid error data
-            if (errorData && typeof errorData === 'object') {
-              // Check if the object has meaningful content
-              const hasContent = Object.keys(errorData).length > 0 && 
-                                Object.values(errorData).some(value => 
-                                  value !== null && 
-                                  value !== undefined && 
-                                  value !== '' && 
-                                  value !== '{}' &&
-                                  (typeof value !== 'object' || Object.keys(value).length > 0)
-                                )
+          // Check if response is HTML (Next.js fallback page)
+          if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+            console.error('❌ Backend returned HTML instead of JSON. This usually means the endpoint is incorrect or the server returned an error page.')
+            errorMessage = `Server returned HTML error page (Status: ${response.status}). The endpoint may be incorrect.`
+          } else if (isJson && text.trim()) {
+            // Try to parse as JSON
+            try {
+              const errorData = JSON.parse(text)
               
-              // Additional check: if it's just an empty object or has no meaningful error fields
-              const hasErrorFields = errorData.error || errorData.message || errorData.detail || errorData.errors
-              
-              if (hasContent && hasErrorFields) {
-                console.error('❌ Load error response:', errorData)
-                errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
+              // Check if response is empty or contains no useful error information
+              if (!errorData || Object.keys(errorData).length === 0) {
+                console.warn('⚠️ Empty response received from server')
+                errorMessage = response.statusText || `HTTP ${response.status}`
               } else {
-                // Handle empty error object - provide more helpful message
-                console.warn('⚠️ Load error response: Empty or meaningless error object')
-                console.warn('  Object keys:', Object.keys(errorData))
-                console.warn('  Object values:', Object.values(errorData))
-                console.warn('  Has content:', hasContent)
-                console.warn('  Has error fields:', hasErrorFields)
-                
-                // Provide more specific error messages based on status code
-                if (response.status === 401) {
-                  errorMessage = 'Authentication failed. Please log in again.'
-                } else if (response.status === 403) {
-                  errorMessage = 'Permission denied. You do not have access to this resource.'
-                } else if (response.status === 404) {
-                  errorMessage = 'Profile not found. A new profile will be created when you save.'
-                } else if (response.status === 500) {
-                  errorMessage = 'Server error. Please try again later or contact support.'
+                // Only log debug info if we have valid error data
+                if (errorData && typeof errorData === 'object') {
+                  // Check if the object has meaningful content
+                  const hasContent = Object.keys(errorData).length > 0 && 
+                                    Object.values(errorData).some(value => 
+                                      value !== null && 
+                                      value !== undefined && 
+                                      value !== '' && 
+                                      value !== '{}' &&
+                                      (typeof value !== 'object' || Object.keys(value).length > 0)
+                                    )
+                  
+                  // Additional check: if it's just an empty object or has no meaningful error fields
+                  const hasErrorFields = errorData.error || errorData.message || errorData.detail || errorData.errors
+                  
+                  if (hasContent && hasErrorFields) {
+                    console.error('❌ Load error response:', errorData)
+                    errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
+                  } else {
+                    // Handle empty error object - provide more helpful message
+                    console.warn('⚠️ Load error response: Empty or meaningless error object')
+                    
+                    // Provide more specific error messages based on status code
+                    if (response.status === 401) {
+                      errorMessage = 'Authentication failed. Please log in again.'
+                    } else if (response.status === 403) {
+                      errorMessage = 'Permission denied. You do not have access to this resource.'
+                    } else if (response.status === 404) {
+                      errorMessage = 'Profile not found. A new profile will be created when you save.'
+                    } else if (response.status === 500) {
+                      errorMessage = 'Server error. Please try again later or contact support.'
+                    } else {
+                      errorMessage = response.statusText || `HTTP ${response.status} - Failed to load profile`
+                    }
+                  }
                 } else {
-                  errorMessage = response.statusText || `HTTP ${response.status} - Failed to load profile`
+                  console.warn('⚠️ Load error response: Invalid error data type')
+                  errorMessage = response.statusText || `HTTP ${response.status}`
                 }
               }
-            } else {
-              console.warn('⚠️ Load error response: Invalid error data type')
-              console.warn('  Error data:', errorData)
-              errorMessage = response.statusText || `HTTP ${response.status}`
+            } catch {
+              // JSON parsing failed - use text as error message
+              errorMessage = text.trim() || response.statusText || `HTTP ${response.status}`
+              console.warn('⚠️ Failed to parse error response as JSON, using text:', errorMessage)
+            }
+          } else {
+            // Not JSON - use text as error message
+            errorMessage = text.trim() || response.statusText || `HTTP ${response.status}`
+            if (errorMessage && errorMessage !== response.statusText) {
+              console.warn('⚠️ Non-JSON error response:', errorMessage)
             }
           }
-        } catch {
+        } catch (readError) {
+          // Failed to read response
           errorMessage = response.statusText || `HTTP ${response.status}`
-          console.error('❌ Load error (non-JSON):', errorMessage)
+          console.error('❌ Failed to read error response:', readError)
         }
         
         if (response.status === 401) {
@@ -323,13 +365,31 @@ const CompanyProfileSettings: React.FC = () => {
         return
       }
       
+      // In development, use absolute URL to bypass Next.js rewrites
+      const getDjangoBackendUrl = () => {
+        if (process.env.NODE_ENV === 'development') {
+          return 'http://localhost:8000'
+        }
+        if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+          return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+        }
+        if (process.env.NEXT_PUBLIC_API_URL) {
+          return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+        }
+        return 'http://13.213.53.199'
+      }
+      
+      const statusUrl = process.env.NODE_ENV === 'development'
+        ? `${getDjangoBackendUrl()}/api/company-profiles/status/`
+        : buildApiUrl('/api/company-profiles/status/')
+      
       console.log('🔍 Loading profile status...')
-      console.log('Status endpoint:', API_ENDPOINTS.COMPANY_PROFILES_STATUS)
+      console.log('Status endpoint:', statusUrl)
       
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
       
-      const response = await fetch(API_ENDPOINTS.COMPANY_PROFILES_STATUS, {
+      const response = await fetch(statusUrl, {
         method: 'GET',
         headers: {
           'Authorization': authHeader,
@@ -413,8 +473,26 @@ const CompanyProfileSettings: React.FC = () => {
         return
       }
       
+      // In development, use absolute URL to bypass Next.js rewrites
+      const getDjangoBackendUrl = () => {
+        if (process.env.NODE_ENV === 'development') {
+          return 'http://localhost:8000'
+        }
+        if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+          return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+        }
+        if (process.env.NEXT_PUBLIC_API_URL) {
+          return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+        }
+        return 'http://13.213.53.199'
+      }
+      
+      const profileUrl = process.env.NODE_ENV === 'development'
+        ? `${getDjangoBackendUrl()}/api/company-profiles/`
+        : buildApiUrl('/api/company-profiles/')
+      
       console.log('💾 Saving profile...')
-      console.log('API Endpoint:', API_ENDPOINTS.COMPANY_PROFILES)
+      console.log('API Endpoint:', profileUrl)
       
       // Test connectivity first (optional - don't block if it fails)
       try {
@@ -481,7 +559,7 @@ const CompanyProfileSettings: React.FC = () => {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout for file uploads
         
-        response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
+        response = await fetch(profileUrl, {
           method: 'POST',
           headers: {
             'Authorization': authHeader
@@ -502,7 +580,7 @@ const CompanyProfileSettings: React.FC = () => {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout for JSON requests
         
-        response = await fetch(API_ENDPOINTS.COMPANY_PROFILES, {
+        response = await fetch(profileUrl, {
           method: 'POST',
           headers: {
             'Authorization': authHeader,
@@ -559,84 +637,110 @@ const CompanyProfileSettings: React.FC = () => {
         let errorMessage = 'Failed to update profile'
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let errorData: any = null
+        
+        // Check content type before parsing
+        const contentType = response.headers.get('content-type') || ''
+        const isJson = contentType.includes('application/json')
+        
         try {
-          errorData = await response.json()
+          // Get response text first (can only read once)
+          const text = await response.text()
           
-          // Check if response is empty or contains no useful error information
-          if (!errorData || Object.keys(errorData).length === 0) {
-            console.warn('⚠️ Empty response received from server during save')
-            errorMessage = response.statusText || `HTTP ${response.status}`
-          } else {
-            // Only log debug info if we have valid error data
-            if (errorData && typeof errorData === 'object') {
-              // Check if the object has meaningful content
-              const hasContent = Object.keys(errorData).length > 0 && 
-                                Object.values(errorData).some(value => 
-                                  value !== null && 
-                                  value !== undefined && 
-                                  value !== '' && 
-                                  value !== '{}' &&
-                                  (typeof value !== 'object' || Object.keys(value).length > 0)
-                                )
+          // Check if response is HTML (Next.js fallback page)
+          if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+            console.error('❌ Backend returned HTML instead of JSON. This usually means the endpoint is incorrect or the server returned an error page.')
+            errorMessage = `Server returned HTML error page (Status: ${response.status}). The endpoint may be incorrect.`
+          } else if (isJson && text.trim()) {
+            // Try to parse as JSON
+            try {
+              errorData = JSON.parse(text)
               
-              // Additional check: if it's just an empty object or has no meaningful error fields
-              const hasErrorFields = errorData.error || errorData.message || errorData.detail || errorData.errors
-              
-              if (hasContent && hasErrorFields) {
-                console.log('Raw error response:', errorData)
-                console.log('Error data type:', typeof errorData)
-                console.log('Error data keys:', Object.keys(errorData))
-                console.log('Error data values:', Object.values(errorData))
-                
-                // Handle different error formats
-                if (errorData.detail && typeof errorData.detail === 'object') {
-                  // If detail is an object (field errors), format them
-                  const fieldErrors = Object.entries(errorData.detail)
-                    .map(([field, error]) => `${field}: ${Array.isArray(error) ? error[0] : error}`)
-                    .join(', ')
-                  errorMessage = errorData.message || fieldErrors || errorMessage
-                } else {
-                  errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
-                }
-                
-                console.error('❌ Save error response:')
-                console.error('  Status:', response.status)
-                console.error('  Error object:', JSON.stringify(errorData, null, 2))
-                console.error('  Error message:', errorMessage)
+              // Check if response is empty or contains no useful error information
+              if (!errorData || Object.keys(errorData).length === 0) {
+                console.warn('⚠️ Empty response received from server during save')
+                errorMessage = response.statusText || `HTTP ${response.status}`
               } else {
-                // Handle empty error object - provide more helpful message
-                console.warn('⚠️ Save error response: Empty or meaningless error object')
-                console.warn('  Status:', response.status)
-                console.warn('  Object keys:', Object.keys(errorData))
-                console.warn('  Object values:', Object.values(errorData))
-                console.warn('  Has content:', hasContent)
-                console.warn('  Has error fields:', hasErrorFields)
-                
-                // Provide more specific error messages based on status code
-                if (response.status === 401) {
-                  errorMessage = 'Authentication failed. Please log in again.'
-                } else if (response.status === 403) {
-                  errorMessage = 'Permission denied. You do not have access to save this profile.'
-                } else if (response.status === 400) {
-                  errorMessage = 'Invalid data provided. Please check your input and try again.'
-                } else if (response.status === 500) {
-                  errorMessage = 'Server error. Please try again later or contact support.'
+                // Only log debug info if we have valid error data
+                if (errorData && typeof errorData === 'object') {
+                  // Check if the object has meaningful content
+                  const hasContent = Object.keys(errorData).length > 0 && 
+                                    Object.values(errorData).some(value => 
+                                      value !== null && 
+                                      value !== undefined && 
+                                      value !== '' && 
+                                      value !== '{}' &&
+                                      (typeof value !== 'object' || Object.keys(value).length > 0)
+                                    )
+                  
+                  // Additional check: if it's just an empty object or has no meaningful error fields
+                  const hasErrorFields = errorData.error || errorData.message || errorData.detail || errorData.errors
+                  
+                  if (hasContent && hasErrorFields) {
+                    console.log('Raw error response:', errorData)
+                    console.log('Error data type:', typeof errorData)
+                    console.log('Error data keys:', Object.keys(errorData))
+                    console.log('Error data values:', Object.values(errorData))
+                    
+                    // Handle different error formats
+                    if (errorData.detail && typeof errorData.detail === 'object') {
+                      // If detail is an object (field errors), format them
+                      const fieldErrors = Object.entries(errorData.detail)
+                        .map(([field, error]) => `${field}: ${Array.isArray(error) ? error[0] : error}`)
+                        .join(', ')
+                      errorMessage = errorData.message || fieldErrors || errorMessage
+                    } else {
+                      errorMessage = errorData.error || errorData.message || errorData.detail || errorMessage
+                    }
+                    
+                    console.error('❌ Save error response:')
+                    console.error('  Status:', response.status)
+                    console.error('  Error object:', JSON.stringify(errorData, null, 2))
+                    console.error('  Error message:', errorMessage)
+                  } else {
+                    // Handle empty error object - provide more helpful message
+                    console.warn('⚠️ Save error response: Empty or meaningless error object')
+                    console.warn('  Status:', response.status)
+                    console.warn('  Object keys:', Object.keys(errorData))
+                    console.warn('  Object values:', Object.values(errorData))
+                    console.warn('  Has content:', hasContent)
+                    console.warn('  Has error fields:', hasErrorFields)
+                    
+                    // Provide more specific error messages based on status code
+                    if (response.status === 401) {
+                      errorMessage = 'Authentication failed. Please log in again.'
+                    } else if (response.status === 403) {
+                      errorMessage = 'Permission denied. You do not have access to save this profile.'
+                    } else if (response.status === 400) {
+                      errorMessage = 'Invalid data provided. Please check your input and try again.'
+                    } else if (response.status === 500) {
+                      errorMessage = 'Server error. Please try again later or contact support.'
+                    } else {
+                      errorMessage = response.statusText || `HTTP ${response.status} - Failed to save profile`
+                    }
+                  }
                 } else {
-                  errorMessage = response.statusText || `HTTP ${response.status} - Failed to save profile`
+                  console.warn('⚠️ Save error response: Invalid error data type')
+                  console.warn('  Status:', response.status)
+                  console.warn('  Error data:', errorData)
+                  errorMessage = response.statusText || `HTTP ${response.status}`
                 }
               }
-            } else {
-              console.warn('⚠️ Save error response: Invalid error data type')
-              console.warn('  Status:', response.status)
-              console.warn('  Error data:', errorData)
-              errorMessage = response.statusText || `HTTP ${response.status}`
+            } catch {
+              // JSON parsing failed - use text as error message
+              errorMessage = text.trim() || response.statusText || `HTTP ${response.status}`
+              console.warn('⚠️ Failed to parse error response as JSON, using text:', errorMessage)
+            }
+          } else {
+            // Not JSON - use text as error message
+            errorMessage = text.trim() || response.statusText || `HTTP ${response.status}`
+            if (errorMessage && errorMessage !== response.statusText) {
+              console.warn('⚠️ Non-JSON error response:', errorMessage)
             }
           }
-        } catch (parseError) {
-          // If response is not JSON (like "Unauthorized"), use status text
+        } catch (readError) {
+          // Failed to read response
           errorMessage = response.statusText || `HTTP ${response.status}`
-          console.error('❌ Save error (non-JSON):', errorMessage)
-          console.error('Parse error:', parseError)
+          console.error('❌ Failed to read error response:', readError)
         }
         
         if (response.status === 401) {

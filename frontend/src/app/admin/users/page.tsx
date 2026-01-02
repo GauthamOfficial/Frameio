@@ -112,9 +112,20 @@ export default function AdminUsersPage() {
         return;
       }
 
+      // Check Content-Type and detect HTML responses
+      const text = await response.text();
+
+      // Check if response is HTML (Next.js fallback page or Django error page)
+      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<!')) {
+        console.error('[Admin Users] Backend returned HTML instead of JSON');
+        setError('Backend returned HTML error page. The endpoint may be incorrect or the server may be down. Please check your browser console for details.');
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
       let data: Record<string, unknown>;
       try {
-        const text = await response.text();
         if (!text) {
           console.warn('[Admin Users] Empty response');
           setUsers([]);
@@ -124,7 +135,7 @@ export default function AdminUsersPage() {
         data = JSON.parse(text);
       } catch (parseError) {
         console.error('[Admin Users] Failed to parse response:', parseError);
-        setError('Invalid response from server');
+        setError(`Invalid response from server: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`);
         setUsers([]);
         setLoading(false);
         return;

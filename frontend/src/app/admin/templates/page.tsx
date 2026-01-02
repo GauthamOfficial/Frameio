@@ -81,15 +81,71 @@ export default function AdminTemplatesPage() {
         credentials: 'include',
       });
 
+      // Read response once
+      const text = await response.text();
+      
+      // Check if response is HTML (error page)
+      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        console.error('[Admin Templates Page] Received HTML instead of JSON');
+        throw new Error('Backend returned HTML error page. Please check server logs.');
+      }
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        let errorData: { error?: string; detail?: string } = {};
+        try {
+          errorData = JSON.parse(text) as { error?: string; detail?: string };
+        } catch {
+          errorData = { error: text || response.statusText };
+        }
         throw new Error(errorData.error || errorData.detail || `Failed to load templates: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      // Parse JSON response
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        console.error('[Admin Templates Page] Failed to parse JSON:', parseError);
+        console.error('[Admin Templates Page] Response text:', text.substring(0, 200));
+        throw new Error('Invalid JSON response from server');
+      }
+      
+      console.log('[Admin Templates Page] ✅ Response received');
+      console.log('[Admin Templates Page] Response status:', response.status);
+      console.log('[Admin Templates Page] Response data type:', typeof data);
+      console.log('[Admin Templates Page] Is array:', Array.isArray(data));
+      console.log('[Admin Templates Page] Full response data:', data);
+      
       // Handle both list and paginated responses
-      const templatesList = Array.isArray(data) ? data : (data.results || []);
-      setTemplates(templatesList);
+      let templatesList: unknown[] = [];
+      if (Array.isArray(data)) {
+        templatesList = data;
+        console.log('[Admin Templates Page] ✅ Data is array, length:', templatesList.length);
+      } else if (data && typeof data === 'object') {
+        if ('results' in data && Array.isArray(data.results)) {
+          templatesList = data.results;
+          console.log('[Admin Templates Page] ✅ Data has results array, length:', templatesList.length);
+        } else if ('data' in data && Array.isArray(data.data)) {
+          templatesList = data.data;
+          console.log('[Admin Templates Page] ✅ Data has data array, length:', templatesList.length);
+        } else {
+          console.warn('[Admin Templates Page] ⚠️ Unexpected data structure');
+          console.warn('[Admin Templates Page] Data keys:', Object.keys(data));
+        }
+      }
+      
+      console.log('[Admin Templates Page] Final templates list length:', templatesList.length);
+      if (templatesList.length > 0) {
+        console.log('[Admin Templates Page] First template:', templatesList[0]);
+      } else {
+        console.warn('[Admin Templates Page] ⚠️ WARNING: Templates list is empty!');
+        console.warn('[Admin Templates Page] This could mean:');
+        console.warn('[Admin Templates Page] 1. No templates in database');
+        console.warn('[Admin Templates Page] 2. Backend not returning templates for admin requests');
+        console.warn('[Admin Templates Page] 3. Backend needs to be restarted after code changes');
+      }
+      
+      setTemplates(templatesList as PosterTemplate[]);
     } catch (err) {
       console.error('Error loading templates:', err);
       setError(err instanceof Error ? err.message : 'Failed to load templates');
@@ -354,22 +410,59 @@ export default function AdminTemplatesPage() {
               </CardHeader>
               <CardContent>
                 {/* Thumbnail */}
-                {template.thumbnail_url ? (
-                  <div className="aspect-[4/3] rounded-lg overflow-hidden mb-4 bg-muted relative">
-                    <Image
-                      src={template.thumbnail_url}
-                      alt={template.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      unoptimized
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-[4/3] rounded-lg bg-muted flex items-center justify-center mb-4">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                  </div>
-                )}
+                {(() => {
+                  // Helper to get full thumbnail URL
+                  const getThumbnailUrl = (thumbnailUrl: string | null | undefined): string | null => {
+                    if (!thumbnailUrl) return null;
+                    
+                    // If already absolute URL, return as-is
+                    if (thumbnailUrl.startsWith('http')) {
+                      return thumbnailUrl;
+                    }
+                    
+                    // In development, construct absolute URL to Django backend
+                    if (process.env.NODE_ENV === 'development') {
+                      const backendUrl = process.env.NEXT_PUBLIC_API_URL 
+                        ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+                        : process.env.NEXT_PUBLIC_API_BASE_URL
+                        ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+                        : 'http://localhost:8000';
+                      
+                      // Ensure path starts with /
+                      const normalizedPath = thumbnailUrl.startsWith('/') ? thumbnailUrl : `/${thumbnailUrl}`;
+                      return `${backendUrl}${normalizedPath}`;
+                    }
+                    
+                    // In production, return relative path (will be handled by Next.js/nginx)
+                    return thumbnailUrl.startsWith('/') ? thumbnailUrl : `/${thumbnailUrl}`;
+                  };
+                  
+                  const fullThumbnailUrl = getThumbnailUrl(template.thumbnail_url);
+                  
+                  return fullThumbnailUrl ? (
+                    <div className="aspect-[4/3] rounded-lg overflow-hidden mb-4 bg-muted relative">
+                      <Image
+                        src={fullThumbnailUrl}
+                        alt={template.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        unoptimized
+                        onError={(e) => {
+                          console.error('Thumbnail load error:', e);
+                          console.error('Thumbnail URL:', fullThumbnailUrl);
+                        }}
+                        onLoad={() => {
+                          console.log('Thumbnail loaded:', fullThumbnailUrl);
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-[4/3] rounded-lg bg-muted flex items-center justify-center mb-4">
+                      <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  );
+                })()}
 
                 {/* Metadata */}
                 <div className="space-y-2 mb-4">

@@ -11,6 +11,34 @@ import { useToastHelpers } from "@/components/common"
 import { useRouter } from "next/navigation"
 import { apiGet, apiDelete, getFullUrl } from "@/utils/api"
 
+// Helper function to get the correct image URL
+// In development, use Django backend URL directly
+const getImageUrl = (imageUrl: string | undefined): string => {
+  if (!imageUrl) return ''
+  
+  // If already absolute URL, return as-is
+  if (imageUrl.startsWith('http')) {
+    return imageUrl
+  }
+  
+  // For relative paths, construct absolute URL
+  // In development, use Django backend URL directly
+  if (process.env.NODE_ENV === 'development') {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL 
+      ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+      : process.env.NEXT_PUBLIC_API_BASE_URL
+      ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+      : 'http://localhost:8000'
+    
+    // Ensure path starts with /
+    const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`
+    return `${backendUrl}${normalizedPath}`
+  }
+  
+  // In production, use getFullUrl
+  return getFullUrl(imageUrl)
+}
+
 interface Poster {
   id: string
   image_url: string
@@ -92,8 +120,8 @@ export function SavedPosters({ limit }: SavedPostersProps) {
       if ('success' in response && response.success && 'results' in response && response.results) {
         // Ensure image URLs are absolute
         const postersWithFixedUrls = response.results.map((poster: Poster) => {
-          if (poster.image_url && !poster.image_url.startsWith('http')) {
-            poster.image_url = getFullUrl(poster.image_url)
+          if (poster.image_url) {
+            poster.image_url = getImageUrl(poster.image_url)
           }
           return poster
         })
@@ -102,8 +130,8 @@ export function SavedPosters({ limit }: SavedPostersProps) {
       } else if (Array.isArray(response)) {
         // If response is directly an array
         const postersWithFixedUrls = response.map((poster: Poster) => {
-          if (poster.image_url && !poster.image_url.startsWith('http')) {
-            poster.image_url = getFullUrl(poster.image_url)
+          if (poster.image_url) {
+            poster.image_url = getImageUrl(poster.image_url)
           }
           return poster
         })
@@ -111,8 +139,8 @@ export function SavedPosters({ limit }: SavedPostersProps) {
       } else if ('results' in response && response.results && Array.isArray(response.results)) {
         // If results exist but success flag might be missing
         const postersWithFixedUrls = response.results.map((poster: Poster) => {
-          if (poster.image_url && !poster.image_url.startsWith('http')) {
-            poster.image_url = getFullUrl(poster.image_url)
+          if (poster.image_url) {
+            poster.image_url = getImageUrl(poster.image_url)
           }
           return poster
         })
@@ -293,17 +321,25 @@ export function SavedPosters({ limit }: SavedPostersProps) {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
-                      // Try to fix relative URLs
-                      if (poster.image_url && !poster.image_url.startsWith('http')) {
-                        target.src = getFullUrl(poster.image_url)
+                      console.error('❌ Image load error for poster:', poster.id)
+                      console.error('Attempted URL:', poster.image_url)
+                      // Try to fix URL using the helper
+                      const fixedUrl = getImageUrl(poster.image_url)
+                      if (fixedUrl && fixedUrl !== poster.image_url) {
+                        console.log('🔄 Retrying with fixed URL:', fixedUrl)
+                        target.src = fixedUrl
                       } else {
                         // Fallback to placeholder
+                        console.error('❌ Could not fix URL, showing placeholder')
                         target.style.display = 'none'
                         const placeholder = target.parentElement?.querySelector('.image-placeholder')
                         if (placeholder) {
                           (placeholder as HTMLElement).style.display = 'flex'
                         }
                       }
+                    }}
+                    onLoad={() => {
+                      console.log('✅ Image loaded successfully for poster:', poster.id)
                     }}
                     loading="lazy"
                   />

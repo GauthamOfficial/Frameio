@@ -25,7 +25,7 @@ import React, { useState, useRef, useEffect } from "react"
 import { useUser, useAuth } from '@/hooks/useAuth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCompanyProfile } from '@/hooks/use-company-profile'
-import { API_BASE_URL, getFullUrl } from '@/utils/api'
+import { API_BASE_URL, getFullUrl, buildApiUrl } from '@/utils/api'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 
 interface GenerationResult {
@@ -85,6 +85,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
   const [aspectRatio, setAspectRatio] = useState("4:5")
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [imageLoadError, setImageLoadError] = useState(false)
   const [limitReached, setLimitReached] = useState<{
     message: string
     currentCount: number
@@ -237,6 +238,52 @@ export default function EnhancedPosterGeneratorWithBranding() {
       }
     }
   }, [previewUrl])
+
+  // Helper function to get the correct image URL
+  // Prioritizes cloudinary_url or public_url if available, otherwise uses image_url
+  const getImageUrl = (imageUrl: string | undefined): string => {
+    if (!imageUrl) return ''
+    
+    // If result has cloudinary_url or public_url, prefer those (they're absolute URLs)
+    if (result) {
+      const cloudinaryUrl = (result as { cloudinary_url?: string }).cloudinary_url
+      if (cloudinaryUrl && cloudinaryUrl.startsWith('http')) {
+        return cloudinaryUrl
+      }
+      if (result.public_url && result.public_url.startsWith('http')) {
+        return result.public_url
+      }
+    }
+    
+    // If image_url is already absolute, return as-is
+    if (imageUrl.startsWith('http')) {
+      return imageUrl
+    }
+    
+    // For relative paths, construct absolute URL
+    // In development, use Django backend URL directly
+    if (process.env.NODE_ENV === 'development') {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL 
+        ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+        : process.env.NEXT_PUBLIC_API_BASE_URL
+        ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+        : 'http://localhost:8000'
+      
+      // Ensure path starts with /
+      const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`
+      return `${backendUrl}${normalizedPath}`
+    }
+    
+    // In production, use getFullUrl
+    return getFullUrl(imageUrl)
+  }
+
+  // Reset image load error when result changes
+  useEffect(() => {
+    if (result?.image_url) {
+      setImageLoadError(false)
+    }
+  }, [result?.image_url])
   
   // Textarea auto-resize functionality
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -275,7 +322,25 @@ export default function EnhancedPosterGeneratorWithBranding() {
           }
         } catch {}
         
-        const response = await fetch(`${API_BASE_URL}/api/ai/poster-templates/?is_active=true`, {
+        // In development, use absolute URL to bypass Next.js rewrites
+        const getDjangoBackendUrl = () => {
+          if (process.env.NODE_ENV === 'development') {
+            return 'http://localhost:8000'
+          }
+          if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+            return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+          }
+          if (process.env.NEXT_PUBLIC_API_URL) {
+            return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+          }
+          return 'http://13.213.53.199'
+        }
+        
+        const templatesUrl = process.env.NODE_ENV === 'development'
+          ? `${getDjangoBackendUrl()}/api/ai/poster-templates/?is_active=true`
+          : buildApiUrl('/api/ai/poster-templates/?is_active=true')
+        
+        const response = await fetch(templatesUrl, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -285,23 +350,38 @@ export default function EnhancedPosterGeneratorWithBranding() {
         })
         
         if (response.ok) {
-          const data = await response.json()
+          // Safely parse JSON, checking for HTML
+          const text = await response.text()
+          if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<!')) {
+            throw new Error('Backend returned HTML error page instead of JSON')
+          }
+          const data = JSON.parse(text)
           // Handle both list and paginated responses
           const templatesList = Array.isArray(data) ? data : (data.results || [])
           console.log(`[Templates] Loaded ${templatesList.length} templates from API`)
           
-          // Only show featured templates or limit to 4 most recent
-          const featuredTemplates = templatesList
-            .filter((t: TemplateResponse) => t.is_active)
-            .sort((a: TemplateResponse, b: TemplateResponse) => {
-              if (a.is_featured && !b.is_featured) return -1
-              if (!a.is_featured && b.is_featured) return 1
-              return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-            })
-            .slice(0, 4)
+          // Show the 4 seed templates: Wedding Frock, Men's Denim Shirt, Elegant Silk Saree, Men's Casual T-shirt
+          const seedTemplateNames = [
+            "Wedding Frock",
+            "Men's Denim Shirt",
+            "Elegant Silk Saree",
+            "Men's Casual T-shirt"
+          ]
           
-          console.log(`[Templates] Showing ${featuredTemplates.length} featured templates`)
-          setTemplates(featuredTemplates)
+          // Filter for the 4 seed templates
+          const seedTemplates = templatesList
+            .filter((t: TemplateResponse) => 
+              t.is_active && seedTemplateNames.includes(t.name)
+            )
+            // Sort to match the order in seedTemplateNames
+            .sort((a: TemplateResponse, b: TemplateResponse) => {
+              const indexA = seedTemplateNames.indexOf(a.name)
+              const indexB = seedTemplateNames.indexOf(b.name)
+              return indexA - indexB
+            })
+          
+          console.log(`[Templates] Showing ${seedTemplates.length} seed templates:`, seedTemplates.map((t: TemplateResponse) => t.name))
+          setTemplates(seedTemplates)
         } else {
           const errorText = await response.text().catch(() => 'Unknown error')
           console.warn(`[Templates] Failed to fetch templates (${response.status}):`, errorText)
@@ -601,9 +681,28 @@ export default function EnhancedPosterGeneratorWithBranding() {
       let response;
 
       // Resolve API base robustly and add fallbacks
-      const primaryBase = API_BASE_URL.replace(/\/$/, '')
+      // In development, use absolute URL to bypass Next.js rewrites
+      const getDjangoBackendUrl = () => {
+        if (process.env.NODE_ENV === 'development') {
+          return 'http://localhost:8000'
+        }
+        if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+          return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+        }
+        if (process.env.NEXT_PUBLIC_API_URL) {
+          return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+        }
+        return 'http://13.213.53.199'
+      }
+      
+      // In development, prioritize direct Django URL
+      const primaryBase = process.env.NODE_ENV === 'development' 
+        ? getDjangoBackendUrl()
+        : (API_BASE_URL || '').replace(/\/$/, '')
+      
       const fallbackBases = [primaryBase]
-        .map(b => b.replace(/\/$/, ''))
+        .filter(b => b) // Remove empty strings
+        .map(b => b.replace(/\/+$/, ''))
         // de-duplicate while preserving order
         .filter((v, i, a) => a.indexOf(v) === i)
 
@@ -963,8 +1062,8 @@ export default function EnhancedPosterGeneratorWithBranding() {
   const downloadImage = async () => {
     if (result?.image_url) {
       try {
-        // The backend now provides full URLs, but keep fallback for safety
-        const downloadUrl = getFullUrl(result.image_url)
+        // Use the same helper to get the correct image URL
+        const downloadUrl = getImageUrl(result.image_url)
         
         // Fetch the image as a blob to force download
         const response = await fetch(downloadUrl)
@@ -985,7 +1084,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
         console.error('Download failed:', error)
         // Fallback to direct link
         const link = document.createElement('a')
-        link.href = getFullUrl(result.image_url)
+        link.href = getImageUrl(result.image_url)
         link.download = result.filename || 'generated-poster.png'
         link.target = '_blank'
         document.body.appendChild(link)
@@ -1243,18 +1342,51 @@ export default function EnhancedPosterGeneratorWithBranding() {
                         disabled={isGenerating}
                       >
                         <div className="w-full aspect-[4/5] rounded-md mb-1 sm:mb-2 overflow-hidden bg-muted">
-                          {template.thumbnail_url ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img 
-                              src={template.thumbnail_url} 
-                              alt={template.name} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="h-8 w-8 text-gray-400" />
-                            </div>
-                          )}
+                          {(() => {
+                            // Helper to get full thumbnail URL
+                            const getThumbnailUrl = (thumbnailUrl: string | null | undefined): string | null => {
+                              if (!thumbnailUrl) return null;
+                              
+                              // If already absolute URL, return as-is
+                              if (thumbnailUrl.startsWith('http')) {
+                                return thumbnailUrl;
+                              }
+                              
+                              // In development, construct absolute URL to Django backend
+                              if (process.env.NODE_ENV === 'development') {
+                                const backendUrl = process.env.NEXT_PUBLIC_API_URL 
+                                  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+                                  : process.env.NEXT_PUBLIC_API_BASE_URL
+                                  ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+                                  : 'http://localhost:8000';
+                                
+                                // Ensure path starts with /
+                                const normalizedPath = thumbnailUrl.startsWith('/') ? thumbnailUrl : `/${thumbnailUrl}`;
+                                return `${backendUrl}${normalizedPath}`;
+                              }
+                              
+                              // In production, return relative path (will be handled by Next.js/nginx)
+                              return thumbnailUrl.startsWith('/') ? thumbnailUrl : `/${thumbnailUrl}`;
+                            };
+                            
+                            const fullThumbnailUrl = getThumbnailUrl(template.thumbnail_url);
+                            
+                            return fullThumbnailUrl ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img 
+                                src={fullThumbnailUrl} 
+                                alt={template.name} 
+                                className="w-full h-full object-cover"
+                                onError={() => {
+                                  console.error('Thumbnail load error for', template.name, ':', fullThumbnailUrl);
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ImageIcon className="h-8 w-8 text-gray-400" />
+                              </div>
+                            );
+                          })()}
                         </div>
                         <div className="font-medium text-gray-700 text-xs sm:text-sm line-clamp-1">{template.name}</div>
                         {template.subcategory && (
@@ -1366,12 +1498,45 @@ export default function EnhancedPosterGeneratorWithBranding() {
               {result && (
                 <div className="space-y-3 sm:space-y-4">
                   <div className="border rounded-lg overflow-hidden relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={result.image_url ? getFullUrl(result.image_url) : ''} 
-                      alt="Generated Poster" 
-                      className="absolute inset-0 w-full h-full object-contain"
-                    />
+                    {!imageLoadError && result.image_url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img 
+                        src={getImageUrl(result.image_url)} 
+                        alt="Generated Poster" 
+                        className="absolute inset-0 w-full h-full object-contain"
+                        onLoad={() => {
+                          setImageLoadError(false)
+                          console.log('✅ Image loaded successfully:', getImageUrl(result.image_url))
+                        }}
+                        onError={() => {
+                          console.error('❌ Image load error')
+                          console.error('Image URL attempted:', getImageUrl(result.image_url))
+                          console.error('Original image_url:', result.image_url)
+                          console.error('public_url:', result.public_url)
+                          console.error('cloudinary_url:', (result as { cloudinary_url?: string }).cloudinary_url)
+                          setImageLoadError(true)
+                        }}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted text-center p-4">
+                        <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground mb-2">Failed to load image preview</p>
+                        <p className="text-xs text-muted-foreground">URL: {result.image_url ? getImageUrl(result.image_url) : 'No URL'}</p>
+                        {result.public_url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => {
+                              window.open(result.public_url, '_blank')
+                            }}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Open in new tab
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-2">

@@ -142,6 +142,39 @@ class ApiClient {
     return `${this.baseUrl}${normalizedEndpoint}`;
   }
 
+  // Helper method to safely parse JSON response
+  private async parseJsonResponse(response: Response): Promise<{ data: unknown; error?: string }> {
+    // Get text first (can only read once)
+    const text = await response.text().catch(() => '');
+    
+    // Check if response looks like HTML
+    const trimmedText = text.trim();
+    if (trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html') || trimmedText.startsWith('<!')) {
+      return {
+        data: null,
+        error: `Backend returned HTML error page instead of JSON. The endpoint may be incorrect or the server may be down.`,
+      };
+    }
+    
+    // If empty, return null
+    if (!text || text.trim() === '') {
+      return { data: null };
+    }
+    
+    // Try to parse as JSON
+    try {
+      return { data: JSON.parse(text) };
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        return {
+          data: null,
+          error: `Failed to parse JSON response: ${error.message}. The server may have returned HTML or an error page.`,
+        };
+      }
+      throw error;
+    }
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -177,18 +210,25 @@ class ApiClient {
         headers: headers as HeadersInit,
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await this.parseJsonResponse(response);
+      
+      if (parseError) {
+        return {
+          success: false,
+          error: parseError,
+        };
+      }
 
       if (!response.ok) {
         return {
           success: false,
-          error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+          error: (data as { error?: string })?.error || `HTTP ${response.status}: ${response.statusText}`,
         };
       }
 
       return {
         success: true,
-        data,
+        data: data as T,
       };
     } catch (error) {
       return {
@@ -223,9 +263,14 @@ class ApiClient {
 
     try {
       const response = await fetch(url, { ...options, method: 'GET', headers: headers as HeadersInit });
-      const data = await response.json();
+      const { data, error: parseError } = await this.parseJsonResponse(response);
+      
+      if (parseError) {
+        return { success: false, error: parseError };
+      }
+      
       if (!response.ok) {
-        return { success: false, error: data?.error || `HTTP ${response.status}: ${response.statusText}` };
+        return { success: false, error: (data as { error?: string })?.error || `HTTP ${response.status}: ${response.statusText}` };
       }
       return data;
     } catch (error) {
@@ -266,9 +311,14 @@ class ApiClient {
         headers: headers as HeadersInit,
         body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
       });
-      const data = await response.json();
+      const { data, error: parseError } = await this.parseJsonResponse(response);
+      
+      if (parseError) {
+        return { success: false, error: parseError };
+      }
+      
       if (!response.ok) {
-        return { success: false, error: data?.error || `HTTP ${response.status}: ${response.statusText}` };
+        return { success: false, error: (data as { error?: string })?.error || `HTTP ${response.status}: ${response.statusText}` };
       }
       return data;
     } catch (error) {
@@ -305,18 +355,25 @@ class ApiClient {
         body: formData,
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await this.parseJsonResponse(response);
+      
+      if (parseError) {
+        return {
+          success: false,
+          error: parseError,
+        };
+      }
 
       if (!response.ok) {
         return {
           success: false,
-          error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+          error: (data as { error?: string })?.error || `HTTP ${response.status}: ${response.statusText}`,
         };
       }
 
       return {
         success: true,
-        data,
+        data: data as FileUploadResponse,
       };
     } catch (error) {
       return {
@@ -354,18 +411,25 @@ class ApiClient {
         body: formData,
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await this.parseJsonResponse(response);
+      
+      if (parseError) {
+        return {
+          success: false,
+          error: parseError,
+        };
+      }
 
       if (!response.ok) {
         return {
           success: false,
-          error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+          error: (data as { error?: string })?.error || `HTTP ${response.status}: ${response.statusText}`,
         };
       }
 
       return {
         success: true,
-        data,
+        data: data as { uploaded_files: FileUploadResponse[]; errors: string[] },
       };
     } catch (error) {
       return {

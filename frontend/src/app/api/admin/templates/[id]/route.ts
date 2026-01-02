@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
 import { buildApiUrl } from '@/utils/api';
 
+// Get Django backend URL - same logic as other API routes
+function getDjangoBackendUrl(): string {
+  // Priority: NEXT_PUBLIC_API_URL > NEXT_PUBLIC_API_BASE_URL > development localhost
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+  }
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '');
+  }
+  // Development fallback
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000';
+  }
+  // Production fallback
+  return 'http://13.213.53.199';
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,7 +33,11 @@ export async function GET(
     }
 
     const { id } = await params;
-    const url = buildApiUrl(`/api/ai/poster-templates/${id}/`);
+    // In development, use absolute URL to bypass Next.js rewrites
+    const backendUrl = getDjangoBackendUrl();
+    const url = process.env.NODE_ENV === 'development'
+      ? `${backendUrl}/api/ai/poster-templates/${id}/`
+      : buildApiUrl(`/api/ai/poster-templates/${id}/`);
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -26,7 +47,42 @@ export async function GET(
       },
     });
 
-    const data = await response.json();
+    // Check content type before parsing
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    
+    let data: unknown;
+    if (isJson) {
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        const text = await response.text().catch(() => '');
+        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+          return NextResponse.json(
+            { error: 'Backend returned HTML error page instead of JSON' },
+            { status: 500 }
+          );
+        }
+        throw jsonError;
+      }
+    } else {
+      const text = await response.text().catch(() => '');
+      if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+        return NextResponse.json(
+          { error: 'Backend returned HTML error page instead of JSON' },
+          { status: 500 }
+        );
+      }
+      try {
+        data = JSON.parse(text);
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid response format from backend' },
+          { status: 500 }
+        );
+      }
+    }
+    
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Admin template fetch error:', error);
@@ -52,7 +108,11 @@ export async function PUT(
 
     const { id } = await params;
     const formData = await request.formData();
-    const url = buildApiUrl(`/api/ai/poster-templates/${id}/`);
+    // In development, use absolute URL to bypass Next.js rewrites
+    const backendUrl = getDjangoBackendUrl();
+    const url = process.env.NODE_ENV === 'development'
+      ? `${backendUrl}/api/ai/poster-templates/${id}/`
+      : buildApiUrl(`/api/ai/poster-templates/${id}/`);
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -110,7 +170,11 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const url = buildApiUrl(`/api/ai/poster-templates/${id}/`);
+    // In development, use absolute URL to bypass Next.js rewrites
+    const backendUrl = getDjangoBackendUrl();
+    const url = process.env.NODE_ENV === 'development'
+      ? `${backendUrl}/api/ai/poster-templates/${id}/`
+      : buildApiUrl(`/api/ai/poster-templates/${id}/`);
     
     const response = await fetch(url, {
       method: 'PATCH',
@@ -122,7 +186,42 @@ export async function PATCH(
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    // Check content type before parsing
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    
+    let data: unknown;
+    if (isJson) {
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        const text = await response.text().catch(() => '');
+        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+          return NextResponse.json(
+            { error: 'Backend returned HTML error page instead of JSON' },
+            { status: 500 }
+          );
+        }
+        throw jsonError;
+      }
+    } else {
+      const text = await response.text().catch(() => '');
+      if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+        return NextResponse.json(
+          { error: 'Backend returned HTML error page instead of JSON' },
+          { status: 500 }
+        );
+      }
+      try {
+        data = JSON.parse(text);
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid response format from backend' },
+          { status: 500 }
+        );
+      }
+    }
+    
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Admin template patch error:', error);
@@ -147,7 +246,11 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const url = buildApiUrl(`/api/ai/poster-templates/${id}/`);
+    // In development, use absolute URL to bypass Next.js rewrites
+    const backendUrl = getDjangoBackendUrl();
+    const url = process.env.NODE_ENV === 'development'
+      ? `${backendUrl}/api/ai/poster-templates/${id}/`
+      : buildApiUrl(`/api/ai/poster-templates/${id}/`);
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {

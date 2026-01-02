@@ -161,8 +161,24 @@ class PosterTemplateSerializer(serializers.ModelSerializer):
         if obj.thumbnail:
             request = self.context.get('request')
             if request:
-                return request.build_absolute_uri(obj.thumbnail.url)
-            return obj.thumbnail.url
+                try:
+                    return request.build_absolute_uri(obj.thumbnail.url)
+                except Exception:
+                    # Fallback if build_absolute_uri fails
+                    from ai_services.utils.storage_handler import get_domain_url
+                    base_url = get_domain_url()
+                    thumbnail_url = obj.thumbnail.url
+                    if thumbnail_url.startswith('/'):
+                        return f"{base_url}{thumbnail_url}"
+                    return f"{base_url}/{thumbnail_url}"
+            else:
+                # No request context, build URL manually
+                from ai_services.utils.storage_handler import get_domain_url
+                base_url = get_domain_url()
+                thumbnail_url = obj.thumbnail.url
+                if thumbnail_url.startswith('/'):
+                    return f"{base_url}{thumbnail_url}"
+                return f"{base_url}/{thumbnail_url}"
         return None
     
     def get_created_by_email(self, obj):

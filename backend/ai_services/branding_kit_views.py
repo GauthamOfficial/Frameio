@@ -75,7 +75,31 @@ def generate_branding_kit(request):
                         logger.info(f"Found organization from company profile: {organization}")
                 except Exception as e:
                     logger.warning(f"Could not get organization: {e}")
-        else:
+        
+        # Check if we can get user from development headers (for development/testing)
+        if not user:
+            dev_user_id = request.META.get('HTTP_X_DEV_USER_ID')
+            if dev_user_id:
+                try:
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    user = User.objects.get(id=dev_user_id)
+                    logger.info(f"Found user from development headers: {user.username} ({user.email if hasattr(user, 'email') else 'N/A'})")
+                except Exception as e:
+                    logger.error(f"Failed to get user from dev headers: {e}")
+        
+        # Check if we can get organization from development headers
+        if not organization:
+            dev_org_id = request.META.get('HTTP_X_DEV_ORG_ID')
+            if dev_org_id:
+                try:
+                    from organizations.models import Organization
+                    organization = Organization.objects.get(id=dev_org_id)
+                    logger.info(f"Found organization from development headers: {organization.name}")
+                except Exception as e:
+                    logger.error(f"Failed to get organization from dev headers: {e}")
+        
+        if not user:
             logger.warning("No authenticated user found - branding kit will be saved without user association")
         
         # Check usage limit before generating
@@ -103,27 +127,36 @@ def generate_branding_kit(request):
                 palette_data_str = palette_data.get('data', '') if palette_data else ''
                 
                 logger.info(f"Saving branding kit - Logo data length: {len(logo_data_str)}, Palette data length: {len(palette_data_str)}")
+                logger.info(f"User: {user.email if user and hasattr(user, 'email') else 'None'}, Organization: {organization.name if organization else 'None'}")
                 
-                branding_kit = GeneratedBrandingKit.objects.create(
-                    organization=organization,
-                    user=user,
-                    prompt=prompt,
-                    style=style,
-                    logo_data=logo_data_str,
-                    logo_format=logo_data.get('format', 'png') if logo_data else 'png',
-                    color_palette_data=palette_data_str,
-                    color_palette_format=palette_data.get('format', 'png') if palette_data else 'png',
-                    colors=result.get('used_colors', [])
-                )
-                logger.info(f"Branding kit saved to database with ID: {branding_kit.id}, User: {user.email if user and hasattr(user, 'email') else 'None'}")
+                # Only save if we have at least logo or palette data
+                if logo_data_str or palette_data_str:
+                    branding_kit = GeneratedBrandingKit.objects.create(
+                        organization=organization,
+                        user=user,
+                        prompt=prompt,
+                        style=style,
+                        logo_data=logo_data_str,
+                        logo_format=logo_data.get('format', 'png') if logo_data else 'png',
+                        color_palette_data=palette_data_str,
+                        color_palette_format=palette_data.get('format', 'png') if palette_data else 'png',
+                        colors=result.get('used_colors', [])
+                    )
+                    logger.info(f"✅ Branding kit saved to database with ID: {branding_kit.id}, User: {user.email if user and hasattr(user, 'email') else 'None'}, Organization: {organization.name if organization else 'None'}")
+                    
+                    # Add the branding kit ID to the response so frontend can verify it was saved
+                    result['branding_kit_id'] = str(branding_kit.id)
+                else:
+                    logger.warning("⚠️ Skipping save - no logo or palette data to save")
             except Exception as e:
-                logger.error(f"Failed to save branding kit to database: {str(e)}", exc_info=True)
-                # Continue even if save fails
+                logger.error(f"❌ Failed to save branding kit to database: {str(e)}", exc_info=True)
+                # Continue even if save fails, but log the error
             
             return Response({
                 'success': True,
                 'message': 'Branding kit generated successfully',
-                'data': result
+                'data': result,
+                'branding_kit_id': result.get('branding_kit_id')  # Include ID in response
             }, status=status.HTTP_200_OK)
         else:
             return Response({
@@ -370,6 +403,29 @@ def list_branding_kits(request):
                         logger.info(f"List branding kits - Found organization from company profile: {organization}")
                 except Exception as e:
                     logger.warning(f"Could not get organization: {e}")
+        
+        # Check if we can get user from development headers (for development/testing)
+        if not user:
+            dev_user_id = request.META.get('HTTP_X_DEV_USER_ID')
+            if dev_user_id:
+                try:
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    user = User.objects.get(id=dev_user_id)
+                    logger.info(f"List branding kits - Found user from development headers: {user.username} ({user.email if hasattr(user, 'email') else 'N/A'})")
+                except Exception as e:
+                    logger.error(f"Failed to get user from dev headers: {e}")
+        
+        # Check if we can get organization from development headers
+        if not organization:
+            dev_org_id = request.META.get('HTTP_X_DEV_ORG_ID')
+            if dev_org_id:
+                try:
+                    from organizations.models import Organization
+                    organization = Organization.objects.get(id=dev_org_id)
+                    logger.info(f"List branding kits - Found organization from development headers: {organization.name}")
+                except Exception as e:
+                    logger.error(f"Failed to get organization from dev headers: {e}")
         
         # Get query parameters
         limit = int(request.GET.get('limit', 50))

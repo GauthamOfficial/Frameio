@@ -75,8 +75,26 @@ export default function BrandingKitPage() {
     try {
       const token = await getToken()
       
+      // In development, use absolute URL to bypass Next.js rewrites and ensure trailing slash is preserved
+      const getDjangoBackendUrl = () => {
+        if (process.env.NODE_ENV === 'development') {
+          return 'http://localhost:8000'
+        }
+        if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+          return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+        }
+        if (process.env.NEXT_PUBLIC_API_URL) {
+          return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+        }
+        return 'http://13.213.53.199'
+      }
+      
+      const brandingKitUrl = process.env.NODE_ENV === 'development'
+        ? `${getDjangoBackendUrl()}/api/ai/branding-kit/generate/`
+        : '/api/ai/branding-kit/generate/'
+      
       const result = await apiPost<{ success: boolean; data?: { branding_kit: BrandingKitData }; error?: string; limit_type?: string; current_count?: number; limit?: number; reset_date?: string }>(
-        '/api/ai/branding-kit/generate/',
+        brandingKitUrl,
         {
           prompt: prompt.trim(),
           style: 'modern'

@@ -8,6 +8,55 @@ const TOKEN_KEY = 'auth_token'
 const REFRESH_TOKEN_KEY = 'refresh_token'
 const USER_KEY = 'auth_user'
 
+/**
+ * Safely parse JSON response, checking for HTML error pages
+ */
+async function safeJsonParse(response: Response, url?: string): Promise<unknown> {
+  const contentType = response.headers.get('content-type') || ''
+  const text = await response.text()
+  
+  // Check if response looks like HTML
+  const trimmedText = text.trim()
+  if (trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html') || trimmedText.startsWith('<!')) {
+    // Provide helpful debugging information
+    const urlInfo = url ? ` URL: ${url}` : ''
+    const preview = text.substring(0, 200).replace(/\n/g, ' ')
+    
+    // Check if it's Next.js index.html (common when rewrites fail)
+    if (text.includes('__NEXT_DATA__') || text.includes('next.js')) {
+      throw new Error(
+        `Next.js served index.html instead of proxying to Django backend.${urlInfo}\n` +
+        `This usually means:\n` +
+        `1. The Django backend is not running on port 8000\n` +
+        `2. Next.js rewrites are not working correctly\n` +
+        `3. The API endpoint URL is incorrect\n` +
+        `Response preview: ${preview}`
+      )
+    }
+    
+    throw new Error(
+      `Backend returned HTML instead of JSON. Status: ${response.status}.${urlInfo}\n` +
+      `Content-Type: ${contentType || 'not set'}\n` +
+      `Response preview: ${preview}`
+    )
+  }
+  
+  // If empty, return empty object
+  if (!text || text.trim() === '') {
+    return {}
+  }
+  
+  // Try to parse as JSON
+  try {
+    return JSON.parse(text)
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error(`Failed to parse JSON response: ${error.message}. The server may have returned HTML or an error page.`)
+    }
+    throw error
+  }
+}
+
 // Token refresh mutex to prevent concurrent refresh attempts
 let refreshPromise: Promise<boolean> | null = null
 
@@ -141,13 +190,41 @@ export function clearAuth(): void {
 }
 
 /**
+ * Get Django backend URL directly (bypasses Next.js rewrites)
+ */
+function getDjangoBackendUrl(): string {
+  // In development, always use localhost:8000 directly
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000'
+  }
+  
+  // In production, use environment variable or fallback
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+  }
+  
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+  }
+  
+  // Production fallback
+  return 'http://13.213.53.199'
+}
+
+/**
  * Login with email and password
  */
 export async function login(email: string, password: string): Promise<AuthResponse> {
   let response: Response
   
+  // In development, use absolute URL to bypass Next.js rewrites
+  // This ensures we hit Django directly even if rewrites aren't working
+  const loginUrl = process.env.NODE_ENV === 'development' 
+    ? `${getDjangoBackendUrl()}/api/users/auth/login/`
+    : buildApiUrl('/api/users/auth/login/')
+  
   try {
-    response = await fetch(buildApiUrl('/api/users/auth/login/'), {
+    response = await fetch(loginUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -296,7 +373,7 @@ export async function login(email: string, password: string): Promise<AuthRespon
   // Success - parse response
   let responseData: unknown
   try {
-    responseData = await response.json()
+    responseData = await safeJsonParse(response, loginUrl)
   } catch (parseError) {
     // JSON parsing failed on success response - unexpected error, log in development
     if (process.env.NODE_ENV === 'development') {
@@ -366,20 +443,26 @@ export async function register(
   })
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Registration failed' }))
+    const errorData = await safeJsonParse(response).catch(() => ({ error: 'Registration failed' })) as { error?: string; detail?: string; details?: string[] }
     // Include details if available (e.g., password validation errors)
     const errorMessage = errorData.error || errorData.detail || 'Registration failed'
     const details = errorData.details ? ` ${errorData.details.join(', ')}` : ''
     throw new Error(errorMessage + details)
   }
 
-  const data = await response.json()
+  const data = await safeJsonParse(response) as AuthResponse & {
+    requires_verification?: boolean
+    tokens?: { access: string; refresh: string } | null
+    user?: User
+    email?: string
+    message?: string
+  }
   
   // Check if verification is required (strict mode - no tokens returned)
   if (data.requires_verification && !data.tokens) {
     // Don't store tokens - user must verify email first
     return {
-      user: data.user || { email: data.email },
+      user: data.user,
       email: data.email || data.user?.email,
       message: data.message,
       requires_verification: true,
@@ -446,10 +529,38 @@ export async function getCurrentUser(retryCount = 0): Promise<User | null> {
     })
 
     if (response.ok) {
-      const data = await response.json()
-      const user = data.user || data
-      setUser(user)
-      return user
+      // Check content type before parsing JSON
+      const contentType = response.headers.get('content-type') || ''
+      const isJson = contentType.includes('application/json')
+      
+      if (isJson) {
+        try {
+          const data = await response.json()
+          const user = data.user || data
+          setUser(user)
+          return user
+        } catch (jsonError) {
+          // JSON parsing failed - might be HTML error page
+          const text = await response.text().catch(() => '')
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Failed to parse JSON response from /api/users/auth/me:', jsonError, {
+              contentType,
+              preview: text.substring(0, 200)
+            })
+          }
+          return getUser() // Fallback to cached user
+        }
+      } else {
+        // Not JSON response - likely HTML error page
+        if (process.env.NODE_ENV === 'development') {
+          const text = await response.text().catch(() => '')
+          console.warn('Backend returned non-JSON response:', {
+            contentType,
+            preview: text.substring(0, 200)
+          })
+        }
+        return getUser() // Fallback to cached user
+      }
     } else if (response.status === 401 && retryCount === 0) {
       // Token expired, try to refresh (only retry once to prevent infinite recursion)
       const refreshed = await refreshAccessToken()
@@ -498,7 +609,7 @@ export async function refreshAccessToken(): Promise<boolean> {
       })
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await safeJsonParse(response) as { access?: string }
         if (data.access) {
           // Update both localStorage and cookies
           const currentRefreshToken = getRefreshToken()
@@ -507,7 +618,7 @@ export async function refreshAccessToken(): Promise<boolean> {
         }
       } else {
         // If refresh fails, clear auth to force re-login
-        const errorData = await response.json().catch(() => ({}))
+        const errorData = await safeJsonParse(response).catch(() => ({})) as { detail?: string }
         if (errorData.detail?.includes('blacklisted') || errorData.detail?.includes('expired')) {
           console.warn('Refresh token is invalid, clearing auth')
           clearAuth()
@@ -555,7 +666,7 @@ export async function sendVerificationEmail(email: string): Promise<void> {
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to send verification email' }))
+    const error = await safeJsonParse(response).catch(() => ({ error: 'Failed to send verification email' })) as { error?: string; message?: string }
     throw new Error(error.error || error.message || 'Failed to send verification email')
   }
 }
@@ -579,11 +690,11 @@ export async function checkVerificationStatus(): Promise<{ is_verified: boolean;
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to check verification status' }))
+    const error = await safeJsonParse(response).catch(() => ({ error: 'Failed to check verification status' })) as { error?: string; message?: string }
     throw new Error(error.error || error.message || 'Failed to check verification status')
   }
 
-  return response.json()
+  return safeJsonParse(response) as Promise<{ is_verified: boolean; email: string }>
 }
 
 /**
@@ -598,11 +709,16 @@ export async function verifyEmail(token: string): Promise<{ message: string; use
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to verify email' }))
+    const error = await safeJsonParse(response).catch(() => ({ error: 'Failed to verify email' })) as { error?: string; message?: string }
     throw new Error(error.error || error.message || 'Failed to verify email')
   }
 
-  const data = await response.json()
+  const data = await safeJsonParse(response) as {
+    message: string
+    user: User
+    access?: string
+    refresh?: string
+  }
   
   // Update user data if verification successful (tokens will be set via server-side route)
   if (data.user) {

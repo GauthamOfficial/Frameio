@@ -228,21 +228,38 @@ async function handleResponse<T>(response: Response): Promise<T> {
     return null as T;
   }
   
-  // Try to parse JSON, handle empty responses gracefully
+  // Get response text first (can only read once)
+  const text = await response.text();
+  
+  // If text is empty, return null
+  if (!text || text.trim() === '') {
+    return null as T;
+  }
+  
+  // Check if response looks like HTML (common error pages) - do this BEFORE trying to parse
+  const trimmedText = text.trim();
+  if (trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html') || trimmedText.startsWith('<!')) {
+    const contentType = response.headers.get('content-type') || 'not set';
+    throw new Error(`Backend returned HTML instead of JSON. This usually means the endpoint is incorrect or the server returned an error page. Content-Type: ${contentType}`);
+  }
+  
+  // Try to parse as JSON
   try {
-    const text = await response.text();
-    
-    // If text is empty, return null
-    if (!text || text.trim() === '') {
-      return null as T;
-    }
-    
-    // Try to parse as JSON
     return JSON.parse(text) as T;
   } catch (error) {
-    // If it's an "Unexpected end of JSON input" error, the response was empty
-    if (error instanceof SyntaxError && error.message.includes('JSON')) {
-      return null as T;
+    // If it's a JSON parsing error, provide helpful message
+    if (error instanceof SyntaxError) {
+      // Check if the text that failed to parse looks like HTML
+      if (trimmedText.includes('<!DOCTYPE') || trimmedText.includes('<html') || trimmedText.includes('<!')) {
+        throw new Error(`Backend returned HTML error page instead of JSON. The endpoint may be incorrect or the server may be down.`);
+      }
+      // If it's an "Unexpected end of JSON input" error, the response was empty or incomplete
+      if (error.message.includes('JSON') || error.message.includes('Unexpected token')) {
+        // Provide helpful error message
+        throw new Error(`Failed to parse JSON response: ${error.message}. Response preview: ${text.substring(0, 100)}`);
+      }
+      // Re-throw syntax errors that aren't JSON-related
+      throw error;
     }
     // Re-throw other errors
     throw error;

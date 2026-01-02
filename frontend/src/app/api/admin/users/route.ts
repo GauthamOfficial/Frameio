@@ -2,6 +2,23 @@ import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
 import { buildApiUrl } from '@/utils/api';
 
+// Get Django backend URL - same logic as other API routes
+function getDjangoBackendUrl(): string {
+  // Priority: NEXT_PUBLIC_API_URL > NEXT_PUBLIC_API_BASE_URL > development localhost
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+  }
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '');
+  }
+  // Development fallback
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000';
+  }
+  // Production fallback
+  return 'http://13.213.53.199';
+}
+
 export async function GET() {
   try {
     // Verify admin session
@@ -16,10 +33,18 @@ export async function GET() {
       );
     }
 
+    // Get Django backend URL
+    const backendUrl = getDjangoBackendUrl();
+    // In development, use absolute URL to bypass Next.js rewrites
+    // In production, use buildApiUrl for relative paths
+    const url = process.env.NODE_ENV === 'development' 
+      ? `${backendUrl}/api/users/`
+      : buildApiUrl('/api/users/');
+
     // Forward request to Django backend with admin header
     let response: Response;
     try {
-      response = await fetch(buildApiUrl('/api/users/'), {
+      response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -41,17 +66,39 @@ export async function GET() {
       );
     }
 
+    const text = await response.text();
+
+    // Check if response is HTML (Next.js fallback page)
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      console.error('Backend returned HTML instead of JSON for admin users');
+      return NextResponse.json(
+        { 
+          error: 'Backend service unavailable',
+          detail: 'Backend returned HTML error page. The endpoint may be incorrect or the server may be down.',
+          networkError: true
+        },
+        { status: 503 }
+      );
+    }
+
     let data: Record<string, unknown>;
     try {
-      const text = await response.text();
       if (text) {
         data = JSON.parse(text);
       } else {
         data = {};
       }
-    } catch {
-      // If response is not JSON, use empty object
-      data = {};
+    } catch (parseError) {
+      // JSON parsing failed
+      console.error('Failed to parse admin users response:', parseError);
+      return NextResponse.json(
+        { 
+          error: 'Invalid response from backend',
+          detail: 'Backend returned non-JSON response. Please check backend logs.',
+          networkError: true
+        },
+        { status: 503 }
+      );
     }
 
     if (!response.ok) {

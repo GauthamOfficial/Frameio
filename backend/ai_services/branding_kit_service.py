@@ -84,26 +84,74 @@ class BrandingKitService:
             The logo should be centered and well-composed.
             """
             
+            # Use GenerateContentConfig to ensure image generation
+            config_kwargs = {"response_modalities": ['Image']}
+            
+            # Try to get image config for aspect ratio (square for logos)
+            try:
+                image_config = types.ImageConfig(
+                    aspect_ratio="1:1",  # Square logo
+                    output_mime_type="image/png"
+                )
+                config_kwargs["image_config"] = image_config
+            except Exception as config_error:
+                logger.warning(f"Could not create image config: {config_error}, using default")
+            
             response = self.client.models.generate_content(
                 model="gemini-2.5-flash-image",
-                contents=enhanced_prompt
+                contents=[enhanced_prompt],
+                config=types.GenerateContentConfig(**config_kwargs)
             )
             
-            # Extract image data
-            image_parts = [
-                part.inline_data.data
-                for part in response.candidates[0].content.parts
-                if part.inline_data
-            ]
+            # Log response structure for debugging
+            logger.info(f"Gemini response received. Candidates: {len(response.candidates) if response.candidates else 0}")
             
-            if not image_parts:
+            if not response.candidates:
+                logger.error("No candidates in Gemini response")
                 return {
                     'success': False,
-                    'error': 'No image generated'
+                    'error': 'No response from AI model'
+                }
+            
+            # Process response similar to poster service
+            candidate = response.candidates[0]
+            logger.info(f"Gemini response candidate received")
+            
+            if not candidate.content:
+                logger.error("No content in Gemini response candidate")
+                return {
+                    'success': False,
+                    'error': 'No content returned from AI model'
+                }
+            
+            if not candidate.content.parts:
+                logger.error("No content parts in Gemini response")
+                return {
+                    'success': False,
+                    'error': 'No content parts returned from AI model'
+                }
+            
+            logger.info(f"Found {len(candidate.content.parts)} content parts")
+            
+            # Extract image data from parts
+            image_data = None
+            for part in candidate.content.parts:
+                if hasattr(part, 'inline_data') and part.inline_data is not None:
+                    if hasattr(part.inline_data, 'data') and part.inline_data.data:
+                        image_data = part.inline_data.data
+                        logger.info(f"Found image data in inline_data, size: {len(image_data)} bytes")
+                        break
+            
+            if not image_data:
+                logger.error("No image data found in response parts")
+                logger.error(f"Part types: {[type(p).__name__ for p in candidate.content.parts]}")
+                return {
+                    'success': False,
+                    'error': 'No image generated - AI model did not return image data'
                 }
             
             # Convert to PIL Image
-            image = Image.open(BytesIO(image_parts[0]))
+            image = Image.open(BytesIO(image_data))
             
             # Convert to base64 for API response
             buffered = BytesIO()
@@ -123,10 +171,12 @@ class BrandingKitService:
             }
             
         except Exception as e:
-            logger.error(f"Error generating logo: {str(e)}")
+            logger.error(f"Error generating logo: {str(e)}", exc_info=True)
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return {
                 'success': False,
-                'error': str(e)
+                'error': f'Error generating logo: {str(e)}'
             }
     
     def generate_color_palette(self, prompt: str, num_colors: int = 5) -> Dict[str, Any]:

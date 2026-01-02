@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
-import { API_BASE_URL, buildApiUrl } from '@/utils/api';
+import { buildApiUrl } from '@/utils/api';
+
+// Get Django backend URL - same logic as other API routes
+function getDjangoBackendUrl(): string {
+  // Priority: NEXT_PUBLIC_API_URL > NEXT_PUBLIC_API_BASE_URL > development localhost
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+  }
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '');
+  }
+  // Development fallback
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000';
+  }
+  // Production fallback
+  return 'http://13.213.53.199';
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -27,9 +44,14 @@ export async function PATCH(
     console.log('[Admin API PATCH] Awaiting params...');
     const { id: userId } = await params;
     console.log(`[Admin API PATCH] User ID: ${userId}`);
-    console.log(`[Admin API PATCH] API_BASE_URL: ${API_BASE_URL}`);
     
-    const djangoUrl = buildApiUrl(`/api/users/${userId}/`);
+    // Get Django backend URL
+    const backendUrl = getDjangoBackendUrl();
+    // In development, use absolute URL to bypass Next.js rewrites
+    // In production, use buildApiUrl for relative paths
+    const djangoUrl = process.env.NODE_ENV === 'development'
+      ? `${backendUrl}/api/users/${userId}/`
+      : buildApiUrl(`/api/users/${userId}/`);
     console.log(`[Admin API PATCH] Django URL: ${djangoUrl}`);
 
     // Forward request to Django backend with admin header
@@ -44,7 +66,31 @@ export async function PATCH(
       body: JSON.stringify(body),
     });
 
-    const data = await response.json().catch(() => ({}));
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const text = await response.text();
+
+    // Check if response is HTML (Next.js fallback page)
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      console.error('Backend returned HTML instead of JSON for admin user PATCH');
+      return NextResponse.json(
+        { 
+          error: 'Backend service unavailable',
+          detail: 'Backend returned HTML error page. The endpoint may be incorrect or the server may be down.',
+          networkError: true
+        },
+        { status: 503 }
+      );
+    }
+
+    let data: Record<string, unknown> = {};
+    if (isJson && text) {
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        console.error('Failed to parse admin user PATCH response:', parseError);
+      }
+    }
 
     if (!response.ok) {
       // If it's an authentication error, provide helpful message
@@ -101,9 +147,14 @@ export async function DELETE(
     console.log('[Admin API DELETE] Awaiting params...');
     const { id: userId } = await params;
     console.log(`[Admin API DELETE] User ID: ${userId}`);
-    console.log(`[Admin API DELETE] API_BASE_URL: ${API_BASE_URL}`);
     
-    const djangoUrl = buildApiUrl(`/api/users/${userId}/`);
+    // Get Django backend URL
+    const backendUrl = getDjangoBackendUrl();
+    // In development, use absolute URL to bypass Next.js rewrites
+    // In production, use buildApiUrl for relative paths
+    const djangoUrl = process.env.NODE_ENV === 'development'
+      ? `${backendUrl}/api/users/${userId}/`
+      : buildApiUrl(`/api/users/${userId}/`);
     console.log(`[Admin API DELETE] Django URL: ${djangoUrl}`);
 
     // Forward request to Django backend with admin header
@@ -120,7 +171,31 @@ export async function DELETE(
     console.log(`[Admin API] Delete response status: ${response.status}`);
 
     if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+      const text = await response.text();
+
+      // Check if response is HTML (Next.js fallback page)
+      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        console.error('Backend returned HTML instead of JSON for admin user DELETE');
+        return NextResponse.json(
+          { 
+            error: 'Backend service unavailable',
+            detail: 'Backend returned HTML error page. The endpoint may be incorrect or the server may be down.',
+            networkError: true
+          },
+          { status: 503 }
+        );
+      }
+
+      let data: Record<string, unknown> = {};
+      if (isJson && text) {
+        try {
+          data = JSON.parse(text);
+        } catch (parseError) {
+          console.error('Failed to parse admin user DELETE response:', parseError);
+        }
+      }
       console.error(`[Admin API] Delete failed:`, data);
       
       // If it's an authentication error, provide helpful message

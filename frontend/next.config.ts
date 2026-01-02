@@ -73,10 +73,11 @@ const nextConfig: NextConfig = {
           source: '/api/ai/:path*',
           destination: `${API_BASE_URL}/api/ai/:path*`,
         },
-        // Note: /api/admin/* routes are handled by Next.js API routes, not Django
-        // Only forward non-admin API routes to Django
+        // Note: /api/admin/* and /api/users/auth/me routes are handled by Next.js API routes, not Django
+        // Exclude admin and specific Next.js API routes from rewrites
+        // All other /api/* routes should be proxied to Django backend
         {
-          source: '/api/((?!admin).*)',
+          source: '/api/((?!admin|users/auth/me|users/me|auth/set-tokens).*)',
           destination: `${API_BASE_URL}/api/$1`,
         },
         {
@@ -109,7 +110,13 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              // SECURITY: Only allow 'unsafe-eval' in development (required for Next.js HMR/React Fast Refresh)
+              // In production, this is disabled to prevent XSS attacks
+              // Development: Next.js requires unsafe-eval for hot module replacement
+              // Production: Strict CSP without unsafe-eval for security
+              process.env.NODE_ENV === 'development'
+                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+                : "script-src 'self' 'unsafe-inline'",
               "worker-src 'self' blob:",
               "child-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",

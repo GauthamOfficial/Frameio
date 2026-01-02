@@ -171,22 +171,41 @@ class PosterTemplateViewSet(viewsets.ModelViewSet):
         return [IsAuthenticatedOrAdmin()]
     
     def get_queryset(self):
-        """Return templates for current organization and global templates (organization=None)"""
-        try:
-            organization = get_current_organization()
-        except Exception:
-            # If get_current_organization fails, try to get from request
-            organization = getattr(self.request, 'organization', None)
+        """Return templates for current organization and global templates (organization=None), or all templates for admin requests"""
+        # Check for admin request header (similar to UserViewSet)
+        admin_header = self.request.META.get('HTTP_X_ADMIN_REQUEST', '').lower()
+        admin_username = self.request.META.get('HTTP_X_ADMIN_USERNAME', '')
+        is_admin_request = getattr(self.request, '_admin_request', False)
         
-        # Return all templates (global + organization-specific) if organization is available
-        # Otherwise return global templates only
-        if organization:
-            queryset = PosterTemplate.objects.filter(
-                Q(organization=organization) | Q(organization__isnull=True)
-            )
+        # Also check header directly in case permission hasn't set the flag yet
+        if not is_admin_request and admin_header == 'true' and admin_username:
+            import os
+            expected_admin = os.getenv('ADMIN_USERNAME', 'tsg_admin')
+            if admin_username == expected_admin:
+                is_admin_request = True
+                self.request._admin_request = True
+                logger.info(f"Admin request detected in PosterTemplateViewSet.get_queryset: {admin_username}")
+        
+        # If this is an admin request, return all templates
+        if is_admin_request:
+            logger.info("Returning all templates for admin request")
+            queryset = PosterTemplate.objects.all()
         else:
-            # If no organization context, return global templates only
-            queryset = PosterTemplate.objects.filter(organization__isnull=True)
+            try:
+                organization = get_current_organization()
+            except Exception:
+                # If get_current_organization fails, try to get from request
+                organization = getattr(self.request, 'organization', None)
+            
+            # Return all templates (global + organization-specific) if organization is available
+            # Otherwise return global templates only
+            if organization:
+                queryset = PosterTemplate.objects.filter(
+                    Q(organization=organization) | Q(organization__isnull=True)
+                )
+            else:
+                # If no organization context, return global templates only
+                queryset = PosterTemplate.objects.filter(organization__isnull=True)
         
         # Filter by active status if provided
         is_active = self.request.query_params.get('is_active')

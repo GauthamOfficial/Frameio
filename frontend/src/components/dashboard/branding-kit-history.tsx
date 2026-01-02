@@ -63,9 +63,28 @@ export function BrandingKitHistory({ limit }: BrandingKitHistoryProps) {
     try {
       setLoading(true)
       const token = await getToken()
+      
+      // In development, use absolute URL to bypass Next.js rewrites
+      const getDjangoBackendUrl = () => {
+        if (process.env.NODE_ENV === 'development') {
+          return 'http://localhost:8000'
+        }
+        if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+          return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+        }
+        if (process.env.NEXT_PUBLIC_API_URL) {
+          return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+        }
+        return 'http://13.213.53.199'
+      }
+      
+      const baseUrl = process.env.NODE_ENV === 'development'
+        ? getDjangoBackendUrl()
+        : ''
+      
       const url = limit 
-        ? `/api/ai/branding-kit/history/?limit=${limit}`
-        : `/api/ai/branding-kit/history/`
+        ? `${baseUrl}/api/ai/branding-kit/history/?limit=${limit}`
+        : `${baseUrl}/api/ai/branding-kit/history/`
       
       console.log('Fetching branding kits from:', url)
       
