@@ -160,25 +160,42 @@ class PosterTemplateSerializer(serializers.ModelSerializer):
         """Return full URL for thumbnail if available"""
         if obj.thumbnail:
             request = self.context.get('request')
+            
+            # Get thumbnail URL path
+            thumbnail_url = obj.thumbnail.url
+            
+            # Ensure it starts with /
+            if not thumbnail_url.startswith('/'):
+                thumbnail_url = f'/{thumbnail_url}'
+            
+            # Try to build absolute URL from request first
             if request:
                 try:
-                    return request.build_absolute_uri(obj.thumbnail.url)
+                    return request.build_absolute_uri(thumbnail_url)
                 except Exception:
-                    # Fallback if build_absolute_uri fails
-                    from ai_services.utils.storage_handler import get_domain_url
-                    base_url = get_domain_url()
-                    thumbnail_url = obj.thumbnail.url
-                    if thumbnail_url.startswith('/'):
-                        return f"{base_url}{thumbnail_url}"
-                    return f"{base_url}/{thumbnail_url}"
-            else:
-                # No request context, build URL manually
-                from ai_services.utils.storage_handler import get_domain_url
-                base_url = get_domain_url()
-                thumbnail_url = obj.thumbnail.url
-                if thumbnail_url.startswith('/'):
-                    return f"{base_url}{thumbnail_url}"
-                return f"{base_url}/{thumbnail_url}"
+                    pass
+            
+            # Fallback: build URL using DOMAIN_URL or API base URL
+            from ai_services.utils.storage_handler import get_domain_url
+            base_url = get_domain_url()
+            
+            # If DOMAIN_URL is not set, try to get from environment
+            if not base_url or base_url == 'http://localhost:8000':
+                # Try to get from API_BASE_URL or construct from common env vars
+                import os
+                domain_url = os.getenv('DOMAIN_URL', '')
+                if not domain_url:
+                    # Try NEXT_PUBLIC_API_BASE_URL pattern (without /api)
+                    api_base = os.getenv('NEXT_PUBLIC_API_BASE_URL', '')
+                    if api_base:
+                        base_url = api_base.replace('/api', '').rstrip('/')
+                    else:
+                        # Production fallback - use the server IP or domain
+                        base_url = os.getenv('API_BASE_URL', 'http://13.213.53.199')
+                else:
+                    base_url = domain_url.rstrip('/')
+            
+            return f"{base_url}{thumbnail_url}"
         return None
     
     def get_created_by_email(self, obj):

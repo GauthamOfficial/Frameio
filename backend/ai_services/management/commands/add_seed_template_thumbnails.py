@@ -10,7 +10,15 @@ from ai_services.models import PosterTemplate
 class Command(BaseCommand):
     help = 'Add thumbnails for seed templates (Wedding Frock, Men\'s Denim Shirt, Elegant Silk Saree, Men\'s Casual T-shirt)'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='Force update thumbnails even if they already exist',
+        )
+
     def handle(self, *args, **options):
+        force_update = options.get('force', False)
         # Map template names to image filenames
         template_image_map = {
             'Wedding Frock': 'Wedding Frock.jpg',
@@ -34,27 +42,54 @@ class Command(BaseCommand):
         
         for template_name, image_filename in template_image_map.items():
             try:
-                # Find template by name
+                self.stdout.write(f'\nProcessing: {template_name}')
+                
+                # Find template by name (try exact match first, then case-insensitive)
                 template = PosterTemplate.objects.filter(name=template_name).first()
+                if not template:
+                    # Try case-insensitive search
+                    template = PosterTemplate.objects.filter(name__iexact=template_name).first()
+                    if template:
+                        self.stdout.write(self.style.WARNING(f'  Found template with different case: "{template.name}"'))
                 
                 if not template:
-                    self.stdout.write(self.style.WARNING(f'Template not found: {template_name}'))
+                    # List similar template names
+                    similar = PosterTemplate.objects.filter(name__icontains=template_name.split()[0]).values_list('name', flat=True)[:5]
+                    self.stdout.write(self.style.ERROR(f'  ✗ Template not found: {template_name}'))
+                    if similar:
+                        self.stdout.write(self.style.WARNING(f'  Similar templates found: {list(similar)}'))
                     not_found_count += 1
                     continue
                 
+                self.stdout.write(self.style.SUCCESS(f'  ✓ Template found: {template.name} (ID: {template.id})'))
+                
                 # Check if template already has a thumbnail
-                if template.thumbnail:
-                    self.stdout.write(self.style.WARNING(f'Template already has thumbnail, skipping: {template_name}'))
+                if template.thumbnail and not force_update:
+                    self.stdout.write(self.style.WARNING(f'  Template already has thumbnail, skipping (use --force to update)'))
                     skipped_count += 1
                     continue
                 
+                if template.thumbnail and force_update:
+                    self.stdout.write(self.style.WARNING(f'  Template has thumbnail, will force update'))
+                
                 # Build image path
                 image_path = os.path.join(images_dir, image_filename)
+                self.stdout.write(f'  Looking for image: {image_path}')
                 
                 if not os.path.exists(image_path):
-                    self.stdout.write(self.style.WARNING(f'Image file not found: {image_path}'))
+                    # List files in the directory to help debug
+                    if os.path.exists(images_dir):
+                        files = [f for f in os.listdir(images_dir) if os.path.isfile(os.path.join(images_dir, f))]
+                        similar_files = [f for f in files if any(word.lower() in f.lower() for word in template_name.split())]
+                        self.stdout.write(self.style.ERROR(f'  ✗ Image file not found: {image_path}'))
+                        if similar_files:
+                            self.stdout.write(self.style.WARNING(f'  Similar files in directory: {similar_files[:5]}'))
+                    else:
+                        self.stdout.write(self.style.ERROR(f'  ✗ Images directory does not exist: {images_dir}'))
                     not_found_count += 1
                     continue
+                
+                self.stdout.write(self.style.SUCCESS(f'  ✓ Image file found'))
                 
                 # Open and save the image
                 try:

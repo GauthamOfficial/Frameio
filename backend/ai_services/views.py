@@ -162,6 +162,12 @@ class PosterTemplateViewSet(viewsets.ModelViewSet):
     serializer_class = PosterTemplateSerializer
     pagination_class = NoPagination  # Return all templates without pagination
     
+    def get_serializer_context(self):
+        """Add request to serializer context for building absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+    
     def get_permissions(self):
         """Allow public read access, require authentication for write operations"""
         if self.action in ['list', 'retrieve']:
