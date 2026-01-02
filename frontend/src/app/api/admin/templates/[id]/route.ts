@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
-import { buildApiUrl } from '@/utils/api';
 
 // Get Django backend URL - same logic as other API routes
 function getDjangoBackendUrl(): string {
@@ -33,11 +32,9 @@ export async function GET(
     }
 
     const { id } = await params;
-    // In development, use absolute URL to bypass Next.js rewrites
+    // Always use absolute URL in API routes (server-side) to ensure proper connection
     const backendUrl = getDjangoBackendUrl();
-    const url = process.env.NODE_ENV === 'development'
-      ? `${backendUrl}/api/ai/poster-templates/${id}/`
-      : buildApiUrl(`/api/ai/poster-templates/${id}/`);
+    const url = `${backendUrl}/api/ai/poster-templates/${id}/`;
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -246,11 +243,9 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    // In development, use absolute URL to bypass Next.js rewrites
+    // Always use absolute URL in API routes (server-side) to ensure proper connection
     const backendUrl = getDjangoBackendUrl();
-    const url = process.env.NODE_ENV === 'development'
-      ? `${backendUrl}/api/ai/poster-templates/${id}/`
-      : buildApiUrl(`/api/ai/poster-templates/${id}/`);
+    const url = `${backendUrl}/api/ai/poster-templates/${id}/`;
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {

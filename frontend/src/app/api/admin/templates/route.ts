@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
-import { buildApiUrl } from '@/utils/api';
 
 // Get Django backend URL - same logic as other API routes
 function getDjangoBackendUrl(): string {
@@ -44,9 +43,8 @@ export async function GET(request: NextRequest) {
     const endpoint = queryString 
       ? `/api/ai/poster-templates/?${queryString}`
       : `/api/ai/poster-templates/`;
-    const url = process.env.NODE_ENV === 'development'
-      ? `${backendUrl}${endpoint}`
-      : buildApiUrl(endpoint);
+    // Always use absolute URL in API routes (server-side) to ensure proper connection
+    const url = `${backendUrl}${endpoint}`;
     
     console.log('[Admin Templates API] Fetching from:', url);
     console.log('[Admin Templates API] Admin username:', session.username);
@@ -222,11 +220,9 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
 
     // Forward request to Django backend with admin header
-    // In development, use absolute URL to bypass Next.js rewrites
+    // Always use absolute URL in API routes (server-side) to ensure proper connection
     const backendUrl = getDjangoBackendUrl();
-    const url = process.env.NODE_ENV === 'development'
-      ? `${backendUrl}/api/ai/poster-templates/`
-      : buildApiUrl('/api/ai/poster-templates/');
+    const url = `${backendUrl}/api/ai/poster-templates/`;
     
     let response: Response;
     try {
