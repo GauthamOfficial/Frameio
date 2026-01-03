@@ -119,9 +119,32 @@ class BrandingKitService:
             }
         
         try:
-            # Enhanced prompt for logo generation - keep it simple and direct
-            # Use a very simple, direct prompt that focuses on image generation
-            enhanced_prompt = f"Logo design for {prompt}, {style} style"
+            # Enhanced prompt for logo generation
+            # Add visual details to help the model generate concrete images
+            # If the prompt is short/vague, enhance it with more descriptive elements
+            base_prompt = prompt.strip()
+            
+            # Check if prompt is too short or vague (less than 10 words or very generic)
+            is_vague = len(base_prompt.split()) < 5 or any(
+                generic_word in base_prompt.lower() 
+                for generic_word in ['company', 'business', 'brand', 'logo', 'organization']
+            )
+            
+            if is_vague:
+                # Enhance vague prompts with more visual details
+                enhanced_prompt = (
+                    f"Create a professional logo design for {base_prompt}. "
+                    f"The logo should be {style} style, visually distinctive, "
+                    f"with clear shapes, symbols, or typography. "
+                    f"Use bold colors and clean lines. "
+                    f"The design should be simple yet memorable, suitable for a {base_prompt} brand identity."
+                )
+            else:
+                # For more detailed prompts, just add style context
+                enhanced_prompt = (
+                    f"Create a professional {style} style logo design based on: {base_prompt}. "
+                    f"The logo should be visually distinctive with clear design elements."
+                )
             
             # Use GenerateContentConfig to ensure image generation
             config_kwargs = {"response_modalities": ['Image']}
@@ -218,16 +241,16 @@ class BrandingKitService:
                             logger.error(f"Safety ratings: {candidate.safety_ratings}")
                         
                         # Provide user-friendly error messages
-                        error_msg = f'AI model stopped generation: {finish_reason_name}'
-                        
                         if finish_reason_name == 'SAFETY':
-                            error_msg += '. The prompt may have triggered safety filters. Try a different description.'
+                            error_msg = 'The prompt may have triggered safety filters. Please try a different description or rephrase your request.'
                         elif finish_reason_name == 'NO_IMAGE':
-                            error_msg += '. The model could not generate an image. Try a different prompt or description.'
+                            error_msg = 'The AI model could not generate an image for this prompt. Please try using a more specific and descriptive prompt with details about colors, style, or design elements.'
                         elif finish_reason_name == 'MAX_TOKENS':
-                            error_msg += '. The response was too long. Try a shorter prompt.'
+                            error_msg = 'The response was too long. Please try a shorter, more concise prompt.'
                         elif finish_reason_name == 'RECITATION':
-                            error_msg += '. The content was blocked due to recitation policy.'
+                            error_msg = 'The content was blocked due to recitation policy. Please try a different description.'
+                        else:
+                            error_msg = f'AI model stopped generation: {finish_reason_name}. Please try a different prompt or description.'
                         
                         return {
                             'success': False,
@@ -250,9 +273,9 @@ class BrandingKitService:
                 if finish_reason_name == 'STOP':
                     error_msg = 'AI model returned STOP but no content was generated. This may be a temporary API issue. Please try again.'
                 elif finish_reason_name == 'NO_IMAGE':
-                    error_msg = 'The model could not generate an image. Try a different prompt or description.'
+                    error_msg = 'The AI model could not generate an image for this prompt. Please try using a more specific and descriptive prompt with details about colors, style, or design elements.'
                 else:
-                    error_msg = 'No content returned from AI model. This may be due to safety filters or API restrictions.'
+                    error_msg = 'No content returned from AI model. This may be due to safety filters or API restrictions. Please try a different prompt.'
                 
                 return {
                     'success': False,

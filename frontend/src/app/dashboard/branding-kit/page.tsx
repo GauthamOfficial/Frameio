@@ -153,12 +153,23 @@ export default function BrandingKitPage() {
         return
       }
       
+      // Extract error message from the error object (available for all error types)
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+      
+      // Check if it's a user-facing error (from AI model, not a technical error)
+      const isUserFacingError = errorMessage.includes('could not generate') || 
+                                errorMessage.includes('try a different') ||
+                                errorMessage.includes('safety filters') ||
+                                errorMessage.includes('model could not') ||
+                                errorMessage.includes('try using a more specific')
+      
       if (err instanceof SyntaxError) {
         setError('Invalid response from server. Please check if the backend is running.')
+      } else if (err instanceof TypeError && (errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch'))) {
+        // Network connectivity error - backend might not be running or CORS issue
+        const backendUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'the backend server'
+        setError(`Cannot connect to the backend server. Please ensure the Django backend is running at ${backendUrl}. Check your connection and try again.`)
       } else {
-        // Extract error message from the error object
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
-        
         // Check if it's a limit error by checking the error message (fallback)
         if (errorMessage.includes('monthly free limit') || errorMessage.includes('reached your') || errorMessage.includes('Please upgrade')) {
           setError(null)
@@ -172,9 +183,20 @@ export default function BrandingKitPage() {
           return
         }
         
-        setError(`Network error: ${errorMessage}`)
+        // For user-facing errors, display the message directly without "Network error:" prefix
+        // For technical errors, add the prefix
+        if (isUserFacingError) {
+          setError(errorMessage)
+        } else {
+          setError(`Network error: ${errorMessage}`)
+        }
       }
-      console.error('Error generating branding kit:', err)
+      
+      // Don't log user-facing errors to console (they're expected and displayed in UI)
+      // Only log actual technical errors (network issues, parsing errors, etc.)
+      if (!isUserFacingError) {
+        console.error('Error generating branding kit:', err)
+      }
     } finally {
       setIsGenerating(false)
     }
@@ -314,7 +336,7 @@ This branding kit was generated using AI and is ready for use in your marketing 
               <Textarea
                 ref={textareaRef}
                 id="brand-prompt"
-                placeholder="describe your logo idea"
+                placeholder="Describe the logo"
                 value={prompt}
                 onChange={(e) => {
                   setPrompt(e.target.value)

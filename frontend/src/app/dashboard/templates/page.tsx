@@ -323,86 +323,126 @@ export default function TemplatesPage() {
         </CardContent>
       </Card>
 
-      {/* Results Count */}
-      <div className="text-sm text-muted-foreground">
-        Showing {filteredTemplates.length} of {templates.length} templates
-      </div>
-
-      {/* Templates Grid */}
-      {filteredTemplates.length === 0 ? (
+      {/* Loading State */}
+      {loading && (
         <Card>
           <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground">No templates found matching your search criteria.</p>
+            <Sparkles className="h-12 w-12 mx-auto mb-4 animate-pulse text-muted-foreground" />
+            <p className="text-muted-foreground">Loading templates...</p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredTemplates.map((template) => (
-            <Card 
-              key={template.id} 
-              className="textile-hover textile-shadow cursor-pointer transition-all hover:shadow-lg"
-              onClick={() => handleTemplateClick(template)}
-            >
-              <CardContent className="p-0">
-                <div className="aspect-[4/3] relative bg-muted rounded-t-lg overflow-hidden">
-                  {template.thumbnail_url ? (
-                    <Image
-                      src={template.thumbnail_url}
-                      alt={template.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <Sparkles className="h-12 w-12 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center">
-                    <Sparkles className="h-8 w-8 text-white opacity-0 hover:opacity-100 transition-opacity" />
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-foreground line-clamp-1">{template.name}</h3>
-                    {template.category && (
-                      <Badge variant="outline" className="text-xs">
-                        {template.category}
-                      </Badge>
-                    )}
-                  </div>
-                  {template.description && (
-                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                      {template.description}
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+            <p className="text-destructive font-medium mb-2">Error loading templates</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <p className="text-xs text-muted-foreground mt-4">
+              Please check that the backend server is running and try refreshing the page.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Results Count */}
+      {!loading && !error && (
+        <div className="text-sm text-muted-foreground">
+          Showing {filteredTemplates.length} of {templates.length} templates
+        </div>
+      )}
+
+      {/* Templates Grid */}
+      {!loading && !error && (
+        <>
+          {filteredTemplates.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                {templates.length === 0 ? (
+                  <>
+                    <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground font-medium mb-2">No templates available</p>
+                    <p className="text-sm text-muted-foreground">
+                      There are no templates in the database. Please contact an administrator to add templates.
                     </p>
-                  )}
-                  {template.audience && template.audience.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {template.audience.map((aud, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {aud}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    {template.subcategory && (
-                      <p className="text-xs text-muted-foreground">
-                        {template.subcategory}
-                      </p>
-                    )}
-                    {template.offer && template.offer !== "No Offer" && (
-                      <Badge className="text-xs bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700 hover:bg-orange-500/20">
-                        {template.offer}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">No templates found matching your search criteria.</p>
+                )}
               </CardContent>
             </Card>
-          ))}
-        </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredTemplates.map((template) => (
+                <Card 
+                  key={template.id} 
+                  className="textile-hover textile-shadow cursor-pointer transition-all hover:shadow-lg"
+                  onClick={() => handleTemplateClick(template)}
+                >
+                  <CardContent className="p-0">
+                    <div className="aspect-[4/3] relative bg-muted rounded-t-lg overflow-hidden">
+                      {template.thumbnail_url ? (
+                        <Image
+                          src={template.thumbnail_url}
+                          alt={template.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                          <Sparkles className="h-12 w-12 text-gray-400" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center">
+                        <Sparkles className="h-8 w-8 text-white opacity-0 hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-foreground line-clamp-1">{template.name}</h3>
+                        {template.category && (
+                          <Badge variant="outline" className="text-xs">
+                            {template.category}
+                          </Badge>
+                        )}
+                      </div>
+                      {template.description && (
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                          {template.description}
+                        </p>
+                      )}
+                      {template.audience && template.audience.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {template.audience.map((aud, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {aud}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        {template.subcategory && (
+                          <p className="text-xs text-muted-foreground">
+                            {template.subcategory}
+                          </p>
+                        )}
+                        {template.offer && template.offer !== "No Offer" && (
+                          <Badge className="text-xs bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700 hover:bg-orange-500/20">
+                            {template.offer}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

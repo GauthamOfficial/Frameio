@@ -159,10 +159,12 @@ def generate_branding_kit(request):
                 'branding_kit_id': result.get('branding_kit_id')  # Include ID in response
             }, status=status.HTTP_200_OK)
         else:
+            # User-facing errors (like NO_IMAGE, SAFETY) should be 400, not 500
+            # 500 is reserved for actual server errors
             return Response({
                 'success': False,
                 'error': result.get('error', 'Unknown error')
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            }, status=status.HTTP_400_BAD_REQUEST)
             
     except Exception as e:
         logger.error(f"Error in generate_branding_kit: {str(e)}")
@@ -212,10 +214,11 @@ def generate_logo(request):
                 'data': result
             }, status=status.HTTP_200_OK)
         else:
+            # User-facing errors (like NO_IMAGE, SAFETY) should be 400, not 500
             return Response({
                 'success': False,
                 'error': result.get('error', 'Unknown error')
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            }, status=status.HTTP_400_BAD_REQUEST)
             
     except Exception as e:
         logger.error(f"Error in generate_logo: {str(e)}")
@@ -273,10 +276,11 @@ def generate_color_palette(request):
                 'data': result
             }, status=status.HTTP_200_OK)
         else:
+            # User-facing errors (like NO_IMAGE, SAFETY) should be 400, not 500
             return Response({
                 'success': False,
                 'error': result.get('error', 'Unknown error')
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            }, status=status.HTTP_400_BAD_REQUEST)
             
     except Exception as e:
         logger.error(f"Error in generate_color_palette: {str(e)}")

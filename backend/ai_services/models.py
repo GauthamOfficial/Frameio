@@ -314,7 +314,7 @@ class PosterTemplate(models.Model):
     """Model to store poster templates with prompts and thumbnails"""
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='poster_templates', null=True, blank=True)
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, related_name='poster_templates', null=True, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_poster_templates', null=True, blank=True)
     
     # Template details

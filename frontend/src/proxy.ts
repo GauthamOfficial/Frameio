@@ -19,7 +19,7 @@ const isPublicRoute = (pathname: string): boolean => {
   );
 };
 
-export default function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Allow token setting route (used for email verification auto-login)
@@ -66,11 +66,11 @@ export default function middleware(req: NextRequest) {
   if (!authToken) {
     // Redirect to sign-in if not authenticated
     // Check referer to avoid redirect loops from sign-in/sign-up/forgot-password pages
-    const referer = req.headers.get('referer') || ''
+    const referer = req.headers.get('referer') || '';
     const isFromAuthPage = referer.includes('/sign-in') || 
                           referer.includes('/sign-up') || 
                           referer.includes('/forgot-password') ||
-                          referer.includes('/reset-password')
+                          referer.includes('/reset-password');
     
     if (!isFromAuthPage) {
       const signInUrl = new URL('/sign-in', req.url);
@@ -85,3 +85,4 @@ export default function middleware(req: NextRequest) {
 export const config = {
   matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
 };
+

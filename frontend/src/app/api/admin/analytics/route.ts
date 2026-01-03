@@ -23,7 +23,24 @@ export async function GET(request: NextRequest) {
 
     // Forward request to Django backend with admin header
     // Django route: /api/ + users.urls path = /api/admin/analytics/
-    const djangoUrl = new URL(buildApiUrl('/api/admin/analytics/'));
+    const apiUrl = buildApiUrl('/api/admin/analytics/');
+    
+    // Ensure we have an absolute URL for server-side fetch
+    // If buildApiUrl returns a relative path, construct absolute URL
+    let djangoUrl: URL;
+    if (apiUrl.startsWith('http://') || apiUrl.startsWith('https://')) {
+      djangoUrl = new URL(apiUrl);
+    } else {
+      // Relative path - need to construct absolute URL
+      // In development, use localhost:8000
+      // In production, use NEXT_PUBLIC_API_BASE_URL or fallback
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 
+                     process.env.NEXT_PUBLIC_API_URL || 
+                     (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'http://13.213.53.199');
+      const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
+      djangoUrl = new URL(apiUrl.startsWith('/') ? apiUrl : `/${apiUrl}`, cleanBaseUrl);
+    }
+    
     djangoUrl.searchParams.set('timeRange', timeRange);
     djangoUrl.searchParams.set('days', days);
 
@@ -63,8 +80,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Admin analytics fetch error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Internal server error';
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      errorMessage = 'Cannot connect to the backend server. Please ensure the Django backend is running.';
+    } else if (error instanceof Error) {
+      errorMessage = `Error fetching analytics: ${error.message}`;
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: errorMessage,
+        detail: error instanceof Error ? error.stack : 'Unknown error occurred'
+      },
       { status: 500 }
     );
   }

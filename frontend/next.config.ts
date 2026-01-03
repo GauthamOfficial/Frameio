@@ -153,6 +153,8 @@ const nextConfig: NextConfig = {
     }
     return config
   },
+  // Turbopack configuration (Next.js 16 uses Turbopack by default)
+  turbopack: {},
   // Experimental features
   experimental: {
     // Add any experimental features here

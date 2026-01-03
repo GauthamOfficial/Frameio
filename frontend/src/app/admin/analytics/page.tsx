@@ -58,7 +58,18 @@ export default function AdminAnalyticsPage() {
         credentials: 'include',
       });
 
-      const data = await response.json();
+      // Check if response is ok before parsing JSON
+      let data;
+      try {
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+        data = JSON.parse(text);
+      } catch (parseError) {
+        console.error('Failed to parse analytics response:', parseError);
+        throw new Error('Invalid response from server. The backend may be experiencing issues.');
+      }
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
