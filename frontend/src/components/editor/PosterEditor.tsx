@@ -61,7 +61,7 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
 
     // Import fabric.js only on client side
     import('fabric').then((fabricModule) => {
-      const { fabric } = fabricModule;
+      const fabric = fabricModule.default || fabricModule;
       
       const canvas = new fabric.Canvas(canvasRef.current!, {
         width: 800,
@@ -70,23 +70,26 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
       });
 
       // Load the poster image
-      fabric.Image.fromURL(poster.imageUrl, (img) => {
-      if (img) {
-        // Scale image to fit canvas
-        const scale = Math.min(800 / img.width!, 800 / img.height!);
-        img.scale(scale);
-        img.set({
-          left: (800 - img.width! * scale) / 2,
-          top: (800 - img.height! * scale) / 2,
-          selectable: true,
-          evented: true
-        });
-        canvas.add(img);
-        canvas.renderAll();
-        saveToHistory();
-      }
-      setIsLoading(false);
-    });
+      fabric.Image.fromURL(poster.imageUrl).then((img) => {
+        if (img) {
+          // Scale image to fit canvas
+          const scale = Math.min(800 / img.width!, 800 / img.height!);
+          img.scale(scale);
+          img.set({
+            left: (800 - img.width! * scale) / 2,
+            top: (800 - img.height! * scale) / 2,
+            selectable: true,
+            evented: true
+          });
+          canvas.add(img);
+          canvas.renderAll();
+          saveToHistory();
+        }
+        setIsLoading(false);
+      }).catch((error) => {
+        console.error('Failed to load image:', error);
+        setIsLoading(false);
+      });
 
       // Event listeners
       canvas.on('selection:created', handleSelection);
@@ -134,7 +137,8 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
   const addText = async () => {
     if (!editorState.canvas || !textInput.trim()) return;
 
-    const { fabric } = await import('fabric');
+    const fabricModule = await import('fabric');
+    const fabric = fabricModule.default || fabricModule;
     const text = new fabric.Text(textInput, {
       left: 100,
       top: 100,
@@ -156,7 +160,8 @@ export function PosterEditor({ poster, onClose, onSave }: PosterEditorProps) {
   const addShape = async () => {
     if (!editorState.canvas) return;
 
-    const { fabric } = await import('fabric');
+    const fabricModule = await import('fabric');
+    const fabric = fabricModule.default || fabricModule;
     let shape: unknown;
     
     if (shapeType === 'rect') {

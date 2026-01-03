@@ -39,7 +39,7 @@ export function CollaborationCanvas({
 
     // Import fabric.js only on client side
     import('fabric').then((fabricModule) => {
-      const { fabric } = fabricModule;
+      const fabric = fabricModule.default || fabricModule;
       
       const fabricCanvas = new fabric.Canvas(canvasRef.current!, {
         width: 800,
@@ -70,8 +70,8 @@ export function CollaborationCanvas({
 
     // Event listeners for real-time collaboration
     fabricCanvas.on('mouse:move', (e) => {
-      if (e.pointer) {
-        onCursorUpdate({ x: e.pointer.x, y: e.pointer.y });
+      if (e.viewportPoint) {
+        onCursorUpdate({ x: e.viewportPoint.x, y: e.viewportPoint.y });
       }
     });
 

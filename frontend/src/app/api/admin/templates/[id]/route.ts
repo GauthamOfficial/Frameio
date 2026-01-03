@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
+import { buildApiUrl } from '@/utils/api';
 
 // Get Django backend URL - same logic as other API routes
 function getDjangoBackendUrl(): string {
