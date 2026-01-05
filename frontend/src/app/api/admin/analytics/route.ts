@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       // In production, use NEXT_PUBLIC_API_BASE_URL or fallback
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 
                      process.env.NEXT_PUBLIC_API_URL || 
-                     (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'http://13.213.53.199');
+                     (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'http://47.129.60.11');
       const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
       djangoUrl = new URL(apiUrl.startsWith('/') ? apiUrl : `/${apiUrl}`, cleanBaseUrl);
     }

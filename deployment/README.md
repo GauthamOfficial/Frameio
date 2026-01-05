@@ -6,7 +6,7 @@ This guide will help you deploy Frameio on AWS EC2 using Nginx and Gunicorn.
 
 - AWS EC2 instance running Ubuntu 20.04 or later
 - SSH access to the EC2 instance
-- Domain name (optional, can use IP: 13.213.53.199)
+- Domain name (optional, can use IP: 47.129.60.11)
 
 ## Quick Start
 
@@ -39,7 +39,7 @@ Add your configuration (see `env.template` for reference):
 # Django Settings
 SECRET_KEY=your_secret_key_here
 DEBUG=False
-ALLOWED_HOSTS=13.213.53.199,localhost,127.0.0.1
+ALLOWED_HOSTS=47.129.60.11, localhost,127.0.0.1
 
 # Database
 DB_NAME=frameio_db
@@ -61,7 +61,7 @@ ARCJET_KEY=your_key
 
 # Production Settings
 SECURE_SSL_REDIRECT=False  # Set to True when SSL is configured
-CORS_ALLOWED_ORIGINS=http://13.213.53.199,https://13.213.53.199
+CORS_ALLOWED_ORIGINS=http://47.129.60.11, https://47.129.60.11
 ```
 
 ### 3. Setup Database

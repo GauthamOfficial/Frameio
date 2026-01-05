@@ -63,7 +63,7 @@ function CheckEmailContent() {
           // Use server-side API route to set cookies and redirect
           // This ensures cookies are set before redirect happens
           // CRITICAL: Always use NEXT_PUBLIC_APP_URL in production, never fallback to window.location.origin
-          // because window.location.origin might be the backend IP (13.213.53.199) instead of the frontend domain
+          // because window.location.origin might be the backend IP (47.129.60.11) instead of the frontend domain
           let frontendUrl = process.env.NEXT_PUBLIC_APP_URL;
           
           // Runtime production detection: check if we're on the production domain
@@ -84,7 +84,7 @@ function CheckEmailContent() {
           
           // Final safety check: never use localhost or backend IP when on production domain
           if (isProductionDomain) {
-            if (frontendUrl?.includes('localhost') || frontendUrl?.includes('13.213.53.199')) {
+            if (frontendUrl?.includes('localhost') || frontendUrl?.includes('47.129.60.11')) {
               console.error('Warning: Invalid URL detected. Using https://frameio.co');
               frontendUrl = 'https://frameio.co';
             }

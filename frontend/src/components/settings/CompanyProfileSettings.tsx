@@ -139,7 +139,7 @@ const CompanyProfileSettings: React.FC = () => {
         if (process.env.NEXT_PUBLIC_API_URL) {
           return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
         }
-        return 'http://13.213.53.199'
+        return 'http://47.129.60.11'
       }
       
       const profileUrl = process.env.NODE_ENV === 'development'
@@ -376,7 +376,7 @@ const CompanyProfileSettings: React.FC = () => {
         if (process.env.NEXT_PUBLIC_API_URL) {
           return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
         }
-        return 'http://13.213.53.199'
+        return 'http://47.129.60.11'
       }
       
       const statusUrl = process.env.NODE_ENV === 'development'
@@ -484,7 +484,7 @@ const CompanyProfileSettings: React.FC = () => {
         if (process.env.NEXT_PUBLIC_API_URL) {
           return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
         }
-        return 'http://13.213.53.199'
+        return 'http://47.129.60.11'
       }
       
       const profileUrl = process.env.NODE_ENV === 'development'

@@ -9,7 +9,7 @@ async function handleRequest(request: NextRequest) {
   
   // Get base URL from environment variable or extract from request
   // CRITICAL: In production, always use NEXT_PUBLIC_APP_URL, never fallback to request.url.origin
-  // because request.url.origin might be the backend IP (13.213.53.199) instead of the frontend domain
+  // because request.url.origin might be the backend IP (47.129.60.11) instead of the frontend domain
   let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
   
   // Runtime production detection: check if request is from production domain
@@ -32,7 +32,7 @@ async function handleRequest(request: NextRequest) {
   
   // Final safety check: never use localhost or backend IP when on production domain
   if (isProductionDomain) {
-    if (baseUrl.includes('localhost') || baseUrl.includes('13.213.53.199')) {
+    if (baseUrl.includes('localhost') || baseUrl.includes('47.129.60.11')) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Warning: Invalid URL detected. Using https://frameio.co');
       }

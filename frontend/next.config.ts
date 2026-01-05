@@ -17,7 +17,7 @@ const getApiBaseUrl = () => {
     return 'http://localhost:8000';
   }
   // Production fallback
-  return 'http://13.213.53.199/api';
+  return 'http://47.129.60.11/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

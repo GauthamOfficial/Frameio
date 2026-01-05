@@ -563,8 +563,8 @@ if not DEBUG:
     else:
         # Fallback: allow IP and common domains
         CORS_ALLOWED_ORIGINS = [
-            "http://13.213.53.199",
-            "https://13.213.53.199",
+            "http://47.129.60.11",
+            "https://47.129.60.11",
         ]
     
     # Logging - more detailed in production

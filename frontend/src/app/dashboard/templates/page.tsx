@@ -94,7 +94,7 @@ export default function TemplatesPage() {
             return 'http://localhost:8000';
           }
           // Production fallback
-          return 'http://13.213.53.199';
+          return 'http://47.129.60.11';
         }
         
         // In development, use absolute URL to bypass Next.js rewrites

@@ -191,7 +191,7 @@ class PosterTemplateSerializer(serializers.ModelSerializer):
                         base_url = api_base.replace('/api', '').rstrip('/')
                     else:
                         # Production fallback - use the server IP or domain
-                        base_url = os.getenv('API_BASE_URL', 'http://13.213.53.199')
+                        base_url = os.getenv('API_BASE_URL', 'http://47.129.60.11')
                 else:
                     base_url = domain_url.rstrip('/')
             

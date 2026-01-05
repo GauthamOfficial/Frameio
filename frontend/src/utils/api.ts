@@ -30,7 +30,7 @@ function getApiBaseUrl(): string {
   
   // Server-side: use absolute URL from environment variable
   // NEXT_PUBLIC_API_BASE_URL must be set for SSR to work correctly
-  // Example: NEXT_PUBLIC_API_BASE_URL=http://13.213.53.199 (without /api suffix)
+  // Example: NEXT_PUBLIC_API_BASE_URL=http://47.129.60.11 (without /api suffix)
   // For development: NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
   const serverBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   if (serverBaseUrl) {
@@ -65,7 +65,7 @@ function getBaseUrlWithoutApi(): string {
  *   - These are routed through Nginx to the backend
  * 
  * Server-side (SSR):
- *   - Returns absolute URLs like 'http://13.213.53.199/api/users/auth/login/'
+ *   - Returns absolute URLs like 'http://47.129.60.11/api/users/auth/login/'
  *   - Uses NEXT_PUBLIC_API_BASE_URL environment variable
  * 
  * @param endpoint - API endpoint path (e.g., '/api/users/' or '/users/')

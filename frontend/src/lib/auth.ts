@@ -208,7 +208,7 @@ function getDjangoBackendUrl(): string {
   }
   
   // Production fallback
-  return 'http://13.213.53.199'
+  return 'http://47.129.60.11'
 }
 
 /**

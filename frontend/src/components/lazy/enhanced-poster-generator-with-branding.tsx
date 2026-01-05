@@ -333,7 +333,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
           if (process.env.NEXT_PUBLIC_API_URL) {
             return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
           }
-          return 'http://13.213.53.199'
+          return 'http://47.129.60.11'
         }
         
         const templatesUrl = process.env.NODE_ENV === 'development'
@@ -692,7 +692,7 @@ export default function EnhancedPosterGeneratorWithBranding() {
         if (process.env.NEXT_PUBLIC_API_URL) {
           return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
         }
-        return 'http://13.213.53.199'
+        return 'http://47.129.60.11'
       }
       
       // In development, prioritize direct Django URL

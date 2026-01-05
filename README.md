@@ -267,20 +267,27 @@ Frameio/
 
 ## 🚀 Deployment
 
-### Full-Stack Server Deployment (AWS EC2)
+### Production Deployment (AWS EC2 + S3) - **RECOMMENDED**
 
-For comprehensive server deployment structure and step-by-step guide, see:
+**Complete production deployment guide with EC2 and S3:**
+- **🚀 Complete Production Guide:** [`deployment/PRODUCTION_DEPLOYMENT_EC2_S3.md`](deployment/PRODUCTION_DEPLOYMENT_EC2_S3.md) ⭐ **START HERE**
+- **✅ Deployment Checklist:** [`deployment/DEPLOYMENT_CHECKLIST.md`](deployment/DEPLOYMENT_CHECKLIST.md)
+
+**Quick Overview:**
+- **Backend:** Django + Gunicorn + Nginx on AWS EC2
+- **Frontend:** Next.js (standalone build on EC2)
+- **Database:** MySQL 8.0+ on EC2
+- **File Storage:** AWS S3 (for media files, posters, uploads)
+- **Cache:** Redis (optional)
+- **Architecture:** Full-stack on single EC2 instance with S3 for scalable file storage
+
+### Alternative Deployment Guides
+
+For other deployment options and detailed structure:
 - **📋 Full Deployment Structure:** [`deployment/FULL_STACK_DEPLOYMENT_STRUCTURE.md`](deployment/FULL_STACK_DEPLOYMENT_STRUCTURE.md)
 - **🚀 Quick Start:** [`deployment/QUICK_START.md`](deployment/QUICK_START.md)
 - **📖 Step-by-Step Guide:** [`deployment/STEP_BY_STEP_DEPLOYMENT.md`](deployment/STEP_BY_STEP_DEPLOYMENT.md)
 - **📚 Complete Documentation:** [`deployment/README.md`](deployment/README.md)
-
-**Quick Overview:**
-- **Backend:** Django + Gunicorn + Nginx on AWS EC2
-- **Frontend:** Next.js (can be deployed separately on Vercel or same server)
-- **Database:** MySQL 8.0+ on EC2 or cloud service
-- **Cache:** Redis (optional)
-- **Server IP:** 13.213.53.199
 
 ### Alternative Deployment Options
 
@@ -316,6 +323,10 @@ For comprehensive server deployment structure and step-by-step guide, see:
 | `CLERK_SECRET_KEY` | Clerk secret key | Yes |
 | `ARCJET_KEY` | Arcjet API key | Yes |
 | `GEMINI_API_KEY` | Google Gemini API key | Yes |
+| `AWS_REGION` | AWS region for S3 (e.g., us-east-1) | Yes (Production) |
+| `AWS_S3_BUCKET` | S3 bucket name for file storage | Yes (Production) |
+| `AWS_ACCESS_KEY_ID` | AWS access key (optional if using IAM role) | Optional |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key (optional if using IAM role) | Optional |
 | `REDIS_URL` | Redis connection URL | Optional |
 
 ## 📝 API Documentation
