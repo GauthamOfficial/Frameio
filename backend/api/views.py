@@ -2,10 +2,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
 from django.core.mail import send_mail
 from django.conf import settings
+from utils.s3_storage import upload_file_object_to_s3, generate_s3_key
 import os
 import uuid
 
@@ -70,13 +69,22 @@ def upload_file(request):
         file_extension = os.path.splitext(file.name)[1]
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         
-        # Save file
-        file_path = default_storage.save(f"uploads/{unique_filename}", ContentFile(file.read()))
-        file_url = request.build_absolute_uri(default_storage.url(file_path))
+        # Generate S3 key (path) for the file
+        # Format: uploads/YYYY/MM/DD/uuid-filename.ext
+        s3_key = generate_s3_key('uploads', unique_filename, date_prefix=True)
         
+        # Upload file to S3 (not local disk)
+        # S3 will return the public URL directly
+        file_url = upload_file_object_to_s3(
+            file_obj=file,
+            s3_key=s3_key,
+            content_type=file.content_type
+        )
+        
+        # Return response with S3 URL (API shape unchanged)
         return Response({
             "success": True,
-            "url": file_url,
+            "url": file_url,  # S3 public URL
             "filename": unique_filename,
             "original_name": file.name,
             "size": file.size,
@@ -126,12 +134,18 @@ def upload_multiple_files(request):
             file_extension = os.path.splitext(file.name)[1]
             unique_filename = f"{uuid.uuid4()}{file_extension}"
             
-            # Save file
-            file_path = default_storage.save(f"uploads/{unique_filename}", ContentFile(file.read()))
-            file_url = request.build_absolute_uri(default_storage.url(file_path))
+            # Generate S3 key (path) for the file
+            s3_key = generate_s3_key('uploads', unique_filename, date_prefix=True)
+            
+            # Upload file to S3 (not local disk)
+            file_url = upload_file_object_to_s3(
+                file_obj=file,
+                s3_key=s3_key,
+                content_type=file.content_type
+            )
             
             uploaded_files.append({
-                "url": file_url,
+                "url": file_url,  # S3 public URL
                 "filename": unique_filename,
                 "original_name": file.name,
                 "size": file.size,
