@@ -693,13 +693,28 @@ class AIPosterService:
                                             logger.info("Brand overlay applied successfully!")
                                             branded_path = brand_result.get("image_path", saved_path)
                                             
-                                            # Get public URL for branded poster from local storage
-                                            logger.info("Getting public URL for branded poster from local storage...")
-                                            branded_public_url = upload_poster_image(branded_path)
-                                            if branded_public_url:
-                                                logger.info(f"✅ Branded poster public URL: {branded_public_url}")
-                                            else:
-                                                logger.warning("⚠️  Failed to get public URL for branded poster, using original")
+                                            # Read branded poster from local storage and upload to S3
+                                            logger.info("Uploading branded poster to S3...")
+                                            try:
+                                                # Read the branded poster file from local storage
+                                                if default_storage.exists(branded_path):
+                                                    with default_storage.open(branded_path, 'rb') as f:
+                                                        branded_image_bytes = f.read()
+                                                    
+                                                    # Upload to S3
+                                                    branded_s3_key, branded_s3_url, branded_public_url = store_poster_image(
+                                                        branded_image_bytes,
+                                                        filename=f"branded_{int(time.time())}.png"
+                                                    )
+                                                    logger.info(f"✅ Branded poster uploaded to S3: {branded_s3_url}")
+                                                    logger.info(f"✅ Branded poster public URL: {branded_public_url}")
+                                                else:
+                                                    logger.error(f"Branded poster file not found: {branded_path}")
+                                                    branded_public_url = public_url if public_url else ''
+                                            except Exception as upload_error:
+                                                logger.error(f"Failed to upload branded poster to S3: {upload_error}")
+                                                import traceback
+                                                logger.error(traceback.format_exc())
                                                 branded_public_url = public_url if public_url else ''
                                             
                                             # Create shareable HTML page for branded poster
@@ -1199,17 +1214,29 @@ class AIPosterService:
                                         logger.info("Brand overlay applied successfully to edited poster!")
                                         branded_path = brand_result.get("image_path", saved_path)
                                         
-                                        # Get public URL for branded poster from local storage
+                                        # Read branded poster from local storage and upload to S3
+                                        logger.info("Uploading branded edited poster to S3...")
                                         branded_public_url = None
                                         try:
-                                            branded_public_url = upload_poster_image(branded_path)
-                                            if branded_public_url:
-                                                logger.info(f"Branded edited poster public URL: {branded_public_url}")
+                                            # Read the branded poster file from local storage
+                                            if default_storage.exists(branded_path):
+                                                with default_storage.open(branded_path, 'rb') as f:
+                                                    branded_image_bytes = f.read()
+                                                
+                                                # Upload to S3
+                                                branded_s3_key, branded_s3_url, branded_public_url = store_poster_image(
+                                                    branded_image_bytes,
+                                                    filename=f"branded_edited_{int(time.time())}.png"
+                                                )
+                                                logger.info(f"✅ Branded edited poster uploaded to S3: {branded_s3_url}")
+                                                logger.info(f"✅ Branded edited poster public URL: {branded_public_url}")
                                             else:
-                                                logger.warning("Failed to get public URL for branded edited poster, using original URL")
+                                                logger.error(f"Branded edited poster file not found: {branded_path}")
                                                 branded_public_url = public_url  # Fallback to original
                                         except Exception as e:
-                                            logger.error(f"Error getting public URL for branded edited poster: {str(e)}")
+                                            logger.error(f"Error uploading branded edited poster to S3: {str(e)}")
+                                            import traceback
+                                            logger.error(traceback.format_exc())
                                             branded_public_url = public_url  # Fallback to original
                                         
                                         # CRITICAL: Ensure public_url is always set (even if empty)

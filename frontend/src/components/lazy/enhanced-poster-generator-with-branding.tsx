@@ -1496,9 +1496,19 @@ export default function EnhancedPosterGeneratorWithBranding() {
 
               {/* Generated Poster */}
               {result && (() => {
-                // Prioritize cloudinary_url (direct image with logo) > public_url (with logo) > image_url (original)
+                // Prioritize branded image: if image_url contains "branded", it has the logo
+                // Otherwise: cloudinary_url (direct image with logo) > public_url (with logo) > image_url (original)
                 const cloudinaryUrl = (result as { cloudinary_url?: string }).cloudinary_url
-                const bestUrl = cloudinaryUrl || result.public_url || result.image_url
+                
+                // If image_url contains "branded", it's the logo-added version (temporary workaround until backend fix)
+                const isBrandedImage = result.image_url && (
+                  result.image_url.includes('branded') || 
+                  result.image_url.includes('branded_poster')
+                )
+                
+                const bestUrl = isBrandedImage 
+                  ? result.image_url  // Use branded image_url if it exists
+                  : (cloudinaryUrl || result.public_url || result.image_url)
                 
                 // If bestUrl is already an absolute URL, use it directly; otherwise use getImageUrl
                 // This ensures we use the logo-added image (cloudinary_url/public_url) instead of the original
