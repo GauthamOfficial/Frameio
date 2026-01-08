@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Men's Casual T-shirt",
+    "description": "Premium dress shop style for casual wear",
+    "prompt": "Create a stylish product post featuring a dummy wearing the uploaded men's T-shirt. Set the background at a cinematic premium dress shop. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.",
+    "category": "Fashion",
+    "subcategory": "Casual",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "thumbnail_filename": "poster_templates/thumbnails/T_shirt_QylbK6U.png"
+  },
+  {
+    "name": "Elegant Silk Saree",
+    "description": "Premium Luxurious Style for sarees",
+    "prompt": "Create a stylish product post featuring a dummy model wearing the uploaded saree. Set the background in a premium, elegant environment with cinematic lighting for a luxurious look. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.",
+    "category": "Fashion",
+    "subcategory": "Traditional",
+    "audience": [
+      "Women"
+    ],
+    "offer": "No Offer",
+    "thumbnail_filename": "poster_templates/thumbnails/Saaree_bLuJAiD.jpg"
+  },
+  {
+    "name": "Men's Denim Shirt",
+    "description": "Urban Casual Style for men's shirts",
+    "prompt": "Create a stylish product post featuring a real man wearing the uploaded shirt. Set the background with cinematic buildings and dramatic lighting for a modern, urban look. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.",
+    "category": "Fashion",
+    "subcategory": "Casual",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "thumbnail_filename": "poster_templates/thumbnails/Men_Shirt_kIcmX5l.png"
+  },
+  {
+    "name": "Wedding Frock",
+    "description": "Moody outdoor style for wedding frocks",
+    "prompt": "Create a stylish product post featuring a dummy model wearing the uploaded white party frock. Set the background in a moody, misty outdoor atmosphere with soft cinematic lighting. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.",
+    "category": "Fashion",
+    "subcategory": "Wedding",
+    "audience": [
+      "Women"
+    ],
+    "offer": "No Offer",
+    "thumbnail_filename": "poster_templates/thumbnails/Wedding_Frock_1bsNnyl.jpg"
+  }
+]

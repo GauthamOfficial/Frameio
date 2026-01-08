@@ -1,0 +1,1260 @@
+[
+{
+  "model": "ai_services.postertemplate",
+  "pk": "0af64647-cc07-4ddc-9ff3-80982a95704c",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Party Wear - Women's Collection",
+    "description": "New Arrivals - Party Wear",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background with subtle festive radiance and natural fabric flow. Add the text 'Up to 30% OFF' in a nice font. Generate 1 short party wear marketing caption. Realistic, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Party_Wear_-_Womens_Collection_EMIRl6I.jpg",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": [
+      "Women"
+    ],
+    "offer": "Up to 30% OFF",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.444Z",
+    "updated_at": "2026-01-03T13:22:37.399Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "0b499686-df8a-44c3-9567-9dd9235c575d",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "New Year - Boy Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with clean modern lighting and subtle festive accents. Generate 1 short New Year-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/new_d7kTikw.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.407Z",
+    "updated_at": "2026-01-03T13:22:37.381Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "0f547dd3-fe43-4229-ae8a-b03f6689d7a4",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Eid - Men's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with calm lighting and cultural richness. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Eid-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Eid_-_Mens_Collection_SriEG09.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.266Z",
+    "updated_at": "2026-01-03T13:22:37.103Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "10496496-8196-4a7a-9ef1-bd0a07a87699",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Thaipongal - Boy Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with warm sunlight and harvest vibes. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Thaipongal-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Thaipongal_-_Boy_Kid_Collection_ZRFP1gs.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.234Z",
+    "updated_at": "2026-01-03T13:22:36.994Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "116e77f5-3ac7-41f2-854b-1abb6d1789d4",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Christmas - Boy Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with cozy lighting and subtle seasonal glow. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Christmas-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Christmas_-_Boy_Kid_Collection_8xn04Fz.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.255Z",
+    "updated_at": "2026-01-03T13:22:37.072Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "19e17a4b-59d1-474c-b50b-61b62777a9db",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "New Year - Men's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with balanced lighting and energetic elegance. Generate 1 short New Year-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/men_new_FyKfWVF.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.401Z",
+    "updated_at": "2026-01-03T13:22:37.364Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "1f169333-96d6-44a7-b9a8-aefc01829b04",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Elegant Silk Saree",
+    "description": "Premium Luxurious Style for sarees",
+    "prompt": "Create a stylish product post featuring a dummy model wearing the uploaded saree. Set the background in a premium, elegant environment with cinematic lighting for a luxurious look. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.",
+    "thumbnail": "poster_templates/thumbnails/Saaree_bLuJAiD.jpg",
+    "category": "Fashion",
+    "subcategory": "Traditional",
+    "audience": [
+      "Women"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": true,
+    "created_at": "2026-01-03T13:18:47.593Z",
+    "updated_at": "2026-01-03T13:25:45.696Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "1f5b938b-4aa5-4271-8eef-bf4855ef792f",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Thaipongal - Men's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with gentle sunlight and cultural joy. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Thaipongal-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Thaipongal_-_Mens_Collection_tcdAMg7.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.222Z",
+    "updated_at": "2026-01-03T13:22:36.969Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "2070f748-a672-435a-b0e6-c904cc89ac27",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "New Year - Women's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with refined sparkle and optimism. Add the text 'Up to 50% Off' in a nice font. Generate 1 short New Year-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/New_Year_-_Womens_Collection_TD06dZ8.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.283Z",
+    "updated_at": "2026-01-03T13:22:37.147Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "20e115d9-e2d4-41b8-9fee-df18294d9268",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Thaipongal - Boy Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with warm sunlight and harvest vibes. Generate 1 short Thaipongal-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/pongal_SuFWWFJ.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.350Z",
+    "updated_at": "2026-01-03T13:22:37.267Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "22c9affa-8cc6-4ca6-8293-d064ea9f3e7c",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Sports Wear - Kids Boy Collection",
+    "description": "New Arrivals - Sports Wear",
+    "prompt": "Create a bright product post featuring a boy child model playing in the uploaded sports wear. Set the background in a bright outdoor park with green grass and playground equipment. Add the text 'NEW ARRIVALS SPORTS WEAR', 'Play Hard. Dress Right.', and 'FLASH SALE - 20% OFF ALL KIDS SPORTS!' in bold fonts. Generate 1 short sports wear marketing caption. Vibrant, energetic, realistic finish.",
+    "thumbnail": "poster_templates/thumbnails/Sports_Wear_-_Kids_Boy_Collection_Kup0gc4.jpg",
+    "category": "New Arrivals",
+    "subcategory": "Sports Wear",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "FLASH SALE - 20% OFF",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.459Z",
+    "updated_at": "2026-01-03T13:22:37.422Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "232da385-8822-4339-8b56-a98771e41213",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Diwali - Girl Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft glow and celebration energy. Generate 1 short Diwali-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/D_girl_6Se4Mr0.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.320Z",
+    "updated_at": "2026-01-03T13:22:37.215Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "2e53179d-e362-4b23-9131-95c01917e783",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Diwali - Men's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft light and elegant warmth. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Diwali-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Diwali_-_Mens_Collection_JQgwZmx.jpg",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.202Z",
+    "updated_at": "2026-01-03T13:22:36.905Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "353c8310-7770-4484-b986-6fc7414ebe23",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Diwali - Women's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft radiance and celebration energy. Generate 1 short Diwali-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Diwali_Women_M9zP9Uf.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.307Z",
+    "updated_at": "2026-01-03T13:22:37.199Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "3c4fba0d-3add-41eb-bd0b-c1e08692be43",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Christmas - Men's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with gentle highlights and cozy tones. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Christmas-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Christmas_-_Mens_Collection_6jzoRUr.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.248Z",
+    "updated_at": "2026-01-03T13:22:37.022Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "443e0540-3cd2-4219-ab01-26a933c80f52",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "New Year - Men's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with balanced lighting and energetic elegance. Add the text 'Up to 50% Off' in a nice font. Generate 1 short New Year-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/New_Year_-_Mens_Collection_AoZcJDN.jpg",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.288Z",
+    "updated_at": "2026-01-03T13:22:37.154Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "4757be5d-70ca-44c7-b560-d14028e6c2a6",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Sports Wear - Kids Girl Collection",
+    "description": "New Arrivals - Sports Wear",
+    "prompt": "Create a bright product post featuring a girl child model playing in the uploaded sports wear. Set the background in a sunny park with green grass and colorful playground equipment. Add the text 'NEW ARRIVALS – SPORTS WEAR', 'Play Hard. Dress Right.', and 'FLASH SALE – 20% OFF ALL KIDS' SPORTS!' in bold fonts. Generate 1 short sports wear marketing caption. Vibrant, joyful, realistic finish.",
+    "thumbnail": "poster_templates/thumbnails/Sports_Wear_-_Kids_Girl_Collection_WBJOWPF.jpg",
+    "category": "New Arrivals",
+    "subcategory": "Sports Wear",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "FLASH SALE - 20% OFF",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.468Z",
+    "updated_at": "2026-01-03T13:22:37.433Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "48eb36ac-c9b4-47d0-8ea0-5caf86804ead",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Eid - Girl Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with soft light and elegance. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Eid-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Eid_-_Girl_Kid_Collection_q7LImY8.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.270Z",
+    "updated_at": "2026-01-03T13:22:37.118Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "49470fba-04cb-4df3-95e9-ed5e7d1514df",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Diwali - Girl Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft glow and celebration energy. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Diwali-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Diwali_-_Girl_Kid_Collection_JMcz5KG.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.205Z",
+    "updated_at": "2026-01-03T13:22:36.921Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "4f5e994b-83ad-4a57-923c-f1055dd57427",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Thaipongal - Women's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with natural warmth and cultural celebration. Generate 1 short Thaipongal-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/gril_t_HavlVYH.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.335Z",
+    "updated_at": "2026-01-03T13:22:37.234Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "62018cab-3487-45e9-bc79-4253f54766c8",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Valentine's Day - Couple",
+    "description": "Special Days - With Offer",
+    "prompt": "Create a stylish product post featuring a couple wearing the uploaded outfits. Set the background in a romantic, modern atmosphere with editorial lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short romantic fashion caption celebrating love and style. High-end, realistic finish.",
+    "thumbnail": "poster_templates/thumbnails/Valentines_Day_-_Couple_YujVZyS.png",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": [
+      "Men",
+      "Women"
+    ],
+    "offer": "With Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.189Z",
+    "updated_at": "2026-01-03T13:22:36.880Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "6467f9f6-3185-4fa8-9b55-45cfd2a36cfb",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Thaipongal - Girl Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with warm sunlight and harvest vibes. Generate 1 short Thaipongal-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/kid_gril_UX45xZt.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.342Z",
+    "updated_at": "2026-01-03T13:22:37.254Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "6a17079b-95a6-4366-8fd0-36a49f4e998a",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Eid - Girl Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with soft light and elegance. Generate 1 short Eid-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/without_G_b3Q5hEt.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.384Z",
+    "updated_at": "2026-01-03T13:22:37.336Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "79ff49ec-8fef-4509-b2af-9c2543dffae6",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Wedding Frock",
+    "description": "Moody outdoor style for wedding frocks",
+    "prompt": "Create a stylish product post featuring a dummy model wearing the uploaded white party frock. Set the background in a moody, misty outdoor atmosphere with soft cinematic lighting. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.",
+    "thumbnail": "poster_templates/thumbnails/Wedding_Frock_1bsNnyl.jpg",
+    "category": "Fashion",
+    "subcategory": "Wedding",
+    "audience": [
+      "Women"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": true,
+    "created_at": "2026-01-03T13:18:47.574Z",
+    "updated_at": "2026-01-03T13:25:45.660Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "7ea18a36-407c-4bfa-bdfa-52c9a8dc21f8",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Party Wear - Kids Boy Collection",
+    "description": "New Arrivals - Party Wear",
+    "prompt": "Create a cheerful product post featuring a boy child model wearing the uploaded outfit. Set the background with soft pastel blue, colorful confetti, and light sparkles. Add the text 'New Party Collection' and 'Flat 25% OFF – 3 Days Only' in playful fonts. Generate 1 short party wear marketing caption. Fun, colorful, realistic finish.",
+    "thumbnail": "poster_templates/thumbnails/Party_Wear_-_Kids_Boy_Collection_nEzXpxC.jpg",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Flat 25% OFF - 3 Days Only",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.451Z",
+    "updated_at": "2026-01-03T13:22:37.405Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "7fffe758-6ade-4e0e-ae72-272a51ea65e9",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Christmas - Girl Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with cozy tones and soft light. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Christmas-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Christmas_-_Girl_Kid_Collection_ef42VRV.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.251Z",
+    "updated_at": "2026-01-03T13:22:37.045Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "8b963805-cb41-409b-8563-c2fb0138288e",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Eid - Boy Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with gentle light and celebration harmony. Generate 1 short Eid-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/boy_spring_rASoWR4.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.388Z",
+    "updated_at": "2026-01-03T13:22:37.347Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "8ce84fa1-7ccc-4760-980f-ad56e4917991",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Valentine's Day - Single",
+    "description": "Special Days - With Offer",
+    "prompt": "Create a stylish product post featuring a model wearing the uploaded outfit. Set the background in a romantic, modern atmosphere with editorial lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short romantic fashion caption. High-end, realistic finish.",
+    "thumbnail": "poster_templates/thumbnails/Valentines_Day_-_Single_B3hxChV.png",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": [
+      "Men",
+      "Women"
+    ],
+    "offer": "With Offer",
+    "is_active": true,
+    "is_featured": true,
+    "created_at": "2026-01-03T13:20:11.186Z",
+    "updated_at": "2026-01-03T13:22:36.864Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "8dd96fbf-de49-4222-b774-ec929dece730",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "New Year - Women's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with refined sparkle and optimism. Generate 1 short New Year-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/women_akZqLkj.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.392Z",
+    "updated_at": "2026-01-03T13:22:37.353Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "8ed3a2bc-0315-4435-9a18-852840ae0cd4",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Mother's Day",
+    "description": "Special Days - With Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a warm, elegant atmosphere with soft lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short appreciative Mother's Day caption. Realistic, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Mothers_Day_XI2h1pl.jpg",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "With Offer",
+    "is_active": true,
+    "is_featured": true,
+    "created_at": "2026-01-03T13:20:11.162Z",
+    "updated_at": "2026-01-03T13:22:36.815Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "92c5a6fb-d5c3-4848-a3ad-221e5aa588a4",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Sports Wear - Men's Collection",
+    "description": "New Arrivals - Sports Wear",
+    "prompt": "Create an energetic product post featuring a person actively wearing the uploaded sports apparel. Set the background in a natural outdoor park or path with soft lighting. Add the text 'GET YOUR WORKOUT ON!', 'Ultimate Compression Gear', 'LIMITED TIME OFFER! 20% OFF ALL SETS', and 'FREE SHIPPING' in high-contrast bold fonts. Generate 1 short sports wear marketing caption. Motivational, energetic, realistic finish.",
+    "thumbnail": "poster_templates/thumbnails/Sports_Wear_-_Mens_Collection_q4cYohA.jpg",
+    "category": "New Arrivals",
+    "subcategory": "Sports Wear",
+    "audience": [
+      "Men"
+    ],
+    "offer": "LIMITED TIME OFFER! 20% OFF ALL SETS",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.471Z",
+    "updated_at": "2026-01-03T13:22:37.444Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "9597032c-52ea-49b4-b57f-77af3fa8727a",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Eid - Men's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with calm lighting and cultural richness. Generate 1 short Eid-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/B_eid_QNpv2gB.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.376Z",
+    "updated_at": "2026-01-03T13:22:37.329Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "97a89cff-98bb-461f-889c-5e7b031dcf85",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "New Year - Girl Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with soft light and cheerful tone. Generate 1 short New Year-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/new_kids_8vmfUXP.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.404Z",
+    "updated_at": "2026-01-03T13:22:37.370Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "99d627e0-070f-4ded-8309-0e52d18593d0",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "New Year - Girl Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with soft light and cheerful tone. Add the text 'Up to 50% Off' in a nice font. Generate 1 short New Year-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/New_Year_-_Girl_Kid_Collection_V1jmmMZ.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.294Z",
+    "updated_at": "2026-01-03T13:22:37.171Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "a3780bc1-85eb-4029-b984-5f8ffbd7f238",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Christmas - Women's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with soft lighting and joyful ambience. Generate 1 short Christmas-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/chr_w_Y9tTtpG.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.353Z",
+    "updated_at": "2026-01-03T13:22:37.278Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "a4faf9ae-6a66-4041-8fea-52d99af20be0",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "New Year - Boy Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive New Year atmosphere with clean modern lighting and subtle festive accents. Add the text 'Up to 50% Off' in a nice font. Generate 1 short New Year-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/New_Year_-_Boy_Kid_Collection_2IfJhyY.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.303Z",
+    "updated_at": "2026-01-03T13:22:37.187Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "a55b6664-0f0c-4c36-96ae-9a3bff1e3fd7",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Father's Day",
+    "description": "Special Days - With Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a warm, strong atmosphere with soft lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short appreciative Father's Day caption. Realistic, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Fathers_Day_jJKs0FC.jpg",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "With Offer",
+    "is_active": true,
+    "is_featured": true,
+    "created_at": "2026-01-03T13:20:11.171Z",
+    "updated_at": "2026-01-03T13:22:36.834Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "ad72a915-6200-4ff6-ae5b-4c8730ef57ee",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Christmas - Boy Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with cozy lighting and subtle seasonal glow. Generate 1 short Christmas-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Xmax-boy_tUesjuX.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.369Z",
+    "updated_at": "2026-01-03T13:22:37.311Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "b26a8668-ac60-42ac-82bf-9fab41c39bbd",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Men's Casual T-shirt",
+    "description": "Premium dress shop style for casual wear",
+    "prompt": "Create a stylish product post featuring a dummy wearing the uploaded men's T-shirt. Set the background at a cinematic premium dress shop. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.",
+    "thumbnail": "poster_templates/thumbnails/T_shirt_QylbK6U.png",
+    "category": "Fashion",
+    "subcategory": "Casual",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": true,
+    "created_at": "2026-01-03T13:18:47.598Z",
+    "updated_at": "2026-01-03T13:25:45.714Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "b29db790-e8c2-44d2-8bd8-6632d4da50ef",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Diwali - Men's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft light and elegant warmth. Generate 1 short Diwali-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/D_man_sZ3aci9.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.316Z",
+    "updated_at": "2026-01-03T13:22:37.205Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "b99cc554-fea7-47e9-8333-e70a3f3282f6",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Diwali - Women's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft radiance and celebration energy. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Diwali-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Diwali_-_Womens_Collection_emGg6IC.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.197Z",
+    "updated_at": "2026-01-03T13:22:36.894Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "bee8c426-d999-4d00-98f0-d7dc969b64e8",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Party Wear - Men's Collection",
+    "description": "New Arrivals - Party Wear",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background with soft evening lighting and navy or charcoal tones. Generate 1 short party wear marketing caption. Realistic, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Party_Wear_-_Mens_off_lSgsfTN.jpg",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.416Z",
+    "updated_at": "2026-01-03T13:22:37.387Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "c4d3a1b8-78fb-413e-9676-bf09451ac803",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Christmas - Women's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with soft lighting and joyful ambience. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Christmas-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Christmas_-_Womens_Collection_5ZtmYO0.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.238Z",
+    "updated_at": "2026-01-03T13:22:37.009Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "c784f15c-589c-4d70-8469-bb5d4f95fbd4",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Eid - Boy Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with gentle light and celebration harmony. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Eid-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Eid_-_Boy_Kid_Collection_WchVaRu.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.274Z",
+    "updated_at": "2026-01-03T13:22:37.133Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "c7f5b348-aa8d-4de6-a5a5-d6b41d348e0c",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Party Wear - Kids Girl Collection",
+    "description": "New Arrivals - Party Wear",
+    "prompt": "Create a cheerful product post featuring a girl child model wearing the uploaded outfit. Set the background with soft pastel blue, colorful confetti, and light sparkles. Add the text 'New Party Collection' and 'Flat 25% OFF – 3 Days Only' in playful fonts. Generate 1 short party wear marketing caption. Fun, colorful, realistic finish.",
+    "thumbnail": "poster_templates/thumbnails/Party_Wear_-_Kids_Girl_Collection_Wl6gBCU.jpg",
+    "category": "New Arrivals",
+    "subcategory": "Party Wear",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Flat 25% OFF - 3 Days Only",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.455Z",
+    "updated_at": "2026-01-03T13:22:37.416Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "d104c3cf-9566-4157-b664-b835532be790",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Thaipongal - Girl Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with warm sunlight and harvest vibes. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Thaipongal-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Thaipongal_-_Girl_Kid_Collection_bXyrgyD.jpg",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.227Z",
+    "updated_at": "2026-01-03T13:22:36.979Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "d994d861-dfa5-487a-99f1-91f1922d220d",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Thaipongal - Men's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with gentle sunlight and cultural joy. Generate 1 short Thaipongal-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/thai_0l8xh7B.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.338Z",
+    "updated_at": "2026-01-03T13:22:37.244Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "dbc0d0de-c49f-482f-99b6-ae1b8a30f15c",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Friendship Day",
+    "description": "Special Days - With Offer",
+    "prompt": "Create a stylish product post featuring a model wearing the uploaded outfit. Set the background in a joyful, casual atmosphere with bright natural lighting. Add the text '{{offer_text}}' in a nice font. Generate 1 short celebratory Friendship Day caption. Realistic, lively, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Friendship_Day_TjDlfS9.png",
+    "category": "Special Days",
+    "subcategory": "With Offer",
+    "audience": [
+      "Men",
+      "Women",
+      "Kids"
+    ],
+    "offer": "With Offer",
+    "is_active": true,
+    "is_featured": true,
+    "created_at": "2026-01-03T13:20:11.180Z",
+    "updated_at": "2026-01-03T13:22:36.848Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "e11bd942-b879-4e85-a8c3-fcad86e609b5",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Eid - Women's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with serenity and soft highlights. Generate 1 short Eid-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/eid_with_out__g_RcueAqu.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.372Z",
+    "updated_at": "2026-01-03T13:22:37.319Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "eb85d0ff-79dd-44ed-9240-a7b0a46be5d0",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Official Wear - Men's Collection",
+    "description": "New Arrivals - Official Wear",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded official shirt. Set the background in a modern indoor office or studio with soft professional lighting. Add the text 'Premium Official Shirt Collection' in elegant font positioned on the right side. Generate 1 short official wear marketing caption. Classy, professional, realistic finish.",
+    "thumbnail": "poster_templates/thumbnails/Official_Wear_-_Mens_Collection_Sp1PLJC.jpg",
+    "category": "New Arrivals",
+    "subcategory": "Official Wear",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.474Z",
+    "updated_at": "2026-01-03T13:22:37.452Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "ede513b0-3677-481f-9c4d-8e78565eb618",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Christmas - Men's Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a male model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with gentle highlights and cozy tones. Generate 1 short Christmas-related marketing caption. Realistic, confident, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/chr-wo_cBtwsNR.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.357Z",
+    "updated_at": "2026-01-03T13:22:37.288Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "ee59c738-580a-4d54-9393-719c7c52b11b",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Diwali - Boy Kid Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft glow and celebration energy. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Diwali-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Diwali_-_Boy_Kid_Collection_1sxiooU.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.212Z",
+    "updated_at": "2026-01-03T13:22:36.936Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "f500b938-0433-4d3a-856f-1081810a6917",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Eid - Women's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Eid atmosphere with serenity and soft highlights. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Eid-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Eid_-_Womens_Collection_oesRcWJ.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.258Z",
+    "updated_at": "2026-01-03T13:22:37.088Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "f79f3fdd-6eec-42a6-ace9-03292363aff4",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Men's Denim Shirt",
+    "description": "Urban Casual Style for men's shirts",
+    "prompt": "Create a stylish product post featuring a real man wearing the uploaded shirt. Set the background with cinematic buildings and dramatic lighting for a modern, urban look. Add the text 'AVAILABLE NOW' and 'Contact Us' in a nice cinematic font, positioned around two-thirds from the top edge of the image. Do not include any other text or contact details.",
+    "thumbnail": "poster_templates/thumbnails/Men_Shirt_kIcmX5l.png",
+    "category": "Fashion",
+    "subcategory": "Casual",
+    "audience": [
+      "Men"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": true,
+    "created_at": "2026-01-03T13:18:47.584Z",
+    "updated_at": "2026-01-03T13:25:45.681Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "fa33e9e0-65a6-4298-8b6e-b9eb03f4e537",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Diwali - Boy Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a boy child model wearing the uploaded outfit. Set the background in a festive Diwali atmosphere with soft glow and celebration energy. Generate 1 short Diwali-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/boy_wp3vSgN.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.331Z",
+    "updated_at": "2026-01-03T13:22:37.223Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "fb474ec9-0786-4b5d-bdda-cd62ffc494a6",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Thaipongal - Women's Collection",
+    "description": "Festival - With Offer",
+    "prompt": "Create a stylish product post featuring a female model wearing the uploaded outfit. Set the background in a festive Thaipongal atmosphere with natural warmth and cultural celebration. Add the text 'Up to 50% Off' in a nice font. Generate 1 short Thaipongal-related marketing caption. Realistic, elegant, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/Thaipongal_-_Womens_Collection_FeqfEEc.png",
+    "category": "Festival",
+    "subcategory": "With Offer",
+    "audience": [
+      "Women"
+    ],
+    "offer": "Up to 50% Off",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.219Z",
+    "updated_at": "2026-01-03T13:22:36.953Z"
+  }
+},
+{
+  "model": "ai_services.postertemplate",
+  "pk": "fb6088bd-165c-4db4-aa91-938c073075ad",
+  "fields": {
+    "organization": null,
+    "created_by": "d15f62ae-a2af-4557-8afd-e303f5d66c29",
+    "name": "Christmas - Girl Kid Collection",
+    "description": "Festival - Without Offer",
+    "prompt": "Create a stylish product post featuring a girl child model wearing the uploaded outfit. Set the background in a festive Christmas atmosphere with cozy tones and soft light. Generate 1 short Christmas-related marketing caption. Realistic, graceful, professional finish.",
+    "thumbnail": "poster_templates/thumbnails/girl-kids_QODibNW.jpg",
+    "category": "Festival",
+    "subcategory": "Without Offer",
+    "audience": [
+      "Kids"
+    ],
+    "offer": "No Offer",
+    "is_active": true,
+    "is_featured": false,
+    "created_at": "2026-01-03T13:20:11.365Z",
+    "updated_at": "2026-01-03T13:22:37.299Z"
+  }
+}
+]

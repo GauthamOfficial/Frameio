@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin-auth';
 
-// Get Django backend URL - same logic as other API routes
 function getDjangoBackendUrl(): string {
-  // Priority: NEXT_PUBLIC_API_URL > NEXT_PUBLIC_API_BASE_URL > development localhost
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
-  }
+  // Prefer local backend for server‑side calls
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
     return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '');
   }
-  // Development fallback
+  // Fallback for dev
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:8000';
   }
-  // Production fallback
-  return 'http://47.129.60.11';
+  // Last resort: public API URL or IP
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+  }
+  return 'http://localhost:8000';
 }
 
 export async function GET(request: NextRequest) {

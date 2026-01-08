@@ -316,7 +316,35 @@ mysql -u frameio_user -p frameio_db
 
 ## Phase 5: Python Virtual Environment Setup
 
-### Step 5.1: Create Virtual Environment
+### Step 5.1: Install System Dependencies for Python Packages
+
+**IMPORTANT:** Before installing Python packages, install system-level dependencies required for building packages like `mysqlclient`:
+
+```bash
+# Update package list
+sudo apt update
+
+# Install required system dependencies
+sudo apt install -y \
+    pkg-config \
+    default-libmysqlclient-dev \
+    python3-dev \
+    build-essential \
+    libssl-dev \
+    libffi-dev
+
+# Verify pkg-config is installed
+pkg-config --version
+```
+
+**Note:** These packages are required for:
+- `pkg-config`: Helps find library configuration files
+- `default-libmysqlclient-dev`: MySQL client development libraries (required for mysqlclient)
+- `python3-dev`: Python development headers
+- `build-essential`: Compiler tools (gcc, make, etc.)
+- `libssl-dev` & `libffi-dev`: SSL and FFI libraries for various Python packages
+
+### Step 5.2: Create Virtual Environment
 
 ```bash
 # Navigate to project root (wherever you cloned it)
@@ -326,12 +354,12 @@ cd ~/framio  # or /opt/framio
 python3 -m venv venv
 
 # Activate virtual environment
-source venv/bin/activate
+source frameio_env/bin/activate
 
 # You should see (venv) in your prompt
 ```
 
-### Step 5.2: Upgrade pip and Install Dependencies
+### Step 5.3: Upgrade pip and Install Dependencies
 
 ```bash
 # Upgrade pip
@@ -811,7 +839,7 @@ http://YOUR_EC2_IP/admin/
 
 ```bash
 # Test static file serving
-curl -I http://YOUR_EC2_IP/static/admin/css/base.css
+curl -I http://47.129.60.11/static/admin/css/base.css
 
 # Should return 200 OK
 ```
@@ -966,7 +994,7 @@ sudo nano /etc/logrotate.d/frameio
 
 **Add this content:**
 ```
-/home/ubuntu/framio/backend/logs/*.log {
+/home/ubuntu/Frameio/backend/logs/*.log {
     daily
     missingok
     rotate 14

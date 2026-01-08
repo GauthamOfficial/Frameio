@@ -1495,49 +1495,68 @@ export default function EnhancedPosterGeneratorWithBranding() {
               )}
 
               {/* Generated Poster */}
-              {result && (
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="border rounded-lg overflow-hidden relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
-                    {!imageLoadError && result.image_url ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img 
-                        src={getImageUrl(result.image_url)} 
-                        alt="Generated Poster" 
-                        className="absolute inset-0 w-full h-full object-contain"
-                        onLoad={() => {
-                          setImageLoadError(false)
-                          console.log('✅ Image loaded successfully:', getImageUrl(result.image_url))
-                        }}
-                        onError={() => {
-                          console.error('❌ Image load error')
-                          console.error('Image URL attempted:', getImageUrl(result.image_url))
-                          console.error('Original image_url:', result.image_url)
-                          console.error('public_url:', result.public_url)
-                          console.error('cloudinary_url:', (result as { cloudinary_url?: string }).cloudinary_url)
-                          setImageLoadError(true)
-                        }}
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted text-center p-4">
-                        <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground mb-2">Failed to load image preview</p>
-                        <p className="text-xs text-muted-foreground">URL: {result.image_url ? getImageUrl(result.image_url) : 'No URL'}</p>
-                        {result.public_url && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-2"
-                            onClick={() => {
-                              window.open(result.public_url, '_blank')
-                            }}
-                          >
-                            <ExternalLink className="h-3 w-3 mr-1" />
-                            Open in new tab
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+              {result && (() => {
+                // Prioritize cloudinary_url (direct image with logo) > public_url (with logo) > image_url (original)
+                const cloudinaryUrl = (result as { cloudinary_url?: string }).cloudinary_url
+                const bestUrl = cloudinaryUrl || result.public_url || result.image_url
+                
+                // If bestUrl is already an absolute URL, use it directly; otherwise use getImageUrl
+                // This ensures we use the logo-added image (cloudinary_url/public_url) instead of the original
+                const displayUrl = bestUrl 
+                  ? (bestUrl.startsWith('http') ? bestUrl : getImageUrl(bestUrl))
+                  : ''
+                
+                return (
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="border rounded-lg overflow-hidden relative w-full" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
+                      {!imageLoadError && displayUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img 
+                          src={displayUrl} 
+                          alt="Generated Poster" 
+                          className="absolute inset-0 w-full h-full object-contain"
+                          onLoad={() => {
+                            setImageLoadError(false)
+                            console.log('✅ Image loaded successfully:', displayUrl)
+                            console.log('Using URL type:', cloudinaryUrl ? 'cloudinary_url' : result.public_url ? 'public_url' : 'image_url')
+                            console.log('cloudinary_url value:', cloudinaryUrl)
+                            console.log('public_url value:', result.public_url)
+                            console.log('image_url value:', result.image_url)
+                            console.log('logo_added:', result.logo_added)
+                            console.log('branding_applied:', result.branding_applied)
+                          }}
+                          onError={() => {
+                            console.error('❌ Image load error')
+                            console.error('Image URL attempted:', displayUrl)
+                            console.error('cloudinary_url:', cloudinaryUrl)
+                            console.error('public_url:', result.public_url)
+                            console.error('image_url:', result.image_url)
+                            console.error('logo_added:', result.logo_added)
+                            console.error('branding_applied:', result.branding_applied)
+                            setImageLoadError(true)
+                          }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted text-center p-4">
+                          <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground mb-2">Failed to load image preview</p>
+                          <p className="text-xs text-muted-foreground">URL: {displayUrl || 'No URL'}</p>
+                          {(result.public_url || cloudinaryUrl) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-2"
+                              onClick={() => {
+                                window.open(result.public_url || cloudinaryUrl || '', '_blank')
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              Open in new tab
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button 
@@ -1658,7 +1677,8 @@ export default function EnhancedPosterGeneratorWithBranding() {
                       </div>
                   </div>
                 </div>
-                )}
+                )
+              })()}
             </div>
           </CardContent>
         </Card>
