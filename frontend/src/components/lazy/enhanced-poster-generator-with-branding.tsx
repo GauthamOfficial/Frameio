@@ -240,11 +240,37 @@ export default function EnhancedPosterGeneratorWithBranding() {
   }, [previewUrl])
 
   // Helper function to get the correct image URL
-  // Prioritizes cloudinary_url or public_url if available, otherwise uses image_url
+  // Prioritizes the passed imageUrl parameter, then falls back to cloudinary_url/public_url
   const getImageUrl = (imageUrl: string | undefined): string => {
     if (!imageUrl) return ''
     
-    // If result has cloudinary_url or public_url, prefer those (they're absolute URLs)
+    // If image_url is already absolute, return as-is (prioritize the passed parameter)
+    if (imageUrl.startsWith('http')) {
+      return imageUrl
+    }
+    
+    // If the passed imageUrl is a branded image (local path), convert it to full URL
+    // This ensures branded images work even if S3 URLs fail
+    if (imageUrl.includes('branded') || imageUrl.includes('branded_poster')) {
+      // For relative paths, construct absolute URL
+      // In development, use Django backend URL directly
+      if (process.env.NODE_ENV === 'development') {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL 
+          ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+          : process.env.NEXT_PUBLIC_API_BASE_URL
+          ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')
+          : 'http://localhost:8000'
+        
+        // Ensure path starts with /
+        const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`
+        return `${backendUrl}${normalizedPath}`
+      }
+      
+      // In production, use getFullUrl
+      return getFullUrl(imageUrl)
+    }
+    
+    // For non-branded images, check result for cloudinary_url or public_url
     if (result) {
       const cloudinaryUrl = (result as { cloudinary_url?: string }).cloudinary_url
       if (cloudinaryUrl && cloudinaryUrl.startsWith('http')) {
@@ -253,11 +279,6 @@ export default function EnhancedPosterGeneratorWithBranding() {
       if (result.public_url && result.public_url.startsWith('http')) {
         return result.public_url
       }
-    }
-    
-    // If image_url is already absolute, return as-is
-    if (imageUrl.startsWith('http')) {
-      return imageUrl
     }
     
     // For relative paths, construct absolute URL
@@ -1500,21 +1521,22 @@ export default function EnhancedPosterGeneratorWithBranding() {
                 // Otherwise: cloudinary_url (direct image with logo) > public_url (with logo) > image_url (original)
                 const cloudinaryUrl = (result as { cloudinary_url?: string }).cloudinary_url
                 
-                // If image_url contains "branded", it's the logo-added version (temporary workaround until backend fix)
+                // If image_url contains "branded", it's the logo-added version (local path)
                 const isBrandedImage = result.image_url && (
                   result.image_url.includes('branded') || 
                   result.image_url.includes('branded_poster')
                 )
                 
+                // Prioritize branded image_url (local path) - convert to full URL like dashboard does
+                // If S3 URLs fail, fallback to local path converted to full URL
                 const bestUrl = isBrandedImage 
-                  ? result.image_url  // Use branded image_url if it exists
+                  ? result.image_url  // Use branded image_url (will be converted to full URL by getImageUrl)
                   : (cloudinaryUrl || result.public_url || result.image_url)
                 
-                // If bestUrl is already an absolute URL, use it directly; otherwise use getImageUrl
-                // This ensures we use the logo-added image (cloudinary_url/public_url) instead of the original
-                const displayUrl = bestUrl 
-                  ? (bestUrl.startsWith('http') ? bestUrl : getImageUrl(bestUrl))
-                  : ''
+                // Always use getImageUrl to convert relative paths to full URLs (like dashboard does)
+                // This handles both S3 URLs and local media paths
+                // getImageUrl will handle absolute URLs by returning them as-is
+                const displayUrl = bestUrl ? getImageUrl(bestUrl) : ''
                 
                 return (
                   <div className="space-y-3 sm:space-y-4">
