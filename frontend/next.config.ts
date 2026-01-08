@@ -10,14 +10,16 @@ const getApiBaseUrl = () => {
   }
   // Then check NEXT_PUBLIC_API_BASE_URL
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-    return process.env.NEXT_PUBLIC_API_BASE_URL;
+    // Add /api if not present
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '');
+    return base.endsWith('/api') ? base : `${base}/api`;
   }
   // Fallback based on NODE_ENV
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:8000';
   }
-  // Production fallback
-  return 'http://47.129.60.11/api';
+  // Production fallback - use HTTPS
+  return 'https://frameio.co/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -120,11 +122,11 @@ const nextConfig: NextConfig = {
               "worker-src 'self' blob:",
               "child-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",
-              // Image sources: production API + localhost for development
-              `img-src 'self' data: blob: https: ${apiProtocol}://${apiHost}${apiUrlObj.port ? `:${apiUrlObj.port}` : ''}${process.env.NODE_ENV === 'development' ? ' http://localhost:8000 http://127.0.0.1:8000' : ''}`,
+              // Image sources: production API + localhost only if API host is actually localhost
+              `img-src 'self' data: blob: https: ${apiProtocol}://${apiHost}${apiUrlObj.port ? `:${apiUrlObj.port}` : ''}${apiHost === 'localhost' || apiHost === '127.0.0.1' ? ' http://localhost:8000 http://127.0.0.1:8000' : ''}`,
               "font-src 'self' data:",
-              // Connect sources: production API + localhost for development
-              `connect-src 'self' ${apiProtocol}://${apiHost}${apiUrlObj.port ? `:${apiUrlObj.port}` : ''}${process.env.NODE_ENV === 'development' ? ' http://localhost:8000 http://127.0.0.1:8000 ws://localhost:3000' : ''}`,
+              // Connect sources: production API + localhost only if API host is actually localhost
+              `connect-src 'self' ${apiProtocol}://${apiHost}${apiUrlObj.port ? `:${apiUrlObj.port}` : ''}${apiHost === 'localhost' || apiHost === '127.0.0.1' ? ' http://localhost:8000 http://127.0.0.1:8000 ws://localhost:3000' : ''}`,
               "frame-src 'self'",
             ].join('; '),
           },
