@@ -1,17 +1,10 @@
 'use client';
 
-<<<<<<< HEAD
-import dynamic from 'next/dynamic';
-
-const FabricCanvas = dynamic(() => import('./FabricCanvasInternal'), { 
-  ssr: false 
-});
-=======
 import React, { useEffect, useRef, useState } from 'react';
+import { fabric } from 'fabric';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User } from 'lucide-react';
->>>>>>> build-fix
 
 interface Participant {
   id: string;
@@ -29,38 +22,29 @@ interface Participant {
 interface CollaborationCanvasProps {
   participants: Participant[];
   onCursorUpdate: (cursor: { x: number; y: number }) => void;
-  onDesignUpdate: (update: unknown) => void;
+  onDesignUpdate: (update: any) => void;
 }
 
-<<<<<<< HEAD
-export function CollaborationCanvas(props: CollaborationCanvasProps) {
-  return <FabricCanvas {...props} />;
-=======
-export function CollaborationCanvas({ 
+export default function FabricCanvasInternal({ 
   participants, 
   onCursorUpdate, 
   onDesignUpdate 
 }: CollaborationCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [canvas, setCanvas] = useState<unknown | null>(null); // fabric.Canvas - using unknown to avoid SSR issues
+  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Import fabric.js only on client side
-    import('fabric').then((fabricModule) => {
-      const fabric = fabricModule.default || fabricModule;
-      
-      const fabricCanvas = new fabric.Canvas(canvasRef.current!, {
-        width: 800,
-        height: 600,
-        backgroundColor: '#ffffff'
-      });
+    const fabricCanvas = new fabric.Canvas(canvasRef.current, {
+      width: 800,
+      height: 600,
+      backgroundColor: '#ffffff'
+    });
 
-      // Add some sample content
-      const sampleText = new fabric.Text('Collaborative Design', {
+    // Add some sample content
+    const sampleText = new fabric.Text('Collaborative Design', {
       left: 100,
       top: 100,
       fontSize: 32,
@@ -82,8 +66,8 @@ export function CollaborationCanvas({
 
     // Event listeners for real-time collaboration
     fabricCanvas.on('mouse:move', (e) => {
-      if (e.viewportPoint) {
-        onCursorUpdate({ x: e.viewportPoint.x, y: e.viewportPoint.y });
+      if (e.pointer) {
+        onCursorUpdate({ x: e.pointer.x, y: e.pointer.y });
       }
     });
 
@@ -108,16 +92,12 @@ export function CollaborationCanvas({
       });
     });
 
-      setCanvas(fabricCanvas);
-      setIsLoading(false);
+    setCanvas(fabricCanvas);
+    setIsLoading(false);
 
-      return () => {
-        fabricCanvas.dispose();
-      };
-    }).catch((error) => {
-      console.error('Failed to load fabric.js:', error);
-      setIsLoading(false);
-    });
+    return () => {
+      fabricCanvas.dispose();
+    };
   }, [onCursorUpdate, onDesignUpdate]);
 
   const getRoleColor = (role: string) => {
@@ -193,5 +173,5 @@ export function CollaborationCanvas({
       </div>
     </div>
   );
->>>>>>> build-fix
 }
+

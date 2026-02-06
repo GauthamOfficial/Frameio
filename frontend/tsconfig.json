@@ -17,16 +17,24 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "plugins": [
       {
         "name": "next"
       }
+<<<<<<< HEAD
     ],
     "paths": {
       "@/*": [
         "./src/*"
       ]
     }
+=======
+    ]
+>>>>>>> master
   },
   "include": [
     "next-env.d.ts",

@@ -2,165 +2,154 @@ import type { NextConfig } from "next";
 import path from "path";
 
 // Get API base URL from environment, with fallback for development
-// Priority: NEXT_PUBLIC_API_URL env var > NEXT_PUBLIC_API_BASE_URL > development localhost > production fallback
 const getApiBaseUrl = () => {
-  // Always prioritize NEXT_PUBLIC_API_URL if set (for production deployments)
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  // Then check NEXT_PUBLIC_API_BASE_URL
+
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-    // Add /api if not present
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '');
-    return base.endsWith('/api') ? base : `${base}/api`;
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, "");
+    return base.endsWith("/api") ? base : `${base}/api`;
   }
-  // Fallback based on NODE_ENV
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:8000';
+
+  if (process.env.NODE_ENV === "development") {
+    return "http://localhost:8000";
   }
-  // Production fallback - use HTTPS
-  return 'https://frameio.co/api';
+
+  return "https://frameio.co/api";
 };
 
 const API_BASE_URL = getApiBaseUrl();
-// Extract hostname and protocol from API_BASE_URL for CSP
 const apiUrlObj = new URL(API_BASE_URL);
 const apiHost = apiUrlObj.hostname;
-const apiProtocol = apiUrlObj.protocol.slice(0, -1); // Remove trailing ':'
+const apiProtocol = apiUrlObj.protocol.slice(0, -1);
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  // Set outputFileTracingRoot to the frontend directory to avoid multiple lockfile warning
   outputFileTracingRoot: path.join(__dirname),
+
   images: {
     remotePatterns: [
-      // Development patterns
       {
-        protocol: 'http' as const,
-        hostname: 'localhost',
-        port: '8000',
-        pathname: '/media/**',
+        protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+        pathname: "/media/**",
       },
       {
-        protocol: 'http' as const,
-        hostname: 'localhost',
-        pathname: '/**',
+        protocol: "http",
+        hostname: "localhost",
+        pathname: "/**",
       },
       {
-        protocol: 'http' as const,
-        hostname: '127.0.0.1',
-        pathname: '/**',
+        protocol: "http",
+        hostname: "127.0.0.1",
+        pathname: "/**",
       },
-      // Production pattern (if API_BASE_URL is set)
-      ...(apiHost !== 'localhost' && apiHost !== '127.0.0.1' ? [{
-        protocol: apiProtocol as 'http' | 'https',
-        hostname: apiHost,
-        ...(apiUrlObj.port ? { port: apiUrlObj.port } : {}),
-        pathname: '/**',
-      }] : []),
-      // ngrok pattern for tunneling
+      ...(apiHost !== "localhost" && apiHost !== "127.0.0.1"
+        ? [
+            {
+              protocol: apiProtocol as "http" | "https",
+              hostname: apiHost,
+              ...(apiUrlObj.port ? { port: apiUrlObj.port } : {}),
+              pathname: "/**",
+            },
+          ]
+        : []),
       {
-        protocol: 'https' as const,
-        hostname: '*.ngrok.io',
-        pathname: '/media/**',
+        protocol: "https",
+        hostname: "*.ngrok.io",
+        pathname: "/media/**",
       },
     ],
   },
+
+  experimental: {
+    optimizePackageImports: ["@clerk/nextjs", "@clerk/themes"],
+  },
+
   async rewrites() {
-    // In production, rewrites may not be needed if frontend and backend are on different domains
-    // Only use rewrites in development or if API_BASE_URL is on same origin
-    if (process.env.NODE_ENV === 'development' || apiHost === 'localhost' || apiHost === '127.0.0.1') {
+    if (
+      process.env.NODE_ENV === "development" ||
+      apiHost === "localhost" ||
+      apiHost === "127.0.0.1"
+    ) {
       return [
         {
-          source: '/api/ai/:path*',
+          source: "/api/ai/:path*",
           destination: `${API_BASE_URL}/api/ai/:path*`,
         },
-        // Note: /api/admin/* and /api/users/auth/me routes are handled by Next.js API routes, not Django
-        // Exclude admin and specific Next.js API routes from rewrites
-        // All other /api/* routes should be proxied to Django backend
         {
-          source: '/api/((?!admin|users/auth/me|users/me|auth/set-tokens).*)',
+          source: "/api/((?!admin|users/auth/me|users/me|auth/set-tokens).*)",
           destination: `${API_BASE_URL}/api/$1`,
         },
         {
-          source: '/health',
+          source: "/health",
           destination: `${API_BASE_URL}/health/`,
         },
       ];
     }
-    // In production with different domains, return empty array (no rewrites)
     return [];
   },
+
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-XSS-Protection", value: "1; mode=block" },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Content-Security-Policy',
+            key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              // SECURITY: Only allow 'unsafe-eval' in development (required for Next.js HMR/React Fast Refresh)
-              // In production, this is disabled to prevent XSS attacks
-              // Development: Next.js requires unsafe-eval for hot module replacement
-              // Production: Strict CSP without unsafe-eval for security
-              process.env.NODE_ENV === 'development'
+              process.env.NODE_ENV === "development"
                 ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
                 : "script-src 'self' 'unsafe-inline'",
               "worker-src 'self' blob:",
               "child-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",
-              // Image sources: production API + localhost only if API host is actually localhost
-              `img-src 'self' data: blob: https: ${apiProtocol}://${apiHost}${apiUrlObj.port ? `:${apiUrlObj.port}` : ''}${apiHost === 'localhost' || apiHost === '127.0.0.1' ? ' http://localhost:8000 http://127.0.0.1:8000' : ''}`,
+              `img-src 'self' data: blob: https: ${apiProtocol}://${apiHost}${
+                apiUrlObj.port ? `:${apiUrlObj.port}` : ""
+              }${
+                apiHost === "localhost" || apiHost === "127.0.0.1"
+                  ? " http://localhost:8000 http://127.0.0.1:8000"
+                  : ""
+              }`,
               "font-src 'self' data:",
-              // Connect sources: production API + localhost only if API host is actually localhost
-              `connect-src 'self' ${apiProtocol}://${apiHost}${apiUrlObj.port ? `:${apiUrlObj.port}` : ''}${apiHost === 'localhost' || apiHost === '127.0.0.1' ? ' http://localhost:8000 http://127.0.0.1:8000 ws://localhost:3000' : ''}`,
+              `connect-src 'self' ${apiProtocol}://${apiHost}${
+                apiUrlObj.port ? `:${apiUrlObj.port}` : ""
+              }${
+                apiHost === "localhost" || apiHost === "127.0.0.1"
+                  ? " http://localhost:8000 http://127.0.0.1:8000 ws://localhost:3000"
+                  : ""
+              }`,
               "frame-src 'self'",
-            ].join('; '),
+            ].join("; "),
           },
         ],
       },
-    ]
+    ];
   },
-  // Improve chunk loading reliability
+
   webpack: (config, { isServer }) => {
-    // Handle fabric.js and canvas for client-side only
     if (!isServer) {
-      // Stub canvas module for client-side builds (fabric.js optional dependency)
-      const path = require('path');
+      const path = require("path");
       config.resolve.alias = {
         ...config.resolve.alias,
-        canvas: path.resolve(__dirname, 'webpack-canvas-stub.js'),
+        canvas: path.resolve(__dirname, "webpack-canvas-stub.js"),
       };
-      
-      // Webpack configuration for client-side builds
     } else {
-      // Server-side: stub canvas to prevent SSR errors
       config.resolve.alias = {
         ...config.resolve.alias,
         canvas: false,
       };
     }
-    return config
+    return config;
   },
-  // Turbopack configuration (Next.js 16 uses Turbopack by default)
+
+  // Turbopack enabled (safe with existing experimental config)
   turbopack: {},
-  // Experimental features
-  experimental: {
-    // Add any experimental features here
-  },
 };
 
 export default nextConfig;
